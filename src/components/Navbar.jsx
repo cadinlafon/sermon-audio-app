@@ -14,17 +14,17 @@ export default function Navbar() {
   const [user, setUser] = useState(null);
   const [showMore, setShowMore] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  // Hide navbar in admin
-  if (location.pathname.startsWith("/admin")) {
-    return null;
-  }
+  const ADMIN_EMAILS = [
+  "cadinlafon@gmail.com",
+  "jonathanmacintosh78@gmail.com"
+];
 
-  // Listen for auth state
+
+  // ✅ Always run hooks first (NO early returns)
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -33,7 +33,6 @@ export default function Navbar() {
     return () => unsubscribe();
   }, []);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event) {
       if (profileRef.current && !profileRef.current.contains(event.target)) {
@@ -70,6 +69,9 @@ export default function Navbar() {
       : "2px solid transparent",
     paddingBottom: "6px",
   });
+
+  const isAdmin = user && ADMIN_EMAILS.includes(user.email);
+
 
   return (
     <div
@@ -119,6 +121,11 @@ export default function Navbar() {
           >
             <NavLink to="/about">About</NavLink>
             <NavLink to="/feedback">Feedback</NavLink>
+
+            {/* 👑 Admin link only visible for admin */}
+            {isAdmin && (
+              <NavLink to="/admin">Admin Panel</NavLink>
+            )}
           </div>
         )}
       </div>
@@ -134,7 +141,7 @@ export default function Navbar() {
           gap: "15px"
         }}
       >
-        {/* 🔔 Notification Bell (only if logged in) */}
+        {/* 🔔 Notification Bell */}
         {user && (
           <div
             style={{ cursor: "pointer", fontSize: "18px" }}
@@ -177,7 +184,7 @@ export default function Navbar() {
           )}
         </div>
 
-        {/* Login Dropdown (only if NOT logged in) */}
+        {/* Login Dropdown */}
         {showProfile && !user && (
           <div
             style={{

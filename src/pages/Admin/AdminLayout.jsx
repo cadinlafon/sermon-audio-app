@@ -18,25 +18,30 @@ export default function AdminLayout() {
     marginBottom: "8px",
     borderRadius: "6px",
     textDecoration: "none",
-    color: location.pathname.includes(path) ? "white" : "#ddd",
-    background: location.pathname.includes(path) ? "#333" : "transparent",
+    color: location.pathname === path || location.pathname.includes(path)
+      ? "white"
+      : "#ddd",
+    background:
+      location.pathname === path || location.pathname.includes(path)
+        ? "#333"
+        : "transparent",
   });
 
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
-      
       {/* Sidebar */}
       <div
         style={{
-          width: "220px",
+          width: "230px",
           background: "#1e1e1e",
           color: "white",
           padding: "20px",
         }}
       >
-        <h3 style={{ marginBottom: "20px" }}>Admin</h3>
+        <h3 style={{ marginBottom: "25px" }}>Admin Panel</h3>
 
-        <Link to="/admin-38447-control" style={linkStyle("control")}>
+        {/* Dashboard */}
+        <Link to="/admin" style={linkStyle("/admin")}>
           Dashboard
         </Link>
 
@@ -59,7 +64,6 @@ export default function AdminLayout() {
 
       {/* Main Content */}
       <div style={{ flex: 1 }}>
-        
         {/* Top Bar */}
         <div
           style={{
@@ -68,6 +72,7 @@ export default function AdminLayout() {
             alignItems: "center",
             padding: "15px 30px",
             background: "#f5f5f5",
+            borderBottom: "1px solid #ddd",
           }}
         >
           <div style={{ position: "relative" }}>
@@ -117,6 +122,7 @@ export default function AdminLayout() {
           </div>
         </div>
 
+        {/* Page Content */}
         <div style={{ padding: "30px" }}>
           <Outlet />
         </div>

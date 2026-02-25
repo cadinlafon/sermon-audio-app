@@ -1,27 +1,45 @@
 import { useEffect, useState } from "react";
-import { db } from "../firebase";
+import { db, auth } from "../firebase";
 import {
   collection,
   getDocs,
   doc,
   updateDoc,
   increment,
+  arrayUnion,
+  arrayRemove,
 } from "firebase/firestore";
+import { onAuthStateChanged } from "firebase/auth";
 
 export default function Sermons() {
   const [sermons, setSermons] = useState([]);
+  const [user, setUser] = useState(null);
 
+  // Track auth state
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Fetch sermons
   useEffect(() => {
     async function fetchSermons() {
       try {
         const querySnapshot = await getDocs(collection(db, "audio"));
 
-        const sermonList = querySnapshot.docs.map((docItem) => ({
-          id: docItem.id,
-          likes: docItem.data().likes || 0,
-          liked: false, // local state only for now
-          ...docItem.data(),
-        }));
+        const sermonList = querySnapshot.docs.map((docItem) => {
+          const data = docItem.data();
+
+          return {
+            id: docItem.id,
+            ...data,
+            likes: data.likes || 0,
+            likedBy: data.likedBy || [],
+          };
+        });
 
         setSermons(sermonList);
       } catch (error) {
@@ -32,31 +50,40 @@ export default function Sermons() {
     fetchSermons();
   }, []);
 
-  const handleLike = async (id, currentLikes, currentlyLiked) => {
-    try {
-      const sermonRef = doc(db, "audio", id);
+  // Like / Unlike
+  const handleLike = async (sermon) => {
+    if (!user) {
+      alert("You must be logged in to like.");
+      return;
+    }
 
-      // Update Firestore count
+    const sermonRef = doc(db, "audio", sermon.id);
+    const hasLiked = sermon.likedBy.includes(user.uid);
+
+    try {
       await updateDoc(sermonRef, {
-        likes: increment(currentlyLiked ? -1 : 1),
+        likes: increment(hasLiked ? -1 : 1),
+        likedBy: hasLiked
+          ? arrayRemove(user.uid)
+          : arrayUnion(user.uid),
       });
 
-      // Update UI instantly
-      setSermons((prevSermons) =>
-        prevSermons.map((sermon) =>
-          sermon.id === id
+      // Update UI immediately
+      setSermons((prev) =>
+        prev.map((s) =>
+          s.id === sermon.id
             ? {
-                ...sermon,
-                liked: !currentlyLiked,
-                likes: currentlyLiked
-                  ? sermon.likes - 1
-                  : sermon.likes + 1,
+                ...s,
+                likes: hasLiked ? s.likes - 1 : s.likes + 1,
+                likedBy: hasLiked
+                  ? s.likedBy.filter((uid) => uid !== user.uid)
+                  : [...s.likedBy, user.uid],
               }
-            : sermon
+            : s
         )
       );
     } catch (error) {
-      console.error("Error updating likes:", error);
+      console.error("Error updating like:", error);
     }
   };
 
@@ -69,60 +96,78 @@ export default function Sermons() {
       {sermons.length === 0 ? (
         <p>No sermons found.</p>
       ) : (
-        sermons.map((sermon) => (
-          <div
-            key={sermon.id}
-            style={{
-              background: "#ffffff",
-              padding: "20px",
-              marginBottom: "25px",
-              borderRadius: "12px",
-              boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
-              maxWidth: "600px",
-              margin: "0 auto 25px auto",
-            }}
-          >
-            <h3 style={{ marginBottom: "5px" }}>
-              {sermon.title}
-            </h3>
+        sermons.map((sermon) => {
+          const isLiked =
+            user && sermon.likedBy.includes(user.uid);
 
-            <p style={{ fontWeight: "bold", color: "#555" }}>
-              Pastor: {sermon.pastor}
-            </p>
+          return (
+            <div
+              key={sermon.id}
+              style={{
+                background: "#ffffff",
+                padding: "20px",
+                marginBottom: "25px",
+                borderRadius: "12px",
+                boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
+                maxWidth: "600px",
+                margin: "0 auto 25px auto",
+              }}
+            >
+              <h3>{sermon.title}</h3>
 
-            <p style={{ marginBottom: "15px" }}>
-              {sermon.description}
-            </p>
+              <p style={{ fontWeight: "bold", color: "#555" }}>
+                Pastor: {sermon.pastor}
+              </p>
 
-            {sermon.audioUrl && (
-              <audio controls style={{ width: "100%" }}>
-                <source
-                  src={sermon.audioUrl}
-                  type="audio/mpeg"
-                />
-                Your browser does not support the audio element.
-              </audio>
-            )}
+              <p>{sermon.description}</p>
 
-            <div style={{ marginTop: "10px" }}>
-              <button
-                onClick={() =>
-                  handleLike(
-                    sermon.id,
-                    sermon.likes,
-                    sermon.liked
-                  )
-                }
+              {sermon.audioUrl && (
+                <audio controls style={{ width: "100%" }}>
+                  <source src={sermon.audioUrl} type="audio/mpeg" />
+                </audio>
+              )}
+
+              <div
+                style={{
+                  marginTop: "15px",
+                  display: "flex",
+                  alignItems: "center",
+                }}
               >
-                {sermon.liked ? "❤️ Liked" : "🤍 Like"}
-              </button>
+                <button
+                  onClick={() => handleLike(sermon)}
+                  style={{
+                    fontSize: "24px",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    position: "relative",
+                    opacity: user ? 1 : 0.5,
+                  }}
+                >
+                  {isLiked ? "❤️" : "🤍"}
 
-              <span style={{ marginLeft: "10px" }}>
-                {sermon.likes}
-              </span>
+                  {!user && (
+                    <span
+                      style={{
+                        position: "absolute",
+                        top: "-5px",
+                        right: "-8px",
+                        fontSize: "14px",
+                      }}
+                    >
+                      🔒
+                    </span>
+                  )}
+                </button>
+
+                <span style={{ marginLeft: "8px" }}>
+                  {sermon.likes}
+                </span>
+              </div>
             </div>
-          </div>
-        ))
+          );
+        })
       )}
     </div>
   );

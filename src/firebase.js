@@ -1,9 +1,10 @@
 // Import Firebase core
 import { initializeApp } from "firebase/app";
 
-// Import services you are using
+// Import services
 import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
+import { getStorage } from "firebase/storage"; // 👈 ADD THIS
 
 // Your Firebase configuration
 const firebaseConfig = {
@@ -12,12 +13,13 @@ const firebaseConfig = {
   projectId: "palousefellowshipsermonapp",
   storageBucket: "palousefellowshipsermonapp.firebasestorage.app",
   messagingSenderId: "591678059434",
-  appId: "1:591678059434:web:dfa8631fab9a2295f831d3"
+  appId: "1:591678059434:web:dfa8631fab9a2295f831d3",
 };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Export Firestore and Auth
+// Initialize services
 export const db = getFirestore(app);
 export const auth = getAuth(app);
+export const storage = getStorage(app); // 👈 ADD THIS
