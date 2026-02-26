@@ -182,7 +182,32 @@ export default function Settings() {
         <button style={styles.deleteButton} onClick={handleDeleteAccount}>
           Delete Account
         </button>
+<label>
+  <input
+    type="checkbox"
+    checked={prefs.sermon}
+    onChange={() => togglePreference("sermon")}
+  />
+  Sermons
+</label>
 
+<label>
+  <input
+    type="checkbox"
+    checked={prefs.announcement}
+    onChange={() => togglePreference("announcement")}
+  />
+  Announcements
+</label>
+
+<label>
+  <input
+    type="checkbox"
+    checked={prefs.homily}
+    onChange={() => togglePreference("homily")}
+  />
+  Homilies
+</label>
         {message && <p style={styles.message}>{message}</p>}
       </div>
     </div>

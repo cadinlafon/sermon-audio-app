@@ -2,7 +2,6 @@ import { Outlet, Link, useLocation } from "react-router-dom";
 import { signOut } from "firebase/auth";
 import { auth } from "../../firebase";
 import { useState } from "react";
-
 export default function AdminLayout() {
   const [open, setOpen] = useState(false);
   const location = useLocation();
