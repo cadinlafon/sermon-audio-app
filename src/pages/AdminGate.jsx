@@ -1,61 +1,109 @@
 import { useState } from "react";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../firebase";
-import Admin from "./Admin";
+import { db, storage } from "../firebase";import {
+  collection,
+  addDoc,
+  serverTimestamp,
+} from "firebase/firestore";
+import {
+  ref,
+  uploadBytes,
+  getDownloadURL,
+} from "firebase/storage";
 
-export default function AdminGate({ user }) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+export default function UploadAudio() {
+  const [title, setTitle] = useState("");
+  const [speaker, setSpeaker] = useState("");
+  const [type, setType] = useState("sermon");
+  const [file, setFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
+  const handleUpload = async () => {
+    if (!file || !title) {
+      alert("Title and file are required.");
+      return;
+    }
+
+    setUploading(true);
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      setError("");
-    } catch (err) {
-      setError("Invalid credentials");
+      // 🔥 Upload file to Firebase Storage
+      const storageRef = ref(
+        storage,
+        `audio/${Date.now()}_${file.name}`
+      );
+
+      await uploadBytes(storageRef, file);
+
+      const downloadURL = await getDownloadURL(storageRef);
+
+      // 🔥 Save metadata to Firestore
+      await addDoc(collection(db, "audio"), {
+        title,
+        speaker,
+        type,
+        audioURL: downloadURL,
+        createdAt: serverTimestamp(),
+      });
+
+      // Reset form
+      setTitle("");
+      setSpeaker("");
+      setType("sermon");
+      setFile(null);
+
+      alert("Upload successful 🎉");
+    } catch (error) {
+      console.error("Upload error:", error);
+      alert("Upload failed. Check console.");
     }
+
+    setUploading(false);
   };
 
-  if (user) {
-    return <Admin />;
-  }
-
   return (
-    <div style={{ padding: "50px", textAlign: "center" }}>
-      <h2>Admin Access</h2>
+    <div style={{ padding: "40px", maxWidth: "500px" }}>
+      <h2>Upload Audio</h2>
 
-      <form onSubmit={handleLogin} style={{ marginTop: "20px" }}>
-        <div>
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            style={{ padding: "10px", marginBottom: "10px", width: "250px" }}
-          />
-        </div>
+      <input
+        type="text"
+        placeholder="Title"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        style={{ width: "100%", marginBottom: "10px" }}
+      />
 
-        <div>
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            style={{ padding: "10px", marginBottom: "10px", width: "250px" }}
-          />
-        </div>
+      <input
+        type="text"
+        placeholder="Speaker"
+        value={speaker}
+        onChange={(e) => setSpeaker(e.target.value)}
+        style={{ width: "100%", marginBottom: "10px" }}
+      />
 
-        <button type="submit" style={{ padding: "10px 20px" }}>
-          Login
-        </button>
+      <select
+        value={type}
+        onChange={(e) => setType(e.target.value)}
+        style={{ width: "100%", marginBottom: "10px" }}
+      >
+        <option value="sermon">Sermon</option>
+        <option value="homily">Homily</option>
+        <option value="sundayschool">Sunday School</option>
+      </select>
 
-        {error && <p style={{ color: "red" }}>{error}</p>}
-      </form>
+      <input
+        type="file"
+        accept="audio/*"
+        onChange={(e) => setFile(e.target.files[0])}
+        style={{ marginBottom: "15px" }}
+      />
+
+      <button
+        onClick={handleUpload}
+        disabled={uploading}
+        style={{ padding: "8px 14px" }}
+      >
+        {uploading ? "Uploading..." : "Upload"}
+      </button>
     </div>
   );
 }

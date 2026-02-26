@@ -116,15 +116,16 @@ export default function Sermons() {
               <h3>{sermon.title}</h3>
 
               <p style={{ fontWeight: "bold", color: "#555" }}>
-                Pastor: {sermon.pastor}
+                Speaker: {sermon.speaker || "Unknown"}
               </p>
 
-              <p>{sermon.description}</p>
-
-              {sermon.audioUrl && (
-                <audio controls style={{ width: "100%" }}>
-                  <source src={sermon.audioUrl} type="audio/mpeg" />
-                </audio>
+              {/* 🎧 FIXED AUDIO FIELD */}
+              {sermon.audioURL && (
+                <audio
+                  controls
+                  style={{ width: "100%", marginTop: "15px" }}
+                  src={sermon.audioURL}
+                />
               )}
 
               <div
