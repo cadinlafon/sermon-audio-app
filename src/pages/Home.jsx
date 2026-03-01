@@ -4,80 +4,99 @@ export default function Home() {
   const navigate = useNavigate();
 
   return (
-    <div style={{ padding: "40px", maxWidth: "800px", margin: "0 auto" }}>
-      
-      {/* ===== MOST RECENT SERMON PLACEHOLDER ===== */}
+    <>
+      {/* ================= HERO IMAGE ================= */}
       <div
         style={{
-          height: "250px",
-          backgroundColor: "#f2f2f2",
-          borderRadius: "12px",
-          marginBottom: "40px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: "20px",
-          fontWeight: "bold",
-          color: "#777",
+          width: "100%",
+          height: "30vh", // 🔥 Change this height if you want
+          backgroundImage: `url("/hero.jpg")`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
         }}
-      >
-        Most Recent Sermon (Coming Soon)
-      </div>
+      />
 
-      {/* ===== NAVIGATION BUTTONS ===== */}
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "15px",
-          marginBottom: "50px",
-        }}
-      >
-        <button
-          onClick={() => navigate("/sermons")}
-          style={buttonStyle}
+      {/* ================= MAIN CONTENT ================= */}
+      <div style={{ padding: "40px", maxWidth: "800px", margin: "0 auto" }}>
+
+        {/* ===== MOST RECENT SERMON PLACEHOLDER ===== */}
+        <div
+          style={{
+            height: "250px",
+            backgroundColor: "#f2f2f2",
+            borderRadius: "12px",
+            marginBottom: "40px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: "20px",
+            fontWeight: "bold",
+            color: "#777",
+          }}
         >
-          Sermons
-        </button>
+          Most Recent Sermon (Coming Soon)
+        </div>
 
-        <button
-          onClick={() => navigate("/sundayschool")}
-          style={buttonStyle}
+        {/* ===== NAVIGATION BUTTONS ===== */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "15px",
+            marginBottom: "50px",
+          }}
         >
-          Sunday School
-        </button>
+          <button
+            onClick={() => navigate("/sermons")}
+            style={buttonStyle}
+          >
+            Sermons
+          </button>
 
-        <button
-          onClick={() => navigate("/homilies")}
-          style={buttonStyle}
+          <button
+            onClick={() => navigate("/sundayschool")}
+            style={buttonStyle}
+          >
+            Sunday School
+          </button>
+
+          <button
+            onClick={() => navigate("/homilies")}
+            style={buttonStyle}
+          >
+            Homilies
+          </button>
+        </div>
+
+        {/* ===== CONTACT CARD ===== */}
+        <div
+          style={{
+            backgroundColor: "#ffffff",
+            padding: "25px",
+            borderRadius: "12px",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+            textAlign: "center",
+          }}
         >
-          Homilies
-        </button>
+          <h3 style={{ marginBottom: "10px" }}>Cadin LaFon</h3>
+
+          <p style={{ marginBottom: "20px", color: "#555" }}>
+            208-874-3729 | Cadinlafon@gmail.com
+            <br />
+            (Palouse Fellowship.)
+          </p>
+
+          <button
+            style={buttonStyle}
+            onClick={() => navigate("/feedback")} // ✅ THIS is the new navigation
+          >
+            Contact Form
+          </button>
+        </div>
+
       </div>
-
-      {/* ===== CONTACT CARD ===== */}
-      <div
-        style={{
-          backgroundColor: "#ffffff",
-          padding: "25px",
-          borderRadius: "12px",
-          boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-          textAlign: "center",
-        }}
-      >
-        <h3 style={{ marginBottom: "10px" }}>Cadin LaFon</h3>
-
-        <p style={{ marginBottom: "20px", color: "#555" }}>
-          208-874-3729 | Cadinlafon@gmail.com
-          <br />
-          (Palouse Fellowship.)
-        </p>
-
-        <button style={buttonStyle}>
-          Contact Form
-        </button>
-      </div>
-    </div>
+    </>
   );
 }
 

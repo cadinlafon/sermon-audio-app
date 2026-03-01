@@ -68,7 +68,6 @@ export default function Sermons() {
           : arrayUnion(user.uid),
       });
 
-      // Update UI immediately
       setSermons((prev) =>
         prev.map((s) =>
           s.id === sermon.id
@@ -106,7 +105,6 @@ export default function Sermons() {
               style={{
                 background: "#ffffff",
                 padding: "20px",
-                marginBottom: "25px",
                 borderRadius: "12px",
                 boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
                 maxWidth: "600px",
@@ -119,15 +117,14 @@ export default function Sermons() {
                 Speaker: {sermon.speaker || "Unknown"}
               </p>
 
-              {/* 🎧 FIXED AUDIO FIELD */}
-              {sermon.audioURL && (
-                <audio
-                  controls
-                  style={{ width: "100%", marginTop: "15px" }}
-                  src={sermon.audioURL}
-                />
-              )}
+              {/* 🎵 SIMPLE AUDIO PLAYER */}
+              <audio
+                controls
+                src={sermon.audioUrl}
+                style={{ width: "100%", marginTop: "15px" }}
+              />
 
+              {/* LIKE SECTION */}
               <div
                 style={{
                   marginTop: "15px",

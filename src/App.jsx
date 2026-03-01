@@ -1,4 +1,8 @@
 import { Routes, Route } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { onAuthStateChanged } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
+import { auth, db } from "./firebase";
 
 // Pages
 import Home from "./pages/Home";
@@ -8,14 +12,10 @@ import SundaySchool from "./pages/SundaySchool";
 import Feedback from "./pages/Feedback";
 import Settings from "./pages/Settings";
 import About from "./pages/About";
-import Admin from "./pages/Admin";
 import SignUp from "./pages/SignUp";
-import { useEffect, useState } from "react";
-import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
-import { auth, db } from "./firebase";
-import AdminGate from "./pages/AdminGate";
 import Notifications from "./pages/Notifications";
+import AdminGate from "./pages/AdminGate";
+
 // Components
 import Navbar from "./components/Navbar";
 
@@ -29,10 +29,16 @@ function App() {
       setUser(currentUser);
 
       if (currentUser) {
-        const userDoc = await getDoc(doc(db, "users", currentUser.uid));
-        if (userDoc.exists() && userDoc.data().role === "admin") {
-          setIsAdmin(true);
-        } else {
+        try {
+          const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+
+          if (userDoc.exists() && userDoc.data().role === "admin") {
+            setIsAdmin(true);
+          } else {
+            setIsAdmin(false);
+          }
+        } catch (error) {
+          console.error("Admin check failed:", error);
           setIsAdmin(false);
         }
       } else {
@@ -60,8 +66,8 @@ function App() {
         <Route path="/settings" element={<Settings />} />
         <Route path="/about" element={<About />} />
         <Route path="/signup" element={<SignUp />} />
-<Route path="/notifications" element={<Notifications />} />
-        {/* ✅ ADMIN ROUTE */}
+        <Route path="/notifications" element={<Notifications />} />
+
         <Route
           path="/admin/*"
           element={<AdminGate user={isAdmin ? user : null} />}
@@ -70,4 +76,5 @@ function App() {
     </>
   );
 }
+
 export default App;
