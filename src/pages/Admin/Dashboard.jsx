@@ -1,111 +1,99 @@
 import { useEffect, useState } from "react";
-import { collection, getDocs } from "firebase/firestore";
 import { db } from "../../firebase";
-import { useNavigate } from "react-router-dom";
+import {
+  collection,
+  getDocs,
+  query,
+  orderBy,
+  limit,
+} from "firebase/firestore";
 
 export default function Dashboard() {
-  const [sermonCount, setSermonCount] = useState(0);
-  const [userCount, setUserCount] = useState(0);
-  const [totalLikes, setTotalLikes] = useState(0);
-
-  const navigate = useNavigate();
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [newUsersToday, setNewUsersToday] = useState(0);
+  const [totalAudio, setTotalAudio] = useState(0);
+  const [latestUpload, setLatestUpload] = useState(null);
 
   useEffect(() => {
-    async function fetchData() {
+    const fetchStats = async () => {
       try {
-        // Get Sermons
-        const sermonSnapshot = await getDocs(collection(db, "audio"));
-        setSermonCount(sermonSnapshot.size);
+        // 🔹 USERS
+        const usersSnapshot = await getDocs(collection(db, "users"));
+        const users = usersSnapshot.docs.map((doc) => doc.data());
 
-        let likesSum = 0;
-        sermonSnapshot.forEach((doc) => {
-          likesSum += doc.data().likes || 0;
+        setTotalUsers(users.length);
+
+        // Calculate new users today
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const newToday = users.filter((user) => {
+          if (!user.createdAt) return false;
+          const created = user.createdAt.toDate();
+          return created >= today;
         });
-        setTotalLikes(likesSum);
 
-        // Get Users
-        const userSnapshot = await getDocs(collection(db, "users"));
-        setUserCount(userSnapshot.size);
+        setNewUsersToday(newToday.length);
 
+        // 🔹 AUDIO
+        const audioSnapshot = await getDocs(collection(db, "audio"));
+        setTotalAudio(audioSnapshot.size);
+
+        // 🔹 Latest Upload
+        const latestQuery = query(
+          collection(db, "audio"),
+          orderBy("createdAt", "desc"),
+          limit(1)
+        );
+
+        const latestSnapshot = await getDocs(latestQuery);
+
+        if (!latestSnapshot.empty) {
+          setLatestUpload(latestSnapshot.docs[0].data());
+        }
       } catch (error) {
         console.error("Dashboard error:", error);
       }
-    }
+    };
 
-    fetchData();
+    fetchStats();
   }, []);
-
-  const cardStyle = {
-    background: "#fff",
-    padding: "25px",
-    borderRadius: "12px",
-    boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-    minWidth: "200px",
-    textAlign: "center",
-  };
 
   return (
     <div>
-      <h2 style={{ marginBottom: "30px" }}>Admin Dashboard</h2>
+      <h1 style={{ marginBottom: "30px" }}>Admin Dashboard</h1>
 
-      {/* Stats Section */}
-      <div
-        style={{
-          display: "flex",
-          gap: "20px",
-          flexWrap: "wrap",
-          marginBottom: "40px",
-        }}
-      >
-        <div style={cardStyle}>
-          <h3>{sermonCount}</h3>
-          <p>Total Sermons</p>
-        </div>
-
-        <div style={cardStyle}>
-          <h3>{userCount}</h3>
-          <p>Total Users</p>
-        </div>
-
-        <div style={cardStyle}>
-          <h3>{totalLikes}</h3>
-          <p>Total Likes</p>
-        </div>
-      </div>
-
-      {/* Quick Actions */}
-      <h3 style={{ marginBottom: "15px" }}>Quick Actions</h3>
-
-      <div style={{ display: "flex", gap: "15px", flexWrap: "wrap" }}>
-        <button onClick={() => navigate("/admin/upload")}>
-          Upload Audio
-        </button>
-
-        <button onClick={() => navigate("/admin/users")}>
-          View Users
-        </button>
-
-        <button onClick={() => navigate("/admin/notifications")}>
-          Send Notification
-        </button>
-
-        <button onClick={() => navigate("/admin/analytics")}>
-          View Analytics
-        </button>
-      </div>
-
-      {/* Upload Notice */}
-      <div
-        style={{
-          marginTop: "40px",
-          padding: "20px",
-          background: "#fff3cd",
-          borderRadius: "8px",
-          color: "#856404",
-        }}
-      >
-        ⚠ Upload feature requires Firebase Blaze plan for full storage functionality.
+      <div style={gridStyle}>
+        <StatBox title="Total Users" value={totalUsers} />
+        <StatBox title="New Users Today" value={newUsersToday} />
+        <StatBox title="Total Audio Files" value={totalAudio} />
+        <StatBox
+          title="Latest Upload"
+          value={latestUpload ? latestUpload.title : "None"}
+        />
       </div>
     </div>
   );
 }
+
+function StatBox({ title, value }) {
+  return (
+    <div style={boxStyle}>
+      <h3 style={{ marginBottom: "10px" }}>{title}</h3>
+      <p style={{ fontSize: "22px", fontWeight: "bold" }}>{value}</p>
+    </div>
+  );
+}
+
+const gridStyle = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+  gap: "20px",
+};
+
+const boxStyle = {
+  padding: "20px",
+  borderRadius: "10px",
+  backgroundColor: "#f3f4f6",
+  boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
+};

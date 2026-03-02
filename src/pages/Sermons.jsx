@@ -3,11 +3,8 @@ import { db, auth } from "../firebase";
 import {
   collection,
   getDocs,
-  doc,
-  updateDoc,
-  increment,
-  arrayUnion,
-  arrayRemove,
+  addDoc,
+  serverTimestamp,
 } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 
@@ -15,7 +12,7 @@ export default function Sermons() {
   const [sermons, setSermons] = useState([]);
   const [user, setUser] = useState(null);
 
-  // Track auth state
+  // 🔥 Listen for auth state
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -24,22 +21,18 @@ export default function Sermons() {
     return () => unsubscribe();
   }, []);
 
-  // Fetch sermons
+  // 🔥 Fetch sermons
   useEffect(() => {
     async function fetchSermons() {
       try {
         const querySnapshot = await getDocs(collection(db, "audio"));
 
-        const sermonList = querySnapshot.docs.map((docItem) => {
-          const data = docItem.data();
-
-          return {
+        const sermonList = querySnapshot.docs
+          .map((docItem) => ({
             id: docItem.id,
-            ...data,
-            likes: data.likes || 0,
-            likedBy: data.likedBy || [],
-          };
-        });
+            ...docItem.data(),
+          }))
+          .filter((item) => item.type === "sermon");
 
         setSermons(sermonList);
       } catch (error) {
@@ -50,39 +43,23 @@ export default function Sermons() {
     fetchSermons();
   }, []);
 
-  // Like / Unlike
-  const handleLike = async (sermon) => {
+  // 🔥 Log usage when audio starts playing
+  const logUsage = async (sermonId) => {
     if (!user) {
-      alert("You must be logged in to like.");
+      console.log("No user logged in");
       return;
     }
 
-    const sermonRef = doc(db, "audio", sermon.id);
-    const hasLiked = sermon.likedBy.includes(user.uid);
-
     try {
-      await updateDoc(sermonRef, {
-        likes: increment(hasLiked ? -1 : 1),
-        likedBy: hasLiked
-          ? arrayRemove(user.uid)
-          : arrayUnion(user.uid),
+      await addDoc(collection(db, "appUsage"), {
+        sermonId,
+        userId: user.uid,
+        createdAt: serverTimestamp(),
       });
 
-      setSermons((prev) =>
-        prev.map((s) =>
-          s.id === sermon.id
-            ? {
-                ...s,
-                likes: hasLiked ? s.likes - 1 : s.likes + 1,
-                likedBy: hasLiked
-                  ? s.likedBy.filter((uid) => uid !== user.uid)
-                  : [...s.likedBy, user.uid],
-              }
-            : s
-        )
-      );
+      console.log("Usage logged!");
     } catch (error) {
-      console.error("Error updating like:", error);
+      console.error("Usage log error:", error);
     }
   };
 
@@ -95,77 +72,34 @@ export default function Sermons() {
       {sermons.length === 0 ? (
         <p>No sermons found.</p>
       ) : (
-        sermons.map((sermon) => {
-          const isLiked =
-            user && sermon.likedBy.includes(user.uid);
+        sermons.map((sermon) => (
+          <div
+            key={sermon.id}
+            style={{
+              background: "#ffffff",
+              padding: "20px",
+              borderRadius: "12px",
+              boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
+              maxWidth: "600px",
+              margin: "0 auto 25px auto",
+            }}
+          >
+            <h3>{sermon.title}</h3>
 
-          return (
-            <div
-              key={sermon.id}
-              style={{
-                background: "#ffffff",
-                padding: "20px",
-                borderRadius: "12px",
-                boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
-                maxWidth: "600px",
-                margin: "0 auto 25px auto",
-              }}
+            <p style={{ fontWeight: "bold", color: "#555" }}>
+              Speaker: {sermon.speaker || "Unknown"}
+            </p>
+
+            <audio
+              controls
+              style={{ width: "100%", marginTop: "10px" }}
+              onPlay={() => logUsage(sermon.id)}
             >
-              <h3>{sermon.title}</h3>
-
-              <p style={{ fontWeight: "bold", color: "#555" }}>
-                Speaker: {sermon.speaker || "Unknown"}
-              </p>
-
-              {/* 🎵 SIMPLE AUDIO PLAYER */}
-              <audio
-                controls
-                src={sermon.audioUrl}
-                style={{ width: "100%", marginTop: "15px" }}
-              />
-
-              {/* LIKE SECTION */}
-              <div
-                style={{
-                  marginTop: "15px",
-                  display: "flex",
-                  alignItems: "center",
-                }}
-              >
-                <button
-                  onClick={() => handleLike(sermon)}
-                  style={{
-                    fontSize: "24px",
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    position: "relative",
-                    opacity: user ? 1 : 0.5,
-                  }}
-                >
-                  {isLiked ? "❤️" : "🤍"}
-
-                  {!user && (
-                    <span
-                      style={{
-                        position: "absolute",
-                        top: "-5px",
-                        right: "-8px",
-                        fontSize: "14px",
-                      }}
-                    >
-                      🔒
-                    </span>
-                  )}
-                </button>
-
-                <span style={{ marginLeft: "8px" }}>
-                  {sermon.likes}
-                </span>
-              </div>
-            </div>
-          );
-        })
+              <source src={sermon.audioURL} type="audio/mpeg" />
+              Your browser does not support the audio element.
+            </audio>
+          </div>
+        ))
       )}
     </div>
   );

@@ -1,58 +1,42 @@
-import { useState } from "react";
-import UploadAudio from "./AdminGate";
-import AdminNotifications from "./AdminNotifications"; // if you have one
+import { Link, Outlet } from "react-router-dom";
 
 export default function AdminLayout() {
-  const [activeTab, setActiveTab] = useState("upload");
-
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
       
       {/* Sidebar */}
       <div
         style={{
-          width: "220px",
-          background: "#111",
-          color: "#fff",
+          width: "250px",
+          background: "#111827",
+          color: "white",
           padding: "20px",
         }}
       >
-        <h2 style={{ marginBottom: "30px" }}>Admin</h2>
+        <h2 style={{ marginBottom: "30px" }}>Admin Panel</h2>
 
-        <div
-          style={tabStyle(activeTab === "upload")}
-          onClick={() => setActiveTab("upload")}
-        >
-          Upload Audio
-        </div>
-
-        <div
-          style={tabStyle(activeTab === "notifications")}
-          onClick={() => setActiveTab("notifications")}
-        >
-          Notifications
-        </div>
+        <nav style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
+          <Link to="/admin/dashboard" style={linkStyle}>Dashboard</Link>
+          <Link to="/admin/upload" style={linkStyle}>Upload</Link>
+          <Link to="/admin/users" style={linkStyle}>Users</Link>
+          <Link to="/admin/analytics" style={linkStyle}>Analytics</Link>
+          <Link to="/admin/content" style={linkStyle}>Content Manager</Link>
+          <Link to="/admin/notifications" style={linkStyle}>Notifications</Link>
+          <Link to="/admin/settings" style={linkStyle}>Settings</Link>
+          <Link to="/admin/logs" style={linkStyle}>Logs</Link>
+        </nav>
       </div>
 
-      {/* Content */}
-      <div
-        style={{
-          flex: 1,
-          background: "#f4f4f4",
-          padding: "40px",
-        }}
-      >
-        {activeTab === "upload" && <UploadAudio />}
-        {activeTab === "notifications" && <AdminNotifications />}
+      {/* Main Content */}
+      <div style={{ flex: 1, padding: "40px", background: "#f3f4f6" }}>
+        <Outlet />
       </div>
     </div>
   );
 }
 
-const tabStyle = (active) => ({
-  padding: "10px",
-  marginBottom: "10px",
-  cursor: "pointer",
-  background: active ? "#333" : "transparent",
-  borderRadius: "6px",
-});
+const linkStyle = {
+  color: "white",
+  textDecoration: "none",
+  fontWeight: "500",
+};

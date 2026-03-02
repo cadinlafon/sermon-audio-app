@@ -1,140 +1,148 @@
 import { useEffect, useState } from "react";
-import { collection, getDocs } from "firebase/firestore";
 import { db } from "../../firebase";
+import { collection, getDocs } from "firebase/firestore";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 
 export default function Analytics() {
-  const [stats, setStats] = useState({
-    totalUsers: 0,
-    verifiedUsers: 0,
-    dailyNewUsers: 0,
-    uploadCount: 0,
-    notificationsSent: 0,
-    mostLiked: null,
-    mostActiveDay: null,
-  });
+  const [usesByDay, setUsesByDay] = useState([]);
+  const [usesByMonth, setUsesByMonth] = useState([]);
+  const [newUsersByMonth, setNewUsersByMonth] = useState([]);
 
   useEffect(() => {
     const fetchAnalytics = async () => {
-      const usersSnap = await getDocs(collection(db, "users"));
-      const audioSnap = await getDocs(collection(db, "audio"));
-      const announcementSnap = await getDocs(collection(db, "announcements"));
+      try {
+        // 🔥 GET APP USAGE
+        const usageSnap = await getDocs(collection(db, "appUsage"));
+        const usageData = usageSnap.docs.map(doc => doc.data());
 
-      const now = new Date();
-      const today = now.toDateString();
+        // 🔥 GET USERS
+        const usersSnap = await getDocs(collection(db, "users"));
+        const usersData = usersSnap.docs.map(doc => doc.data());
 
-      let verified = 0;
-      let todayUsers = 0;
+        // ------------------------
+        // USES BY DAY
+        // ------------------------
+        const dayCounts = {};
 
-      usersSnap.docs.forEach((doc) => {
-        const data = doc.data();
+        usageData.forEach(item => {
+          if (!item.createdAt?.seconds) return;
 
-        if (data.emailVerified) verified++;
+          const date = new Date(item.createdAt.seconds * 1000);
+          const day = date.toLocaleDateString();
 
-        if (data.createdAt?.toDate) {
-          const created = data.createdAt.toDate();
-          if (created.toDateString() === today) {
-            todayUsers++;
-          }
-        }
-      });
+          dayCounts[day] = (dayCounts[day] || 0) + 1;
+        });
 
-      // 🔥 Most Liked Sermon
-      let topSermon = null;
-      audioSnap.docs.forEach((doc) => {
-        const data = doc.data();
-        if (!topSermon || (data.likes || 0) > (topSermon.likes || 0)) {
-          topSermon = {
-            title: data.title,
-            likes: data.likes || 0,
-          };
-        }
-      });
+        const dayChartData = Object.keys(dayCounts).map(day => ({
+          name: day,
+          value: dayCounts[day],
+        }));
 
-      // 🔥 Most Active Day (based on uploads)
-      const uploadDays = {};
-      audioSnap.docs.forEach((doc) => {
-        const data = doc.data();
-        if (data.createdAt?.toDate) {
-          const day = data.createdAt.toDate().toDateString();
-          uploadDays[day] = (uploadDays[day] || 0) + 1;
-        }
-      });
+        setUsesByDay(dayChartData);
 
-      const mostActive = Object.keys(uploadDays).reduce(
-        (a, b) => (uploadDays[a] > uploadDays[b] ? a : b),
-        null
-      );
+        // ------------------------
+        // USES BY MONTH
+        // ------------------------
+        const monthCounts = {};
 
-      setStats({
-        totalUsers: usersSnap.size,
-        verifiedUsers: verified,
-        dailyNewUsers: todayUsers,
-        uploadCount: audioSnap.size,
-        notificationsSent: announcementSnap.size,
-        mostLiked: topSermon,
-        mostActiveDay: mostActive,
-      });
+        usageData.forEach(item => {
+          if (!item.createdAt?.seconds) return;
+
+          const date = new Date(item.createdAt.seconds * 1000);
+          const month = `${date.getMonth() + 1}/${date.getFullYear()}`;
+
+          monthCounts[month] = (monthCounts[month] || 0) + 1;
+        });
+
+        const monthChartData = Object.keys(monthCounts).map(month => ({
+          name: month,
+          value: monthCounts[month],
+        }));
+
+        setUsesByMonth(monthChartData);
+
+        // ------------------------
+        // NEW USERS PER MONTH
+        // ------------------------
+        const userMonthCounts = {};
+
+        usersData.forEach(user => {
+          if (!user.createdAt?.seconds) return;
+
+          const date = new Date(user.createdAt.seconds * 1000);
+          const month = `${date.getMonth() + 1}/${date.getFullYear()}`;
+
+          userMonthCounts[month] = (userMonthCounts[month] || 0) + 1;
+        });
+
+        const userChartData = Object.keys(userMonthCounts).map(month => ({
+          name: month,
+          value: userMonthCounts[month],
+        }));
+
+        setNewUsersByMonth(userChartData);
+
+      } catch (error) {
+        console.error("Analytics error:", error);
+      }
     };
 
     fetchAnalytics();
   }, []);
 
   return (
-    <div>
-      <h2 style={{ marginBottom: "25px" }}>Advanced Analytics</h2>
+    <div style={{ padding: "30px" }}>
+      <h1 style={{ marginBottom: "40px" }}>Analytics Dashboard</h1>
 
-      <div style={grid}>
-        <Stat title="Total Users" value={stats.totalUsers} />
-        <Stat title="Verified Users" value={stats.verifiedUsers} />
-        <Stat title="New Users Today" value={stats.dailyNewUsers} />
-        <Stat title="Uploads" value={stats.uploadCount} />
-        <Stat title="Notifications Sent" value={stats.notificationsSent} />
-        <Stat
-          title="Most Active Upload Day"
-          value={stats.mostActiveDay || "N/A"}
-        />
+      {/* USES BY DAY */}
+      <div style={{ height: "300px", marginBottom: "60px" }}>
+        <h2>Uses by Day</h2>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={usesByDay}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="name" />
+            <YAxis allowDecimals={false} />
+            <Tooltip />
+            <Bar dataKey="value" fill="#3b82f6" />
+          </BarChart>
+        </ResponsiveContainer>
       </div>
 
-      <div style={card}>
-        <h3>Most Liked Sermon</h3>
-        {stats.mostLiked ? (
-          <>
-            <p><strong>{stats.mostLiked.title}</strong></p>
-            <p>{stats.mostLiked.likes} Likes</p>
-          </>
-        ) : (
-          <p>No data yet.</p>
-        )}
+      {/* USES BY MONTH */}
+      <div style={{ height: "300px", marginBottom: "60px" }}>
+        <h2>Uses by Month</h2>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={usesByMonth}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="name" />
+            <YAxis allowDecimals={false} />
+            <Tooltip />
+            <Bar dataKey="value" fill="#10b981" />
+          </BarChart>
+        </ResponsiveContainer>
       </div>
 
-      <div style={card}>
-        <h3>Storage Usage</h3>
-        <p>Coming Soon (requires Firebase Storage tracking)</p>
+      {/* NEW USERS PER MONTH */}
+      <div style={{ height: "300px" }}>
+        <h2>New Users per Month</h2>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={newUsersByMonth}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="name" />
+            <YAxis allowDecimals={false} />
+            <Tooltip />
+            <Bar dataKey="value" fill="#f59e0b" />
+          </BarChart>
+        </ResponsiveContainer>
       </div>
     </div>
   );
 }
-
-function Stat({ title, value }) {
-  return (
-    <div style={card}>
-      <h4 style={{ fontSize: "13px", color: "#666" }}>{title}</h4>
-      <div style={{ fontSize: "26px", fontWeight: "bold" }}>{value}</div>
-    </div>
-  );
-}
-
-const grid = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-  gap: "20px",
-  marginBottom: "40px",
-};
-
-const card = {
-  background: "white",
-  padding: "20px",
-  borderRadius: "12px",
-  boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-  marginBottom: "25px",
-};

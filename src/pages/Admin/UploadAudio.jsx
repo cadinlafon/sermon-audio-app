@@ -1,99 +1,127 @@
 import { useState } from "react";
 import { db, storage } from "../../firebase";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import {
+  collection,
+  addDoc,
+  serverTimestamp,
+} from "firebase/firestore";
+import {
+  ref,
+  uploadBytes,
+  getDownloadURL,
+} from "firebase/storage";
 
 export default function UploadAudio() {
-  const [type, setType] = useState("sermon");
-  const [pastor, setPastor] = useState("");
   const [title, setTitle] = useState("");
+  const [speaker, setSpeaker] = useState("");
+  const [type, setType] = useState("sermon");
   const [file, setFile] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleUpload = async () => {
+    if (!file || !title) {
+      alert("Title and file are required.");
+      return;
+    }
 
-    if (!file) return alert("Please select an audio file.");
-
-    setLoading(true);
+    setUploading(true);
 
     try {
-      // Upload file to Firebase Storage
-      const storageRef = ref(storage, `audio/${Date.now()}-${file.name}`);
+      // 🔥 Upload file to Firebase Storage
+      const storageRef = ref(
+        storage,
+        `audio/${Date.now()}_${file.name}`
+      );
+
       await uploadBytes(storageRef, file);
 
       const downloadURL = await getDownloadURL(storageRef);
 
-      // Save metadata to Firestore
+      // 🔥 Save metadata to Firestore
       await addDoc(collection(db, "audio"), {
-  title: title,
-  pastor: pastor,
-  type: type,
-  audioUrl: downloadURL,
-  createdAt: serverTimestamp()
-});
+        title,
+        speaker,
+        type,
+        audioURL: downloadURL,
+        createdAt: serverTimestamp(),
+      });
 
-
-      alert("Upload successful!");
-
-      setPastor("");
+      // Reset form
       setTitle("");
+      setSpeaker("");
+      setType("sermon");
       setFile(null);
+
+      alert("Upload successful 🎉");
     } catch (error) {
-      console.error(error);
-      alert("Upload failed.");
+      console.error("Upload error:", error);
+      alert("Upload failed. Check console.");
     }
 
-    setLoading(false);
+    setUploading(false);
   };
 
   return (
-    <div>
-      <h1>Upload Audio</h1>
+    <div style={{ maxWidth: "600px" }}>
+      <h1 style={{ marginBottom: "20px" }}>Upload Audio</h1>
 
-      <form onSubmit={handleSubmit} style={{ maxWidth: "500px" }}>
-        <label>Audio Type</label>
-        <select
-          value={type}
-          onChange={(e) => setType(e.target.value)}
-          style={{ width: "100%", marginBottom: "10px" }}
-        >
-          <option value="sermon">Sermon</option>
-          <option value="sundayschool">Sunday School</option>
-          <option value="homily">Homily</option>
-        </select>
+      <input
+        type="text"
+        placeholder="Title"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        style={inputStyle}
+      />
 
-        <label>Pastor Name</label>
-        <input
-          type="text"
-          value={pastor}
-          onChange={(e) => setPastor(e.target.value)}
-          required
-          style={{ width: "100%", marginBottom: "10px" }}
-        />
+      <input
+        type="text"
+        placeholder="Speaker"
+        value={speaker}
+        onChange={(e) => setSpeaker(e.target.value)}
+        style={inputStyle}
+      />
 
-        <label>Title</label>
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          required
-          style={{ width: "100%", marginBottom: "10px" }}
-        />
+      <select
+        value={type}
+        onChange={(e) => setType(e.target.value)}
+        style={inputStyle}
+      >
+        <option value="sermon">Sermon</option>
+        <option value="homily">Homily</option>
+        <option value="sundayschool">Sunday School</option>
+      </select>
 
-        <label>Upload Audio File</label>
-        <input
-          type="file"
-          accept="audio/*"
-          onChange={(e) => setFile(e.target.files[0])}
-          required
-          style={{ width: "100%", marginBottom: "10px" }}
-        />
+      <input
+        type="file"
+        accept="audio/mpeg,audio/mp3"
+        onChange={(e) => setFile(e.target.files[0])}
+        style={{ marginBottom: "20px" }}
+      />
 
-        <button type="submit" disabled={loading}>
-          {loading ? "Uploading..." : "Submit"}
-        </button>
-      </form>
+      <button
+        onClick={handleUpload}
+        disabled={uploading}
+        style={buttonStyle}
+      >
+        {uploading ? "Uploading..." : "Upload"}
+      </button>
     </div>
   );
 }
+
+const inputStyle = {
+  width: "100%",
+  padding: "10px",
+  marginBottom: "15px",
+  borderRadius: "6px",
+  border: "1px solid #ccc",
+};
+
+const buttonStyle = {
+  padding: "10px 18px",
+  borderRadius: "6px",
+  border: "none",
+  backgroundColor: "#111827",
+  color: "white",
+  cursor: "pointer",
+};
