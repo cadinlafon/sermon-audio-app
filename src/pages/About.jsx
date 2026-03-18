@@ -24,7 +24,7 @@ export default function About() {
             fontSize: "32px",
           }}
         >
-          About This App
+          Not Yet Set Up
         </h1>
 
         <p
@@ -35,12 +35,8 @@ export default function About() {
             color: "#444",
           }}
         >
-          This Sermon Audio App was created to make it easier for our church
-          community to access sermons, homilies, and Sunday School content
-          anytime, anywhere. Built with simplicity and accessibility in mind,
-          the app allows users to listen to sermins and stay connected.
         </p>
-
+No Data Recieved
         <p
           style={{
             fontSize: "18px",
@@ -48,7 +44,7 @@ export default function About() {
             color: "#444",
           }}
         >
-          The app was designed and developed by Cadin LaFon
+          No Data Recived
         </p>
       </div>
     </div>

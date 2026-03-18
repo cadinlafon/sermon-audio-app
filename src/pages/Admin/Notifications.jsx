@@ -1,67 +1,188 @@
-import { useEffect, useState } from "react";
-import {
-  collection,
-  onSnapshot,
-  query,
-  orderBy
-} from "firebase/firestore";
-import { db } from "../../firebase";
-export default function Notifications() {
-  const [notifications, setNotifications] = useState([]);
-const [type, setType] = useState("sermon");
-  useEffect(() => {
-    const q = query(
-      collection(db, "announcements"),
-      orderBy("createdAt", "desc")
-    );
+import { useEffect, useState } from "react"
+import { collection, addDoc, serverTimestamp, getDocs, query, orderBy } from "firebase/firestore"
+import { db } from "../../firebase"
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const list = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setNotifications(list);
-    });
+export default function AdminNotifications(){
 
-    return () => unsubscribe();
-  }, []);
+const [title,setTitle] = useState("")
+const [content,setContent] = useState("")
+const [link,setLink] = useState("")
 
-  return (
-    <div style={{ padding: "40px" }}>
-      <h2>Notifications</h2>
+const [targetType,setTargetType] = useState("all")
+const [targetUser,setTargetUser] = useState("")
 
-      {notifications.length === 0 ? (
-        <p>No notifications yet.</p>
-      ) : (
-        notifications.map((n) => (
-          <div key={n.id} style={card}>
-            <h4>{n.title}</h4>
-            <select
-  value={type}
-  onChange={(e) => setType(e.target.value)}
-  style={input}
->
-  <option value="sermon">Sermon</option>
-  <option value="announcement">Announcement</option>
-  <option value="homily">Homily</option>
-</select>
-            <p>{n.message}</p>
-            <small>
-              {n.createdAt?.toDate
-                ? n.createdAt.toDate().toLocaleString()
-                : ""}
-            </small>
-          </div>
-        ))
-      )}
-    </div>
-  );
+const [users,setUsers] = useState([])
+const [history,setHistory] = useState([])
+
+//////////////////////////////////////////////////
+// LOAD USERS
+//////////////////////////////////////////////////
+
+useEffect(()=>{
+
+const loadUsers = async()=>{
+
+const snap = await getDocs(collection(db,"users"))
+
+let list = []
+
+snap.forEach(doc=>{
+list.push({uid:doc.id,...doc.data()})
+})
+
+list.sort((a,b)=>
+(a.fullName || "").localeCompare(b.fullName || "")
+)
+
+setUsers(list)
+
 }
 
-const card = {
-  background: "#fff",
-  padding: "15px",
-  borderRadius: "10px",
-  marginBottom: "15px",
-  boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-};
+loadUsers()
+
+},[])
+
+//////////////////////////////////////////////////
+// LOAD HISTORY
+//////////////////////////////////////////////////
+
+useEffect(()=>{
+
+const loadHistory = async()=>{
+
+const q = query(
+collection(db,"notifications"),
+orderBy("createdAt","desc")
+)
+
+const snap = await getDocs(q)
+
+let list=[]
+
+snap.forEach(doc=>{
+list.push({id:doc.id,...doc.data()})
+})
+
+setHistory(list)
+
+}
+
+loadHistory()
+
+},[])
+
+//////////////////////////////////////////////////
+// SEND NOTIFICATION
+//////////////////////////////////////////////////
+
+const sendNotification = async()=>{
+
+if(!title || !content){
+alert("Title and content required")
+return
+}
+
+await addDoc(collection(db,"notifications"),{
+
+title,
+content,
+link:link || null,
+
+targetType,
+targetUser: targetType==="user" ? targetUser : null,
+
+active:true,
+createdAt:serverTimestamp()
+
+})
+
+setTitle("")
+setContent("")
+setLink("")
+alert("Notification sent")
+
+}
+
+return(
+
+<div style={container}>
+
+<h2>Send Notification</h2>
+
+<input
+placeholder="Title"
+value={title}
+onChange={(e)=>setTitle(e.target.value)}
+/>
+
+<textarea
+placeholder="Content"
+value={content}
+onChange={(e)=>setContent(e.target.value)}
+/>
+
+<input
+placeholder="Optional link"
+value={link}
+onChange={(e)=>setLink(e.target.value)}
+/>
+
+<select
+value={targetType}
+onChange={(e)=>setTargetType(e.target.value)}
+>
+<option value="all">All Users</option>
+<option value="user">Target User</option>
+</select>
+
+{targetType==="user" &&(
+
+<select
+value={targetUser}
+onChange={(e)=>setTargetUser(e.target.value)}
+>
+
+<option value="">Select User</option>
+
+{users.map(user=>(
+<option key={user.uid} value={user.uid}>
+{user.fullName || user.email}
+</option>
+))}
+
+</select>
+
+)}
+
+<button onClick={sendNotification}>
+Send Notification
+</button>
+
+<h3>Notification History</h3>
+
+{history.map(n=>(
+<div key={n.id} style={historyItem}>
+<strong>{n.title}</strong>
+<p>{n.content}</p>
+</div>
+))}
+
+</div>
+
+)
+
+}
+
+const container={
+maxWidth:"600px",
+margin:"40px auto",
+display:"flex",
+flexDirection:"column",
+gap:"10px"
+}
+
+const historyItem={
+border:"1px solid #ddd",
+padding:"10px",
+borderRadius:"6px"
+}
