@@ -1,347 +1,324 @@
 import { useEffect, useState, useRef } from "react";
 import { db, auth } from "../firebase";
 import {
-collection,
-getDocs,
-addDoc,
-setDoc,
-doc,
-getDoc,
-serverTimestamp,
-query,
-where,
-orderBy,
+  collection,
+  getDocs,
+  addDoc,
+  setDoc,
+  doc,
+  getDoc,
+  serverTimestamp,
+  query,
+  where,
+  orderBy,
 } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { logEvent } from "../utils/logEvent";
+import { trackListenTime } from "../utils/listenTracker";
+import { toggleSaveSermon } from "../utils/saveSermon";
 
 export default function Sermons() {
+  const [sermons, setSermons] = useState([]);
+  const [user, setUser] = useState(null);
+  const [progressMap, setProgressMap] = useState({});
+  const [savedMap, setSavedMap] = useState({});
+  const audioRefs = useRef({});
 
-const [sermons, setSermons] = useState([]);
-const [user, setUser] = useState(null);
-const [progressMap, setProgressMap] = useState({});
+  const [search, setSearch] = useState("");
+  const [sortOrder, setSortOrder] = useState("desc");
+  const [speakerFilter, setSpeakerFilter] = useState("all");
 
-const audioRefs = useRef({});
+  //////////////////////////////////////////////////
+  // AUTH
+  //////////////////////////////////////////////////
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, setUser);
+    return () => unsubscribe();
+  }, []);
 
-const [search, setSearch] = useState("");
-const [sortOrder, setSortOrder] = useState("desc");
-const [pastorFilter, setPastorFilter] = useState("all");
+  //////////////////////////////////////////////////
+  // LOAD SAVED
+  //////////////////////////////////////////////////
+  useEffect(() => {
+    if (!user) return;
 
-const pastors = [
-"Johhathan Mcintosh",
-"Rusty Olps",
-"Mark Theile"
-];
+    async function loadSaved() {
+      const q = query(
+        collection(db, "saved"),
+        where("userId", "==", user.uid)
+      );
 
-//////////////////////////////////////////////////
-// AUTH LISTENER
-//////////////////////////////////////////////////
+      const snap = await getDocs(q);
+      const map = {};
 
-useEffect(() => {
+      snap.docs.forEach((d) => {
+        map[d.data().sermonId] = true;
+      });
 
-const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-setUser(currentUser);
-});
+      setSavedMap(map);
+    }
 
-return () => unsubscribe();
+    loadSaved();
+  }, [user]);
 
-}, []);
+  //////////////////////////////////////////////////
+  // FETCH
+  //////////////////////////////////////////////////
+  useEffect(() => {
+    async function fetchSermons() {
+      const q = query(
+        collection(db, "audio"),
+        where("type", "==", "sermon"),
+        orderBy("createdAt", sortOrder)
+      );
 
-//////////////////////////////////////////////////
-// FETCH SERMONS
-//////////////////////////////////////////////////
+      const snapshot = await getDocs(q);
 
-useEffect(() => {
+      setSermons(
+        snapshot.docs.map((docItem) => ({
+          id: docItem.id,
+          ...docItem.data(),
+        }))
+      );
+    }
 
-async function fetchSermons() {
+    fetchSermons();
+  }, [sortOrder]);
 
-try {
+  //////////////////////////////////////////////////
+  // SPEAKERS
+  //////////////////////////////////////////////////
+  const speakers = [
+    ...new Set(sermons.map((s) => s.speaker).filter(Boolean)),
+  ];
 
-const q = query(
-collection(db, "audio"),
-where("type", "==", "sermon"),
-orderBy("createdAt", sortOrder)
-);
+  //////////////////////////////////////////////////
+  // LOAD PROGRESS
+  //////////////////////////////////////////////////
+  useEffect(() => {
+    if (!user) return;
 
-const snapshot = await getDocs(q);
+    async function loadProgress() {
+      const progress = {};
 
-const sermonList = snapshot.docs.map((docItem) => ({
-id: docItem.id,
-...docItem.data(),
-}));
+      for (const sermon of sermons) {
+        const snap = await getDoc(
+          doc(db, "listeningProgress", `${user.uid}_${sermon.id}`)
+        );
 
-setSermons(sermonList);
+        if (snap.exists()) {
+          progress[sermon.id] = snap.data().time;
+        }
+      }
 
-} catch (error) {
-console.error("Error fetching sermons:", error);
+      setProgressMap(progress);
+    }
+
+    loadProgress();
+  }, [user, sermons]);
+
+  //////////////////////////////////////////////////
+  // SAVE PROGRESS
+  //////////////////////////////////////////////////
+  const saveProgress = async (sermonId, time) => {
+    if (!user) return;
+
+    await setDoc(
+      doc(db, "listeningProgress", `${user.uid}_${sermonId}`),
+      {
+        userId: user.uid,
+        sermonId,
+        time,
+        updatedAt: serverTimestamp(),
+      }
+    );
+  };
+
+  //////////////////////////////////////////////////
+  // PLAY
+  //////////////////////////////////////////////////
+  const handlePlay = async (sermon) => {
+    const cleanData = {
+      userId: user?.uid || null,
+      sermonId: sermon.id,
+      title: sermon.title || "Untitled",
+      speaker: sermon.speaker || "Unknown",
+    };
+
+    await trackListenTime(cleanData);
+
+    await addDoc(collection(db, "appUsage"), {
+      ...cleanData,
+      createdAt: serverTimestamp(),
+    });
+
+    await logEvent("sermon_play", cleanData);
+  };
+
+  //////////////////////////////////////////////////
+  // FILTER
+  //////////////////////////////////////////////////
+  const filtered = sermons.filter((sermon) => {
+    const matchesSearch = sermon.title
+      ?.toLowerCase()
+      .includes(search.toLowerCase());
+
+    const matchesSpeaker =
+      speakerFilter === "all" || sermon.speaker === speakerFilter;
+
+    return matchesSearch && matchesSpeaker;
+  });
+
+  //////////////////////////////////////////////////
+  // UI
+  //////////////////////////////////////////////////
+  return (
+    <div style={{ padding: "30px", maxWidth: "900px", margin: "0 auto" }}>
+      
+      <h1 style={{ textAlign: "center", marginBottom: "25px" }}>
+        Sermons
+      </h1>
+
+      {/* 🔥 CONTROLS BAR */}
+      <div
+        style={{
+          display: "flex",
+          gap: "12px",
+          marginBottom: "30px",
+          flexWrap: "wrap",
+          justifyContent: "center",
+        }}
+      >
+        <button
+          onClick={() =>
+            setSortOrder(sortOrder === "desc" ? "asc" : "desc")
+          }
+          style={buttonStyle}
+        >
+          {sortOrder === "desc" ? "Newest" : "Oldest"}
+        </button>
+
+        <input
+          placeholder="Search sermons..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          style={inputStyle}
+        />
+
+        <select
+          value={speakerFilter}
+          onChange={(e) => setSpeakerFilter(e.target.value)}
+          style={inputStyle}
+        >
+          <option value="all">All Speakers</option>
+          {speakers.map((s) => (
+            <option key={s}>{s}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* 🔥 CARDS */}
+      {filtered.map((sermon) => (
+        <div key={sermon.id} style={cardStyle}>
+          
+          <div style={{ paddingRight: "30px" }}>
+            <h3 style={{ marginBottom: "6px", fontSize: "18px" }}>
+              {sermon.title}
+            </h3>
+
+            <p style={{ color: "#666", fontSize: "14px", marginBottom: "12px" }}>
+              {sermon.speaker}
+            </p>
+
+            <audio
+              ref={(el) => (audioRefs.current[sermon.id] = el)}
+              controls
+              style={{ width: "100%" }}
+              onLoadedMetadata={() => {
+                const savedTime = progressMap[sermon.id];
+                if (savedTime && audioRefs.current[sermon.id]) {
+                  audioRefs.current[sermon.id].currentTime = savedTime;
+                }
+              }}
+              onPlay={() => handlePlay(sermon)}
+              onTimeUpdate={(e) => {
+  const currentTime = e.target.currentTime;
+
+  if (Math.floor(currentTime) % 10 === 0) {
+    saveProgress(sermon.id, currentTime);
+
+    trackListenTime({
+      userId: user?.uid,
+      sermonId: sermon.id,
+      title: sermon.title,
+      speaker: sermon.speaker,
+      seconds: 10,
+    });
+  }
+}}
+            >
+              <source src={sermon.audioURL} type="audio/mpeg" />
+            </audio>
+          </div>
+
+          {/* ⭐ SAVE BUTTON */}
+          {user && (
+            <button
+              onClick={async () => {
+                const result = await toggleSaveSermon(user.uid, sermon);
+                setSavedMap((prev) => ({
+                  ...prev,
+                  [sermon.id]: result,
+                }));
+              }}
+              style={{
+                position: "absolute",
+                top: "15px",
+                right: "15px",
+                fontSize: "22px",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                color: savedMap[sermon.id] ? "gold" : "#ccc",
+              }}
+            >
+              ★
+            </button>
+          )}
+        </div>
+      ))}
+    </div>
+  );
 }
 
-}
-
-fetchSermons();
-
-}, [sortOrder]);
-
 //////////////////////////////////////////////////
-// LOAD LISTENING PROGRESS
+// 🎨 STYLES
 //////////////////////////////////////////////////
 
-useEffect(() => {
-
-if (!user) return;
-
-async function loadProgress() {
-
-const progress = {};
-
-for (const sermon of sermons) {
-
-const ref = doc(db, "listeningProgress", `${user.uid}_${sermon.id}`);
-const snap = await getDoc(ref);
-
-if (snap.exists()) {
-progress[sermon.id] = snap.data().time;
-}
-
-}
-
-setProgressMap(progress);
-
-}
-
-loadProgress();
-
-}, [user, sermons]);
-
-//////////////////////////////////////////////////
-// SAVE PROGRESS
-//////////////////////////////////////////////////
-
-const saveProgress = async (sermonId, time) => {
-
-if (!user) return;
-
-try {
-
-await setDoc(
-doc(db, "listeningProgress", `${user.uid}_${sermonId}`),
-{
-userId: user.uid,
-sermonId,
-time,
-updatedAt: serverTimestamp()
-}
-);
-
-} catch (err) {
-console.error("Progress save failed", err);
-}
-
+const cardStyle = {
+  position: "relative",
+  background: "#fff",
+  borderRadius: "16px",
+  padding: "20px",
+  marginBottom: "20px",
+  boxShadow: "0 6px 18px rgba(0,0,0,0.08)",
+  border: "1px solid #f1f1f1",
+  transition: "transform 0.2s ease, box-shadow 0.2s ease",
 };
 
-//////////////////////////////////////////////////
-// LOG PLAY
-//////////////////////////////////////////////////
-
-const logUsage = async (sermon) => {
-
-try {
-
-await addDoc(collection(db, "appUsage"), {
-sermonId: sermon.id,
-title: sermon.title,
-speaker: sermon.speaker,
-userId: user?.uid || null,
-createdAt: serverTimestamp(),
-});
-
-await logEvent("sermon_play", {
-sermonId: sermon.id,
-title: sermon.title,
-speaker: sermon.speaker,
-});
-
-} catch (error) {
-console.error("Usage log error:", error);
-}
-
+const buttonStyle = {
+  padding: "10px 16px",
+  borderRadius: "999px",
+  border: "none",
+  background: "#111",
+  color: "#fff",
+  cursor: "pointer",
+  fontSize: "13px",
 };
 
-//////////////////////////////////////////////////
-// FORMAT DATE
-//////////////////////////////////////////////////
-
-const formatDate = (timestamp) => {
-
-if (!timestamp) return "";
-
-const date = timestamp.toDate();
-
-return date.toLocaleDateString();
-
+const inputStyle = {
+  padding: "10px 14px",
+  borderRadius: "999px",
+  border: "1px solid #ddd",
+  fontSize: "13px",
 };
-
-//////////////////////////////////////////////////
-// SEARCH + FILTER
-//////////////////////////////////////////////////
-
-const filtered = sermons.filter((sermon) => {
-
-const matchesSearch = sermon.title
-?.toLowerCase()
-.includes(search.toLowerCase());
-
-const matchesPastor =
-pastorFilter === "all" || sermon.speaker === pastorFilter;
-
-return matchesSearch && matchesPastor;
-
-});
-
-//////////////////////////////////////////////////
-// UI
-//////////////////////////////////////////////////
-
-return (
-
-<div style={{ padding: "40px" }}>
-
-<h1 style={{ textAlign: "center", marginBottom: "25px" }}>
-Sermons
-</h1>
-
-<div
-style={{
-display: "flex",
-justifyContent: "center",
-alignItems: "center",
-gap: "15px",
-marginBottom: "35px",
-}}
->
-
-<button
-onClick={() =>
-setSortOrder(sortOrder === "desc" ? "asc" : "desc")
-}
-style={{
-padding: "8px 16px",
-borderRadius: "6px",
-border: "none",
-background: "#111827",
-color: "white",
-cursor: "pointer",
-}}
->
-{sortOrder === "desc" ? "New → Old" : "Old → New"}
-</button>
-
-<input
-type="text"
-placeholder="Search sermons..."
-value={search}
-onChange={(e) => setSearch(e.target.value)}
-style={{
-padding: "10px",
-width: "300px",
-borderRadius: "6px",
-border: "1px solid #ccc",
-}}
-/>
-
-<select
-value={pastorFilter}
-onChange={(e) => setPastorFilter(e.target.value)}
-style={{
-padding: "10px",
-borderRadius: "6px",
-border: "1px solid #ccc",
-}}
->
-
-<option value="all">All Pastors</option>
-
-{pastors.map((p) => (
-<option key={p} value={p}>
-{p}
-</option>
-))}
-
-</select>
-
-</div>
-
-{filtered.length === 0 ? (
-
-<p style={{ textAlign: "center" }}>No sermons found.</p>
-
-) : (
-
-filtered.map((sermon) => (
-
-<div
-key={sermon.id}
-style={{
-background: "#ffffff",
-padding: "20px",
-borderRadius: "12px",
-boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
-maxWidth: "600px",
-margin: "0 auto 25px auto",
-}}
->
-
-<h3>{sermon.title}</h3>
-
-<p style={{ fontWeight: "bold", color: "#555" }}>
-Speaker: {sermon.speaker || "Unknown"}
-</p>
-
-<p style={{ color: "#777", fontSize: "14px" }}>
-{formatDate(sermon.createdAt)}
-</p>
-
-<audio
-ref={(el) => (audioRefs.current[sermon.id] = el)}
-controls
-style={{ width: "100%", marginTop: "10px" }}
-
-onLoadedMetadata={() => {
-
-const savedTime = progressMap[sermon.id];
-
-if (savedTime && audioRefs.current[sermon.id]) {
-audioRefs.current[sermon.id].currentTime = savedTime;
-}
-
-}}
-
-onPlay={() => logUsage(sermon)}
-
-onTimeUpdate={(e) => {
-
-const currentTime = e.target.currentTime;
-
-if (Math.floor(currentTime) % 5 === 0) {
-saveProgress(sermon.id, currentTime);
-}
-
-}}
-
->
-
-<source src={sermon.audioURL} type="audio/mpeg" />
-
-</audio>
-
-</div>
-
-))
-
-)}
-
-</div>
-
-);
-
-}

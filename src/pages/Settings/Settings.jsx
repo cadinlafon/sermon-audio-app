@@ -55,9 +55,6 @@ Account
 Notifications
 </button>
 
-<button onClick={() => setPage("privacy")} style={navBtn}>
-Privacy
-</button>
 
 <button onClick={() => setPage("help")} style={navBtn}>
 Help Center

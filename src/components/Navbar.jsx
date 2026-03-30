@@ -1,18 +1,17 @@
 import { useState, useEffect, useRef } from "react";
 import { NavLink, Link, useNavigate, useLocation } from "react-router-dom";
-import { requestPushPermission } from "../utils/requestPushPermission";
 import {
-signInWithEmailAndPassword,
-signInWithPopup,
-onAuthStateChanged,
-signOut
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  onAuthStateChanged,
+  signOut
 } from "firebase/auth";
 
 import {
-doc,
-getDoc,
-setDoc,
-serverTimestamp
+  doc,
+  getDoc,
+  setDoc,
+  serverTimestamp
 } from "firebase/firestore";
 
 import { auth, db, googleProvider } from "../firebase";
@@ -226,13 +225,13 @@ More ▾
 
 <div style={dropdownAnimated}>
 
-<NavLink to="/page-not-ready" style={dropdownLink} onClick={()=>setShowMore(false)}>
+<NavLink to="/about" style={dropdownLink} onClick={()=>setShowMore(false)}>
 About
 </NavLink>
 
-<NavLink to="/feedback" style={dropdownLink} onClick={()=>setShowMore(false)}>
+<Link to="https://form.jotform.com/251326863283157" style={dropdownLink} onClick={()=>setShowMore(false)}>
 Feedback
-</NavLink>
+</Link>
 
 {isAdmin &&(
 <NavLink to="/admin" style={dropdownLink} onClick={()=>setShowMore(false)}>
@@ -265,6 +264,7 @@ onClick={()=>setShowProfile(!showProfile)}
 
 </div>
 
+{/* NOT LOGGED IN */}
 {showProfile && !user &&(
 
 <div style={dropdownAnimated}>
@@ -306,6 +306,7 @@ Don't have an account?
 
 )}
 
+{/* LOGGED IN */}
 {showProfile && user &&(
 
 <div style={dropdownAnimated}>
@@ -316,21 +317,28 @@ Don't have an account?
 
 <hr/>
 
-<button
-style={accountButton}
-onClick={()=>{
-navigate("/settings")
-setShowProfile(false)
-}}
->
+<button style={accountButton} onClick={()=>{navigate("/your-listens"); setShowProfile(false);}}>
+Your Listens
+</button>
+
+<button style={accountButton} onClick={()=>{navigate("/saved"); setShowProfile(false);}}>
+Saved
+</button>
+
+<button style={accountButton} onClick={()=>{navigate("/stats"); setShowProfile(false);}}>
+Stats
+</button>
+
+<button style={accountButton} onClick={()=>{navigate("/suggest"); setShowProfile(false);}}>
+Suggest Feature
+</button>
+
+<button style={accountButton} onClick={()=>{navigate("/settings"); setShowProfile(false);}}>
 <img src={userIcon} style={accountIcon}/>
 Account Page
 </button>
 
-<button
-style={logoutButton}
-onClick={handleLogout}
->
+<button style={logoutButton} onClick={handleLogout}>
 LOG OUT
 </button>
 
@@ -355,8 +363,7 @@ display:"flex",
 alignItems:"center",
 padding:"14px 20px",
 borderBottom:"1px solid #eee",
-background:"#fff",
-transition:"box-shadow 0.3s"
+background:"#fff"
 }
 
 const navLinks={
@@ -372,8 +379,7 @@ position:"relative"
 const moreText={
 cursor:"pointer",
 fontSize:"14px",
-padding:"10px 6px",
-transition:"color 0.25s"
+padding:"10px 6px"
 }
 
 const dropdownAnimated={
@@ -387,16 +393,13 @@ display:"flex",
 flexDirection:"column",
 gap:"10px",
 width:"240px",
-boxShadow:"0 10px 22px rgba(0,0,0,0.12)",
-animation:"fadeSlide 0.25s ease"
+boxShadow:"0 10px 22px rgba(0,0,0,0.12)"
 }
 
 const dropdownLink={
 textDecoration:"none",
 fontSize:"14px",
-color:"#444",
-padding:"6px 0",
-transition:"color 0.2s"
+color:"#444"
 }
 
 const rightSide={
@@ -432,8 +435,7 @@ border:"none",
 padding:"10px",
 fontWeight:"600",
 cursor:"pointer",
-borderRadius:"6px",
-transition:"all 0.25s"
+borderRadius:"6px"
 }
 
 const googleButton={
@@ -446,8 +448,7 @@ background:"#fff",
 padding:"12px",
 cursor:"pointer",
 fontWeight:"600",
-borderRadius:"6px",
-transition:"all 0.25s"
+borderRadius:"6px"
 }
 
 const googleLogoStyle={
@@ -480,9 +481,8 @@ border:"1px solid #ddd",
 padding:"10px",
 cursor:"pointer",
 fontWeight:"500",
-justifyContent:"center",
-borderRadius:"6px",
-transition:"all 0.25s"
+justifyContent:"flex-start",
+borderRadius:"6px"
 }
 
 const accountIcon={
@@ -497,6 +497,5 @@ border:"none",
 padding:"10px",
 fontWeight:"600",
 cursor:"pointer",
-borderRadius:"6px",
-transition:"all 0.25s"
+borderRadius:"6px"
 }
