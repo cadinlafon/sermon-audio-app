@@ -1,197 +1,210 @@
 import { useEffect, useState } from "react";
 import { db, auth } from "../firebase";
 import {
-collection,
-getDocs,
-addDoc,
-serverTimestamp,
-query,
-where,
-orderBy,
+  collection,
+  getDocs,
+  addDoc,
+  serverTimestamp,
+  query,
+  where,
+  orderBy,
 } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
+import { useAudioPlayer } from "../context/AudioPlayerContext";
 
-export default function Homilys() {
-const [homilys, setHomilys] = useState([]);
-const [user, setUser] = useState(null);
+export default function Homilies() {
+  const [homilies, setHomilies] = useState([]);
+  const [user, setUser] = useState(null);
 
-const [search, setSearch] = useState("");
-const [sortOrder, setSortOrder] = useState("desc");
-const [pastorFilter, setPastorFilter] = useState("all");
+  const [search, setSearch] = useState("");
+  const [sortOrder, setSortOrder] = useState("desc");
+  const [speakerFilter, setSpeakerFilter] = useState("all");
 
-// ✏️ CHANGE PASTOR NAMES HERE
-const pastors = [
-"Jonathan Mcintosh", // ✏️ change name
-"Rusty Olps", // ✏️ change name
-"Jason Farley"  // ✏️ change name
-];
+  const { playSermon } = useAudioPlayer();
 
-// Auth listener
-useEffect(() => {
-const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-setUser(currentUser);
-});
+  //////////////////////////////////////////////////
+  // AUTH
+  //////////////////////////////////////////////////
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, setUser);
+    return () => unsubscribe();
+  }, []);
 
-return () => unsubscribe();
-}, []);
+  //////////////////////////////////////////////////
+  // FETCH
+  //////////////////////////////////////////////////
+  useEffect(() => {
+    async function fetchHomilies() {
+      const q = query(
+        collection(db, "audio"),
+        where("type", "==", "homily"),
+        orderBy("createdAt", sortOrder)
+      );
 
-// Fetch homilys
-useEffect(() => {
-async function fetchHomilys() {
-try {
-const q = query(
-collection(db, "audio"),
-where("type", "==", "homily"),
-orderBy("createdAt", sortOrder)
-);
+      const snapshot = await getDocs(q);
 
-const querySnapshot = await getDocs(q);
+      setHomilies(
+        snapshot.docs.map((docItem) => ({
+          id: docItem.id,
+          ...docItem.data(),
+        }))
+      );
+    }
 
-const list = querySnapshot.docs.map((docItem) => ({
-id: docItem.id,
-...docItem.data(),
-}));
+    fetchHomilies();
+  }, [sortOrder]);
 
-setHomilys(list);
-} catch (error) {
-console.error("Error fetching homilys:", error);
+  //////////////////////////////////////////////////
+  // SPEAKERS (DYNAMIC — SAME AS SERMONS)
+  //////////////////////////////////////////////////
+  const speakers = [
+    ...new Set(homilies.map((h) => h.speaker).filter(Boolean)),
+  ];
+
+  //////////////////////////////////////////////////
+  // PLAY
+  //////////////////////////////////////////////////
+  const handlePlay = async (item) => {
+    playSermon(item);
+
+    if (!user) return;
+
+    await addDoc(collection(db, "appUsage"), {
+      sermonId: item.id,
+      userId: user.uid,
+      createdAt: serverTimestamp(),
+    });
+  };
+
+  //////////////////////////////////////////////////
+  // FILTER
+  //////////////////////////////////////////////////
+  const filtered = homilies.filter((item) => {
+    const matchesSearch = item.title
+      ?.toLowerCase()
+      .includes(search.toLowerCase());
+
+    const matchesSpeaker =
+      speakerFilter === "all" || item.speaker === speakerFilter;
+
+    return matchesSearch && matchesSpeaker;
+  });
+
+  //////////////////////////////////////////////////
+  // UI
+  //////////////////////////////////////////////////
+  return (
+    <div style={{ padding: "30px", maxWidth: "900px", margin: "0 auto" }}>
+      <h1 style={{ textAlign: "center", marginBottom: "25px" }}>
+        Homilies
+      </h1>
+
+      {/* 🔥 CONTROLS (NOW IDENTICAL TO SERMONS) */}
+      <div style={controls}>
+        <button
+          onClick={() =>
+            setSortOrder(sortOrder === "desc" ? "asc" : "desc")
+          }
+          style={buttonStyle}
+        >
+          {sortOrder === "desc" ? "Newest" : "Oldest"}
+        </button>
+
+        <input
+          placeholder="Search..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          style={inputStyle}
+        />
+
+        <select
+          value={speakerFilter}
+          onChange={(e) => setSpeakerFilter(e.target.value)}
+          style={inputStyle}
+        >
+          <option value="all">All Speakers</option>
+          {speakers.map((s) => (
+            <option key={s}>{s}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* 🔥 CARDS */}
+      {filtered.map((item) => (
+        <div key={item.id} style={cardStyle}>
+          <div>
+            <h3 style={titleStyle}>{item.title}</h3>
+            <p style={speakerStyle}>{item.speaker}</p>
+
+            <button
+              onClick={() => handlePlay(item)}
+              style={playButton}
+            >
+              ▶ Play
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }
-}
 
-fetchHomilys();
-}, [sortOrder]);
+//////////////////////////////////////////////////
+// 🎨 EXACT SAME STYLES AS SERMONS
+//////////////////////////////////////////////////
 
-const formatDate = (timestamp) => {
-if (!timestamp) return "";
-const date = timestamp.toDate();
-return date.toLocaleDateString();
+const controls = {
+  display: "flex",
+  gap: "12px",
+  marginBottom: "30px",
+  flexWrap: "wrap",
+  justifyContent: "center",
 };
 
-const logUsage = async (id) => {
-if (!user) return;
-
-try {
-await addDoc(collection(db, "appUsage"), {
-sermonId: id,
-userId: user.uid,
-createdAt: serverTimestamp(),
-});
-} catch (error) {
-console.error("Usage log error:", error);
-}
+const cardStyle = {
+  position: "relative",
+  background: "#fff",
+  borderRadius: "16px",
+  padding: "20px",
+  marginBottom: "20px",
+  boxShadow: "0 6px 18px rgba(0,0,0,0.08)",
+  border: "1px solid #f1f1f1",
 };
 
-const filtered = homilys.filter((item) => {
-const matchesSearch = item.title
-?.toLowerCase()
-.includes(search.toLowerCase());
+const titleStyle = {
+  marginBottom: "6px",
+  fontSize: "17px",
+};
 
-const matchesPastor =
-pastorFilter === "all" || item.speaker === pastorFilter;
+const speakerStyle = {
+  color: "#666",
+  fontSize: "13px",
+  marginBottom: "14px",
+};
 
-return matchesSearch && matchesPastor;
-});
+const playButton = {
+  padding: "8px 14px",
+  borderRadius: "8px",
+  border: "none",
+  background: "#111",
+  color: "#fff",
+  cursor: "pointer",
+  fontSize: "13px",
+};
 
-return (
-<div style={{ padding: "40px" }}>
-<h1 style={{ textAlign: "center", marginBottom: "25px" }}>
-Homilies
-</h1>
+const buttonStyle = {
+  padding: "10px 16px",
+  borderRadius: "999px",
+  border: "none",
+  background: "#111",
+  color: "#fff",
+  cursor: "pointer",
+  fontSize: "13px",
+};
 
-<div
-style={{
-display: "flex",
-justifyContent: "center",
-alignItems: "center",
-gap: "15px",
-marginBottom: "35px",
-}}
->
-
-<button
-onClick={() =>
-setSortOrder(sortOrder === "desc" ? "asc" : "desc")
-}
-style={{
-padding: "8px 16px",
-borderRadius: "6px",
-border: "none",
-background: "#111827",
-color: "white",
-cursor: "pointer",
-}}
->
-{sortOrder === "desc" ? "New → Old" : "Old → New"}
-</button>
-
-<input
-type="text"
-placeholder="Search homilys..."
-value={search}
-onChange={(e) => setSearch(e.target.value)}
-style={{
-padding: "10px",
-width: "300px",
-borderRadius: "6px",
-border: "1px solid #ccc",
-}}
-/>
-
-<select
-value={pastorFilter}
-onChange={(e) => setPastorFilter(e.target.value)}
-style={{
-padding: "10px",
-borderRadius: "6px",
-border: "1px solid #ccc",
-}}
->
-<option value="all">All Pastors</option>
-
-{pastors.map((p) => (
-<option key={p} value={p}>
-{p}
-</option>
-))}
-</select>
-
-</div>
-
-{filtered.length === 0 ? (
-<p style={{ textAlign: "center" }}>No homilys found.</p>
-) : (
-filtered.map((item) => (
-<div
-key={item.id}
-style={{
-background: "#ffffff",
-padding: "20px",
-borderRadius: "12px",
-boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
-maxWidth: "600px",
-margin: "0 auto 25px auto",
-}}
->
-<h3>{item.title}</h3>
-
-<p style={{ fontWeight: "bold", color: "#555" }}>
-Speaker: {item.speaker || "Unknown"}
-</p>
-
-<p style={{ color: "#777", fontSize: "14px" }}>
-{formatDate(item.createdAt)}
-</p>
-
-<audio
-controls
-style={{ width: "100%", marginTop: "10px" }}
-onPlay={() => logUsage(item.id)}
->
-<source src={item.audioURL} type="audio/mpeg" />
-</audio>
-</div>
-))
-)}
-</div>
-);
-}
+const inputStyle = {
+  padding: "10px 14px",
+  borderRadius: "999px",
+  border: "1px solid #ddd",
+  fontSize: "13px",
+};

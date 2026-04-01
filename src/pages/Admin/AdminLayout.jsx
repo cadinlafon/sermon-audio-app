@@ -35,7 +35,13 @@ Admin Panel
 
 <Link to="/admin/settings" style={linkStyle}>Settings</Link>
 
+<Link to="/admin/notices" style={linkStyle}>Notices</Link>
+
+
 <Link to="/admin/logs" style={linkStyle}>Logs</Link>
+
+<Link to="/admin/suggestions" style={linkStyle}>Suggestions</Link>
+
 
 </nav>
 

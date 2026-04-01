@@ -1,238 +1,286 @@
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { db } from "../firebase";
+import { db, auth } from "../firebase";
 import {
-collection,
-query,
-orderBy,
-limit,
-getDocs,
+  collection,
+  query,
+  orderBy,
+  limit,
+  getDocs,
+  doc,
+  getDoc,
 } from "firebase/firestore";
+import { onAuthStateChanged } from "firebase/auth";
 
 export default function Home() {
+  const navigate = useNavigate();
 
-const navigate = useNavigate();
+  const [latestSermon, setLatestSermon] = useState(null);
+  const [continueListening, setContinueListening] = useState(null);
+  const [notices, setNotices] = useState([]);
 
-const [latestSermon, setLatestSermon] = useState(null);
-const [continueListening, setContinueListening] = useState(null);
+  const [user, setUser] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [authLoaded, setAuthLoaded] = useState(false);
 
-/* LOAD MOST RECENT SERMON */
+  //////////////////////////////////////////////////
+  // AUTH
+  //////////////////////////////////////////////////
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (u) => {
+      setUser(u);
 
-useEffect(() => {
+      if (u) {
+        const snap = await getDoc(doc(db, "users", u.uid));
 
-async function fetchLatestSermon() {
+        if (snap.exists() && snap.data().role === "admin") {
+          setIsAdmin(true);
+        } else {
+          setIsAdmin(false);
+        }
+      } else {
+        setIsAdmin(false);
+      }
 
-try {
+      setAuthLoaded(true);
+    });
 
-const q = query(
-collection(db, "audio"),
-orderBy("createdAt", "desc"),
-limit(1)
-);
+    return () => unsubscribe();
+  }, []);
 
-const snapshot = await getDocs(q);
+  //////////////////////////////////////////////////
+  // LOAD DATA
+  //////////////////////////////////////////////////
+  useEffect(() => {
+    if (!authLoaded) return;
 
-if (!snapshot.empty) {
-setLatestSermon(snapshot.docs[0].data());
+    async function fetchData() {
+      try {
+        // 🔥 Latest sermon
+        const sermonQ = query(
+          collection(db, "audio"),
+          orderBy("createdAt", "desc"),
+          limit(1)
+        );
+
+        const sermonSnap = await getDocs(sermonQ);
+
+        if (!sermonSnap.empty) {
+          const docItem = sermonSnap.docs[0];
+          setLatestSermon({
+            id: docItem.id,
+            ...docItem.data(),
+          });
+        }
+
+        // 🔥 Notices
+        const noticeQ = query(
+          collection(db, "notices"),
+          orderBy("createdAt", "desc")
+        );
+
+        const noticeSnap = await getDocs(noticeQ);
+        const now = new Date();
+
+        const filtered = noticeSnap.docs
+          .map((d) => ({ id: d.id, ...d.data() }))
+          .filter((n) => {
+            const notExpired =
+              !n.expiresAt ||
+              new Date(n.expiresAt.seconds * 1000) > now;
+
+            const visibleTo = n.audience || "all";
+
+            const passesVisibility =
+              visibleTo === "all" ||
+              (visibleTo === "users" && user) ||
+              (visibleTo === "admins" && isAdmin) ||
+              (visibleTo === "guests" && !user);
+
+            return n.active !== false && notExpired && passesVisibility;
+          });
+
+        // 🔥 pinned first
+        filtered.sort((a, b) => (b.pinned === true) - (a.pinned === true));
+
+        setNotices(filtered);
+      } catch (error) {
+        console.error("Error loading home data:", error);
+      }
+    }
+
+    fetchData();
+
+    const saved = localStorage.getItem("continueListening");
+    if (saved) {
+      setContinueListening(JSON.parse(saved));
+    }
+  }, [authLoaded, user, isAdmin]);
+
+  //////////////////////////////////////////////////
+  // UI
+  //////////////////////////////////////////////////
+  return (
+    <>
+      {/* HERO */}
+      <div
+        style={{
+          width: "100%",
+          height: "30vh",
+          backgroundImage: `url("/hero.jpg")`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      />
+
+      <div style={{ padding: "40px", maxWidth: "800px", margin: "0 auto" }}>
+
+        {/* 🔥 NOTICES */}
+        {notices.length > 0 && (
+          <div style={card}>
+            <h2 style={{ marginBottom: "15px" }}>Notices</h2>
+
+            {notices.map((n) => (
+              <div key={n.id} style={noticeItem}>
+                <h4 style={{ marginBottom: "5px" }}>{n.title}</h4>
+
+                {/* ✅ FIX IS RIGHT HERE */}
+                <p
+                  style={{
+                    color: "#555",
+                    fontSize: "14px",
+                    whiteSpace: "pre-line",
+                  }}
+                >
+                  {n.details}
+                </p>
+
+                {n.buttonEnabled && (
+                  <button
+                    style={noticeButton}
+                    onClick={() => {
+                      if (n.buttonType === "url") {
+                        window.open(n.buttonValue, "_blank");
+                      } else if (n.buttonType === "page") {
+                        navigate(n.buttonValue);
+                      }
+                    }}
+                  >
+                    {n.buttonText || "Learn More"}
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* 🔥 LATEST SERMON */}
+        <div style={card}>
+          <h2 style={{ marginBottom: "10px" }}>Latest Audio</h2>
+
+          {latestSermon ? (
+            <>
+              <h3 style={{ marginBottom: "10px" }}>
+                {latestSermon.title}
+              </h3>
+
+              <p style={{ color: "#666", marginBottom: "15px" }}>
+                {latestSermon.speaker}
+              </p>
+
+              <button
+                onClick={() => {
+                  localStorage.setItem(
+                    "continueListening",
+                    JSON.stringify(latestSermon)
+                  );
+                  navigate("/sermons");
+                }}
+                style={playButton}
+              >
+                Play
+              </button>
+            </>
+          ) : (
+            <p style={{ color: "#777" }}>No sermons uploaded yet</p>
+          )}
+        </div>
+
+        {/* NAV */}
+        <div style={navButtons}>
+          <button onClick={() => navigate("/sermons")} style={buttonStyle}>
+            Sermons
+          </button>
+
+          <button onClick={() => navigate("/sundayschool")} style={buttonStyle}>
+            Sunday School
+          </button>
+
+          <button onClick={() => navigate("/homilies")} style={buttonStyle}>
+            Homilies
+          </button>
+        </div>
+
+      </div>
+    </>
+  );
 }
 
-} catch (error) {
-console.error("Error loading sermon:", error);
-}
+//////////////////////////////////////////////////
+// STYLES
+//////////////////////////////////////////////////
 
-}
+const card = {
+  backgroundColor: "#ffffff",
+  borderRadius: "12px",
+  padding: "25px",
+  marginBottom: "40px",
+  boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+  textAlign: "center",
+};
 
-fetchLatestSermon();
+const noticeItem = {
+  background: "#fffbea",
+  border: "1px solid #facc15",
+  padding: "12px",
+  borderRadius: "8px",
+  marginBottom: "10px",
+  textAlign: "left",
+};
 
-/* LOAD CONTINUE LISTENING */
+const noticeButton = {
+  marginTop: "10px",
+  padding: "8px 14px",
+  borderRadius: "6px",
+  border: "none",
+  background: "#111",
+  color: "#fff",
+  cursor: "pointer",
+  fontSize: "13px",
+};
 
-const saved = localStorage.getItem("continueListening");
+const playButton = {
+  padding: "10px 20px",
+  borderRadius: "999px",
+  border: "none",
+  background: "#111",
+  color: "#fff",
+  cursor: "pointer",
+};
 
-if (saved) {
-setContinueListening(JSON.parse(saved));
-}
-
-}, []);
-
-return (
-<>
-
-{/* HERO IMAGE */}
-
-<div
-style={{
-width: "100%",
-height: "30vh",
-backgroundImage: `url("/hero.jpg")`,
-backgroundSize: "cover",
-backgroundPosition: "center",
-backgroundRepeat: "no-repeat",
-}}
-/>
-
-{/* MAIN CONTENT */}
-
-<div style={{ padding: "40px", maxWidth: "800px", margin: "0 auto" }}>
-
-{/* MOST RECENT SERMON */}
-
-<div
-style={{
-backgroundColor: "#ffffff",
-borderRadius: "12px",
-padding: "25px",
-marginBottom: "40px",
-boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-textAlign: "center",
-}}
->
-
-<h2 style={{ marginBottom: "10px" }}>
-Latest Sermon
-</h2>
-
-{latestSermon ? (
-<>
-
-<h3 style={{ marginBottom: "10px" }}>
-{latestSermon.title}
-</h3>
-
-<p style={{ color: "#666", marginBottom: "15px" }}>
-{latestSermon.speaker}
-</p>
-
-<audio controls style={{ width: "100%" }}>
-<source src={latestSermon.audioURL} />
-</audio>
-
-</>
-) : (
-
-<p style={{ color: "#777" }}>
-No sermons uploaded yet
-</p>
-
-)}
-
-</div>
-
-{/* CONTINUE LISTENING */}
-
-{continueListening && (
-
-<div
-style={{
-backgroundColor: "#ffffff",
-borderRadius: "12px",
-padding: "25px",
-marginBottom: "40px",
-boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-textAlign: "center",
-}}
->
-
-<h2 style={{ marginBottom: "10px" }}>
-Continue Listening
-</h2>
-
-<h3 style={{ marginBottom: "10px" }}>
-{continueListening.title}
-</h3>
-
-<p style={{ color: "#666", marginBottom: "10px" }}>
-{continueListening.speaker}
-</p>
-
-<p style={{ fontSize: "14px", color: "#888", marginBottom: "15px" }}>
-Resume at {Math.floor(continueListening.time / 60)}:
-{String(Math.floor(continueListening.time % 60)).padStart(2,"0")}
-</p>
-
-<audio controls style={{ width: "100%" }}>
-<source src={continueListening.audioURL} />
-</audio>
-
-</div>
-
-)}
-
-{/* NAV BUTTONS */}
-
-<div
-style={{
-display: "flex",
-flexDirection: "column",
-gap: "15px",
-marginBottom: "50px",
-}}
->
-
-<button
-onClick={() => navigate("/sermons")}
-style={buttonStyle}
->
-Sermons
-</button>
-
-<button
-onClick={() => navigate("/sundayschool")}
-style={buttonStyle}
->
-Sunday School
-</button>
-
-<button
-onClick={() => navigate("/homilies")}
-style={buttonStyle}
->
-Homilies
-</button>
-
-</div>
-
-{/* CONTACT CARD */}
-
-<div
-style={{
-backgroundColor: "#ffffff",
-padding: "25px",
-borderRadius: "12px",
-boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-textAlign: "center",
-}}
->
-
-<h3 style={{ marginBottom: "10px" }}>
-Cadin LaFon
-</h3>
-
-<p style={{ marginBottom: "20px", color: "#555" }}>
-208-874-3729 | Cadinlafon@gmail.com
-<br />
-(Palouse Fellowship.)
-</p>
-
-<button
-style={buttonStyle}
-onClick={() => navigate("/feedback")}
->
-Contact Form
-</button>
-
-</div>
-
-</div>
-</>
-);
-}
+const navButtons = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "15px",
+  marginBottom: "50px",
+};
 
 const buttonStyle = {
-padding: "15px",
-fontSize: "16px",
-borderRadius: "8px",
-border: "none",
-backgroundColor: "#2c3e50",
-color: "white",
-cursor: "pointer",
+  padding: "15px",
+  fontSize: "16px",
+  borderRadius: "8px",
+  border: "none",
+  backgroundColor: "#2c3e50",
+  color: "white",
+  cursor: "pointer",
 };

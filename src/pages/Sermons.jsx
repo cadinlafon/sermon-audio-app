@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { db, auth } from "../firebase";
 import {
   collection,
@@ -16,17 +16,18 @@ import { onAuthStateChanged } from "firebase/auth";
 import { logEvent } from "../utils/logEvent";
 import { trackListenTime } from "../utils/listenTracker";
 import { toggleSaveSermon } from "../utils/saveSermon";
+import { useAudioPlayer } from "../context/AudioPlayerContext";
 
 export default function Sermons() {
   const [sermons, setSermons] = useState([]);
   const [user, setUser] = useState(null);
-  const [progressMap, setProgressMap] = useState({});
   const [savedMap, setSavedMap] = useState({});
-  const audioRefs = useRef({});
 
   const [search, setSearch] = useState("");
   const [sortOrder, setSortOrder] = useState("desc");
   const [speakerFilter, setSpeakerFilter] = useState("all");
+
+  const { playSermon } = useAudioPlayer();
 
   //////////////////////////////////////////////////
   // AUTH
@@ -62,7 +63,7 @@ export default function Sermons() {
   }, [user]);
 
   //////////////////////////////////////////////////
-  // FETCH
+  // FETCH SERMONS
   //////////////////////////////////////////////////
   useEffect(() => {
     async function fetchSermons() {
@@ -93,51 +94,13 @@ export default function Sermons() {
   ];
 
   //////////////////////////////////////////////////
-  // LOAD PROGRESS
-  //////////////////////////////////////////////////
-  useEffect(() => {
-    if (!user) return;
-
-    async function loadProgress() {
-      const progress = {};
-
-      for (const sermon of sermons) {
-        const snap = await getDoc(
-          doc(db, "listeningProgress", `${user.uid}_${sermon.id}`)
-        );
-
-        if (snap.exists()) {
-          progress[sermon.id] = snap.data().time;
-        }
-      }
-
-      setProgressMap(progress);
-    }
-
-    loadProgress();
-  }, [user, sermons]);
-
-  //////////////////////////////////////////////////
-  // SAVE PROGRESS
-  //////////////////////////////////////////////////
-  const saveProgress = async (sermonId, time) => {
-    if (!user) return;
-
-    await setDoc(
-      doc(db, "listeningProgress", `${user.uid}_${sermonId}`),
-      {
-        userId: user.uid,
-        sermonId,
-        time,
-        updatedAt: serverTimestamp(),
-      }
-    );
-  };
-
-  //////////////////////////////////////////////////
-  // PLAY
+  // PLAY (NOW GLOBAL PLAYER)
   //////////////////////////////////////////////////
   const handlePlay = async (sermon) => {
+    if (!sermon) return;
+
+    playSermon(sermon); // 🔥 global player
+
     const cleanData = {
       userId: user?.uid || null,
       sermonId: sermon.id,
@@ -145,14 +108,18 @@ export default function Sermons() {
       speaker: sermon.speaker || "Unknown",
     };
 
-    await trackListenTime(cleanData);
+    try {
+      await trackListenTime(cleanData);
 
-    await addDoc(collection(db, "appUsage"), {
-      ...cleanData,
-      createdAt: serverTimestamp(),
-    });
+      await addDoc(collection(db, "appUsage"), {
+        ...cleanData,
+        createdAt: serverTimestamp(),
+      });
 
-    await logEvent("sermon_play", cleanData);
+      await logEvent("sermon_play", cleanData);
+    } catch (err) {
+      console.error("Play tracking error:", err);
+    }
   };
 
   //////////////////////////////////////////////////
@@ -174,21 +141,12 @@ export default function Sermons() {
   //////////////////////////////////////////////////
   return (
     <div style={{ padding: "30px", maxWidth: "900px", margin: "0 auto" }}>
-      
       <h1 style={{ textAlign: "center", marginBottom: "25px" }}>
         Sermons
       </h1>
 
-      {/* 🔥 CONTROLS BAR */}
-      <div
-        style={{
-          display: "flex",
-          gap: "12px",
-          marginBottom: "30px",
-          flexWrap: "wrap",
-          justifyContent: "center",
-        }}
-      >
+      {/* CONTROLS */}
+      <div style={controls}>
         <button
           onClick={() =>
             setSortOrder(sortOrder === "desc" ? "asc" : "desc")
@@ -199,7 +157,7 @@ export default function Sermons() {
         </button>
 
         <input
-          placeholder="Search sermons..."
+          placeholder="Search..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           style={inputStyle}
@@ -217,51 +175,23 @@ export default function Sermons() {
         </select>
       </div>
 
-      {/* 🔥 CARDS */}
+      {/* CARDS */}
       {filtered.map((sermon) => (
         <div key={sermon.id} style={cardStyle}>
-          
-          <div style={{ paddingRight: "30px" }}>
-            <h3 style={{ marginBottom: "6px", fontSize: "18px" }}>
-              {sermon.title}
-            </h3>
+          <div>
+            <h3 style={titleStyle}>{sermon.title}</h3>
+            <p style={speakerStyle}>{sermon.speaker}</p>
 
-            <p style={{ color: "#666", fontSize: "14px", marginBottom: "12px" }}>
-              {sermon.speaker}
-            </p>
-
-            <audio
-              ref={(el) => (audioRefs.current[sermon.id] = el)}
-              controls
-              style={{ width: "100%" }}
-              onLoadedMetadata={() => {
-                const savedTime = progressMap[sermon.id];
-                if (savedTime && audioRefs.current[sermon.id]) {
-                  audioRefs.current[sermon.id].currentTime = savedTime;
-                }
-              }}
-              onPlay={() => handlePlay(sermon)}
-              onTimeUpdate={(e) => {
-  const currentTime = e.target.currentTime;
-
-  if (Math.floor(currentTime) % 10 === 0) {
-    saveProgress(sermon.id, currentTime);
-
-    trackListenTime({
-      userId: user?.uid,
-      sermonId: sermon.id,
-      title: sermon.title,
-      speaker: sermon.speaker,
-      seconds: 10,
-    });
-  }
-}}
+            {/* 🔥 PLAY BUTTON (REPLACES AUDIO) */}
+            <button
+              onClick={() => handlePlay(sermon)}
+              style={playButton}
             >
-              <source src={sermon.audioURL} type="audio/mpeg" />
-            </audio>
+              ▶ Play
+            </button>
           </div>
 
-          {/* ⭐ SAVE BUTTON */}
+          {/* ⭐ SAVE */}
           {user && (
             <button
               onClick={async () => {
@@ -292,8 +222,16 @@ export default function Sermons() {
 }
 
 //////////////////////////////////////////////////
-// 🎨 STYLES
+// STYLES
 //////////////////////////////////////////////////
+
+const controls = {
+  display: "flex",
+  gap: "12px",
+  marginBottom: "30px",
+  flexWrap: "wrap",
+  justifyContent: "center",
+};
 
 const cardStyle = {
   position: "relative",
@@ -303,7 +241,27 @@ const cardStyle = {
   marginBottom: "20px",
   boxShadow: "0 6px 18px rgba(0,0,0,0.08)",
   border: "1px solid #f1f1f1",
-  transition: "transform 0.2s ease, box-shadow 0.2s ease",
+};
+
+const titleStyle = {
+  marginBottom: "6px",
+  fontSize: "17px",
+};
+
+const speakerStyle = {
+  color: "#666",
+  fontSize: "13px",
+  marginBottom: "14px",
+};
+
+const playButton = {
+  padding: "8px 14px",
+  borderRadius: "8px",
+  border: "none",
+  background: "#111",
+  color: "#fff",
+  cursor: "pointer",
+  fontSize: "13px",
 };
 
 const buttonStyle = {

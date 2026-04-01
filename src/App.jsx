@@ -23,7 +23,7 @@ import About from "./pages/About";
 import SignUp from "./pages/SignUp";
 import NotFound from "./pages/NotFound";
 import AdminAccess from "./pages/AdminAccess";
-
+import Player from "./pages/Player";
 // Admin Pages
 import AdminGate from "./pages/Admin/AdminGate";
 import AdminLayout from "./pages/Admin/AdminLayout";
@@ -36,10 +36,12 @@ import AdminSettings from "./pages/Admin/Settings";
 import Logs from "./pages/Admin/Logs";
 import AdminNotifications from "./pages/Admin/AdminNotifications";
 import SuggestFeature from "./pages/SuggestFeature";
+import AdminSuggestions from "./pages/Admin/AdminSuggestions";
+import AdminNotices from "./pages/Admin/AdminNotices";
 // Components
 import Navbar from "./components/Navbar";
 import PopupNotification from "./components/PopupNotification";
-
+import MiniPlayer from "./components/MiniPlayer";
 function App() {
   const [user, setUser] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -162,6 +164,9 @@ function App() {
 <Route path="/your-listens" element={<YourListens />} />
 <Route path="/saved" element={<Saved />} />
 <Route path="/stats" element={<Stats />} />
+<Route path="/player" element={<Player />} />
+            <Route path="suggest" element={<SuggestFeature />} />
+
         {/* ADMIN ROUTES */}
         <Route
           path="/admin/*"
@@ -177,10 +182,13 @@ function App() {
             <Route path="notifications" element={<AdminNotifications />} />
             <Route path="settings" element={<AdminSettings />} />
             <Route path="logs" element={<Logs />} />
-            <Route path="suggest" element={<SuggestFeature />} />
+            <Route path="suggestions" element={<AdminSuggestions />} />
+            <Route path="notices" element={<AdminNotices />} />
           </Route>
         </Route>
       </Routes>
+      <MiniPlayer />
+
     </AppGuard>
   );
 }
