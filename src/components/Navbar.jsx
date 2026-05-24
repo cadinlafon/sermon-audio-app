@@ -210,7 +210,7 @@ return(
 <NavLink to="/" style={linkStyle}>Home</NavLink>
 <NavLink to="/sermons" style={linkStyle}>Sermons</NavLink>
 <NavLink to="/sundayschool" style={linkStyle}>Sunday School</NavLink>
-<NavLink to="/homilies" style={linkStyle}>Homilies</NavLink>
+
 
 <div ref={moreRef} style={moreContainer}>
 

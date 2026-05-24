@@ -1,12 +1,27 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import { VitePWA } from 'vite-plugin-pwa'
+import { VitePWA } from 'vite-plugin-pwa' // 🔥 THIS WAS MISSING
 
 export default defineConfig({
   plugins: [
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+
+      workbox: {
+        navigateFallback: '/index.html',
+
+        // 🔥 DON'T CACHE SITEMAP
+        globIgnores: ['**/sitemap*.xml'],
+
+        runtimeCaching: [
+          {
+            urlPattern: ({ url }) => url.pathname.endsWith('.xml'),
+            handler: 'NetworkOnly',
+          },
+        ],
+      },
+
       manifest: {
         name: 'Sermon Audio App',
         short_name: 'Sermons',

@@ -1,30 +1,39 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "./firebase";
+import LoadingScreen from "./components/LoadingScreen";
+
+import AudioAppLanding from "./pages/AudioAppLanding";
 import RouteLogger from "./RouteLogger";
 import { logEvent } from "./utils/logEvent";
+
 import IosInstallPopup from "./components/IosInstallPopup";
 import NotificationPopup from "./components/NotificationPopup";
+import PopupNotification from "./components/PopupNotification";
+import TopBar from "./components/TopBar";
+import BottomBar from "./components/BottomBar";
+import MiniPlayer from "./components/MiniPlayer";
+import AppGuard from "./components/AppGuard";
+
+// Pages
 import YourListens from "./pages/YourListens";
 import Saved from "./pages/Saved";
-// Shutdown system
-import AppGuard from "./components/AppGuard";
 import Stats from "./pages/Stats";
-// Public Pages
 import Home from "./pages/Home";
 import Sermons from "./pages/Sermons";
-import Homilys from "./pages/Homilys";
 import SundaySchool from "./pages/SundaySchool";
 import Feedback from "./pages/Feedback";
 import Settings from "./pages/Settings/Settings";
-import About from "./pages/About";
 import SignUp from "./pages/SignUp";
 import NotFound from "./pages/NotFound";
 import AdminAccess from "./pages/AdminAccess";
 import Player from "./pages/Player";
-// Admin Pages
+import SuggestFeature from "./pages/SuggestFeature";
+import Contact from "./pages/Contact";
+
+// Admin
 import AdminGate from "./pages/Admin/AdminGate";
 import AdminLayout from "./pages/Admin/AdminLayout";
 import Dashboard from "./pages/Admin/Dashboard";
@@ -35,20 +44,54 @@ import AdminContentManager from "./pages/Admin/AdminContentManager";
 import AdminSettings from "./pages/Admin/Settings";
 import Logs from "./pages/Admin/Logs";
 import AdminNotifications from "./pages/Admin/AdminNotifications";
-import SuggestFeature from "./pages/SuggestFeature";
 import AdminSuggestions from "./pages/Admin/AdminSuggestions";
 import AdminNotices from "./pages/Admin/AdminNotices";
-// Components
-import Navbar from "./components/Navbar";
-import PopupNotification from "./components/PopupNotification";
-import MiniPlayer from "./components/MiniPlayer";
+
+
 function App() {
   const [user, setUser] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  const location = useLocation();
+
   //////////////////////////////////////////////////
-  // APP OPEN + MODE DETECTION
+  // 🔥 SESSION START (THIS WAS MISSING)
+  //////////////////////////////////////////////////
+  useEffect(() => {
+const sessionId = crypto.randomUUID();
+    localStorage.setItem("sessionId", sessionId);
+    localStorage.setItem("sessionStart", Date.now());
+
+    logEvent("session_start", { sessionId });
+  }, []);
+
+  //////////////////////////////////////////////////
+  // 🔥 SESSION END (NEW)
+  //////////////////////////////////////////////////
+  useEffect(() => {
+    const handleClose = () => {
+      const sessionId = localStorage.getItem("sessionId");
+      const start = localStorage.getItem("sessionStart");
+
+      if (!sessionId || !start) return;
+
+      const duration = Math.floor((Date.now() - start) / 1000);
+
+      logEvent("session_end", {
+        sessionId,
+        duration,
+      });
+    };
+
+    window.addEventListener("beforeunload", handleClose);
+
+    return () =>
+      window.removeEventListener("beforeunload", handleClose);
+  }, []);
+
+  //////////////////////////////////////////////////
+  // APP OPEN TRACKING
   //////////////////////////////////////////////////
   useEffect(() => {
     const isStandalone =
@@ -62,7 +105,6 @@ function App() {
       mode: isStandalone ? "pwa" : "web",
     });
 
-    // iOS PWA detection
     if (window.navigator.standalone === true) {
       const alreadyLogged = localStorage.getItem("ios_pwa_logged");
 
@@ -84,7 +126,9 @@ function App() {
     }
 
     function handleInstalled() {
-      const alreadyLogged = localStorage.getItem("pwa_installed_logged");
+      const alreadyLogged = localStorage.getItem(
+        "pwa_installed_logged"
+      );
 
       if (!alreadyLogged) {
         logEvent("pwa_installed", {
@@ -98,13 +142,16 @@ function App() {
     window.addEventListener("appinstalled", handleInstalled);
 
     return () => {
-      window.removeEventListener("beforeinstallprompt", handleInstallPrompt);
+      window.removeEventListener(
+        "beforeinstallprompt",
+        handleInstallPrompt
+      );
       window.removeEventListener("appinstalled", handleInstalled);
     };
   }, []);
 
   //////////////////////////////////////////////////
-  // AUTH LISTENER
+  // AUTH
   //////////////////////////////////////////////////
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -112,7 +159,9 @@ function App() {
 
       if (currentUser) {
         try {
-          const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+          const userDoc = await getDoc(
+            doc(db, "users", currentUser.uid)
+          );
 
           if (userDoc.exists() && userDoc.data().role === "admin") {
             setIsAdmin(true);
@@ -136,7 +185,7 @@ function App() {
   //////////////////////////////////////////////////
   // LOADING
   //////////////////////////////////////////////////
-  if (loading) return null;
+  if (loading) return <LoadingScreen />;
 
   //////////////////////////////////////////////////
   // UI
@@ -145,50 +194,57 @@ function App() {
     <AppGuard user={isAdmin ? { role: "admin" } : null}>
       <PopupNotification />
       <RouteLogger />
-      <Navbar />
+
+      <TopBar />
+
       <NotificationPopup />
       <IosInstallPopup />
 
-      <Routes>
-        {/* PUBLIC ROUTES */}
-        <Route path="/" element={<Home />} />
-        <Route path="/sermons" element={<Sermons />} />
-        <Route path="/homilies" element={<Homilys />} />
-        <Route path="/sundayschool" element={<SundaySchool />} />
-        <Route path="/feedback" element={<Feedback />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/signup" element={<SignUp />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/admin-access" element={<AdminAccess />} />
-        <Route path="*" element={<NotFound />} />
-<Route path="/your-listens" element={<YourListens />} />
-<Route path="/saved" element={<Saved />} />
-<Route path="/stats" element={<Stats />} />
-<Route path="/player" element={<Player />} />
-            <Route path="suggest" element={<SuggestFeature />} />
+      <div style={{ paddingBottom: "80px" }}>
+        <Routes>
+          {/* PUBLIC */}
+          <Route path="/" element={<Home />} />
+          <Route path="/sermons" element={<Sermons />} />
+          <Route path="/sundayschool" element={<SundaySchool />} />
+          <Route path="/feedback" element={<Feedback />} />
+          <Route path="/about" element={<AudioAppLanding />} />
+          <Route path="/signup" element={<SignUp />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/admin-access" element={<AdminAccess />} />
+          <Route path="/your-listens" element={<YourListens />} />
+          <Route path="/saved" element={<Saved />} />
+          <Route path="/stats" element={<Stats />} />
+          <Route path="/player" element={<Player />} />
+          <Route path="/suggest" element={<SuggestFeature />} />
+          <Route path="/audio-app" element={<AudioAppLanding />} />
+          <Route path="/contact" element={<Contact />} />
 
-        {/* ADMIN ROUTES */}
-        <Route
-          path="/admin/*"
-          element={<AdminGate user={isAdmin ? user : null} />}
-        >
-          <Route element={<AdminLayout />}>
-            <Route index element={<Navigate to="dashboard" />} />
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="content" element={<AdminContentManager />} />
-            <Route path="upload" element={<UploadAudio />} />
-            <Route path="users" element={<Users />} />
-            <Route path="analytics" element={<Analytics />} />
-            <Route path="notifications" element={<AdminNotifications />} />
-            <Route path="settings" element={<AdminSettings />} />
-            <Route path="logs" element={<Logs />} />
-            <Route path="suggestions" element={<AdminSuggestions />} />
-            <Route path="notices" element={<AdminNotices />} />
+          {/* ADMIN */}
+          <Route
+            path="/admin/*"
+            element={<AdminGate user={isAdmin ? user : null} />}
+          >
+            <Route element={<AdminLayout />}>
+              <Route index element={<Navigate to="dashboard" />} />
+              <Route path="dashboard" element={<Dashboard />} />
+              <Route path="content" element={<AdminContentManager />} />
+              <Route path="upload" element={<UploadAudio />} />
+              <Route path="users" element={<Users />} />
+              <Route path="analytics" element={<Analytics />} />
+              <Route path="notifications" element={<AdminNotifications />} />
+              <Route path="settings" element={<AdminSettings />} />
+              <Route path="logs" element={<Logs />} />
+              <Route path="suggestions" element={<AdminSuggestions />} />
+              <Route path="notices" element={<AdminNotices />} />
+            </Route>
           </Route>
-        </Route>
-      </Routes>
-      <MiniPlayer />
+        </Routes>
+      </div>
 
+      <BottomBar />
+
+      {/* MINI PLAYER */}
+      {location.pathname !== "/player" && <MiniPlayer />}
     </AppGuard>
   );
 }

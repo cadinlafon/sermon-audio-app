@@ -4,127 +4,68 @@ import {
   collection,
   getDocs,
   addDoc,
-  setDoc,
-  doc,
-  getDoc,
   serverTimestamp,
   query,
   where,
-  orderBy,
 } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
-import { logEvent } from "../utils/logEvent";
-import { trackListenTime } from "../utils/listenTracker";
-import { toggleSaveSermon } from "../utils/saveSermon";
 import { useAudioPlayer } from "../context/AudioPlayerContext";
 
 export default function Sermons() {
   const [sermons, setSermons] = useState([]);
   const [user, setUser] = useState(null);
-  const [savedMap, setSavedMap] = useState({});
 
   const [search, setSearch] = useState("");
   const [sortOrder, setSortOrder] = useState("desc");
   const [speakerFilter, setSpeakerFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
 
   const { playSermon } = useAudioPlayer();
 
-  //////////////////////////////////////////////////
-  // AUTH
-  //////////////////////////////////////////////////
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, setUser);
     return () => unsubscribe();
   }, []);
 
-  //////////////////////////////////////////////////
-  // LOAD SAVED
-  //////////////////////////////////////////////////
   useEffect(() => {
-    if (!user) return;
-
-    async function loadSaved() {
-      const q = query(
-        collection(db, "saved"),
-        where("userId", "==", user.uid)
-      );
-
-      const snap = await getDocs(q);
-      const map = {};
-
-      snap.docs.forEach((d) => {
-        map[d.data().sermonId] = true;
-      });
-
-      setSavedMap(map);
-    }
-
-    loadSaved();
-  }, [user]);
-
-  //////////////////////////////////////////////////
-  // FETCH SERMONS
-  //////////////////////////////////////////////////
-  useEffect(() => {
-    async function fetchSermons() {
+    async function fetchAudio() {
       const q = query(
         collection(db, "audio"),
-        where("type", "==", "sermon"),
-        orderBy("createdAt", sortOrder)
+        where("type", "in", ["sermon", "homily"])
       );
 
       const snapshot = await getDocs(q);
 
-      setSermons(
-        snapshot.docs.map((docItem) => ({
-          id: docItem.id,
-          ...docItem.data(),
-        }))
-      );
+      const data = snapshot.docs.map((docItem) => ({
+        id: docItem.id,
+        ...docItem.data(),
+      }));
+
+      // Oldest → newest base order
+      data.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+      setSermons(data);
     }
 
-    fetchSermons();
-  }, [sortOrder]);
+    fetchAudio();
+  }, []);
 
-  //////////////////////////////////////////////////
-  // SPEAKERS
-  //////////////////////////////////////////////////
   const speakers = [
     ...new Set(sermons.map((s) => s.speaker).filter(Boolean)),
   ];
 
-  //////////////////////////////////////////////////
-  // PLAY (NOW GLOBAL PLAYER)
-  //////////////////////////////////////////////////
   const handlePlay = async (sermon) => {
-    if (!sermon) return;
+    playSermon(sermon);
 
-    playSermon(sermon); // 🔥 global player
+    if (!user) return;
 
-    const cleanData = {
-      userId: user?.uid || null,
+    await addDoc(collection(db, "appUsage"), {
       sermonId: sermon.id,
-      title: sermon.title || "Untitled",
-      speaker: sermon.speaker || "Unknown",
-    };
-
-    try {
-      await trackListenTime(cleanData);
-
-      await addDoc(collection(db, "appUsage"), {
-        ...cleanData,
-        createdAt: serverTimestamp(),
-      });
-
-      await logEvent("sermon_play", cleanData);
-    } catch (err) {
-      console.error("Play tracking error:", err);
-    }
+      userId: user.uid,
+      createdAt: serverTimestamp(),
+    });
   };
 
-  //////////////////////////////////////////////////
-  // FILTER
-  //////////////////////////////////////////////////
   const filtered = sermons.filter((sermon) => {
     const matchesSearch = sermon.title
       ?.toLowerCase()
@@ -133,27 +74,32 @@ export default function Sermons() {
     const matchesSpeaker =
       speakerFilter === "all" || sermon.speaker === speakerFilter;
 
-    return matchesSearch && matchesSpeaker;
+    const matchesType =
+      typeFilter === "all" || sermon.type === typeFilter;
+
+    return matchesSearch && matchesSpeaker && matchesType;
   });
 
-  //////////////////////////////////////////////////
-  // UI
-  //////////////////////////////////////////////////
-  return (
-    <div style={{ padding: "30px", maxWidth: "900px", margin: "0 auto" }}>
-      <h1 style={{ textAlign: "center", marginBottom: "25px" }}>
-        Sermons
-      </h1>
+  // NEWEST FIRST by default
+  const displayList =
+    sortOrder === "desc"
+      ? [...filtered].reverse()
+      : filtered;
 
-      {/* CONTROLS */}
+  return (
+    <div style={page}>
+      <h1 style={pageTitle}>Sermons &amp; Homilies</h1>
+
       <div style={controls}>
         <button
           onClick={() =>
             setSortOrder(sortOrder === "desc" ? "asc" : "desc")
           }
-          style={buttonStyle}
+          style={pillButton}
         >
-          {sortOrder === "desc" ? "Newest" : "Oldest"}
+          {sortOrder === "desc"
+            ? "Newest first"
+            : "Oldest first"}
         </button>
 
         <input
@@ -164,119 +110,164 @@ export default function Sermons() {
         />
 
         <select
+          value={typeFilter}
+          onChange={(e) => setTypeFilter(e.target.value)}
+          style={inputStyle}
+        >
+          <option value="all">All types</option>
+          <option value="sermon">Sermons</option>
+          <option value="homily">Homilies</option>
+        </select>
+
+        <select
           value={speakerFilter}
           onChange={(e) => setSpeakerFilter(e.target.value)}
           style={inputStyle}
         >
-          <option value="all">All Speakers</option>
+          <option value="all">All speakers</option>
+
           {speakers.map((s) => (
             <option key={s}>{s}</option>
           ))}
         </select>
       </div>
 
-      {/* CARDS */}
-      {filtered.map((sermon) => (
-        <div key={sermon.id} style={cardStyle}>
-          <div>
-            <h3 style={titleStyle}>{sermon.title}</h3>
-            <p style={speakerStyle}>{sermon.speaker}</p>
+      {displayList.length === 0 && (
+        <p style={emptyText}>
+          Nothing found — try adjusting your filters.
+        </p>
+      )}
 
-            {/* 🔥 PLAY BUTTON (REPLACES AUDIO) */}
-            <button
-              onClick={() => handlePlay(sermon)}
-              style={playButton}
-            >
-              ▶ Play
-            </button>
-          </div>
+      {displayList.map((sermon) => (
+        <div key={sermon.id} style={card}>
+          <span style={tagStyle(sermon.type)}>
+            {sermon.type === "homily"
+              ? "Homily"
+              : "Sermon"}
+          </span>
 
-          {/* ⭐ SAVE */}
-          {user && (
-            <button
-              onClick={async () => {
-                const result = await toggleSaveSermon(user.uid, sermon);
-                setSavedMap((prev) => ({
-                  ...prev,
-                  [sermon.id]: result,
-                }));
-              }}
-              style={{
-                position: "absolute",
-                top: "15px",
-                right: "15px",
-                fontSize: "22px",
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                color: savedMap[sermon.id] ? "gold" : "#ccc",
-              }}
-            >
-              ★
-            </button>
-          )}
+          <h3 style={titleStyle}>{sermon.title}</h3>
+
+          <p style={speakerStyle}>{sermon.speaker}</p>
+
+          <button
+            onClick={() => handlePlay(sermon)}
+            style={playButton}
+          >
+            <span style={{ fontSize: "11px" }}>▶</span>
+            Play
+          </button>
         </div>
       ))}
     </div>
   );
 }
 
-//////////////////////////////////////////////////
-// STYLES
-//////////////////////////////////////////////////
+const page = {
+  padding: "32px 20px 60px",
+  maxWidth: "860px",
+  margin: "0 auto",
+  background: "#fdf8f3",
+  minHeight: "100vh",
+  fontFamily: "'Georgia', serif",
+};
+
+const pageTitle = {
+  textAlign: "center",
+  marginBottom: "28px",
+  fontSize: "28px",
+  fontWeight: "normal",
+  color: "#3d2200",
+};
 
 const controls = {
   display: "flex",
-  gap: "12px",
-  marginBottom: "30px",
+  gap: "10px",
+  marginBottom: "28px",
   flexWrap: "wrap",
   justifyContent: "center",
 };
 
-const cardStyle = {
-  position: "relative",
-  background: "#fff",
-  borderRadius: "16px",
-  padding: "20px",
-  marginBottom: "20px",
-  boxShadow: "0 6px 18px rgba(0,0,0,0.08)",
-  border: "1px solid #f1f1f1",
-};
-
-const titleStyle = {
-  marginBottom: "6px",
-  fontSize: "17px",
-};
-
-const speakerStyle = {
-  color: "#666",
-  fontSize: "13px",
-  marginBottom: "14px",
-};
-
-const playButton = {
-  padding: "8px 14px",
-  borderRadius: "8px",
-  border: "none",
-  background: "#111",
-  color: "#fff",
-  cursor: "pointer",
-  fontSize: "13px",
-};
-
-const buttonStyle = {
-  padding: "10px 16px",
+const pillButton = {
+  padding: "9px 18px",
   borderRadius: "999px",
-  border: "none",
-  background: "#111",
-  color: "#fff",
+  border: "1px solid #c8922a",
+  background: "transparent",
+  color: "#7a4f10",
   cursor: "pointer",
   fontSize: "13px",
+  fontFamily: "sans-serif",
 };
 
 const inputStyle = {
-  padding: "10px 14px",
+  padding: "9px 16px",
   borderRadius: "999px",
-  border: "1px solid #ddd",
+  border: "1px solid #eddfc8",
   fontSize: "13px",
+  fontFamily: "sans-serif",
+  background: "#fffdf9",
+  color: "#3d2200",
+  outline: "none",
+};
+
+const card = {
+  position: "relative",
+  background: "#fffdf9",
+  borderRadius: "18px",
+  padding: "22px 22px 18px",
+  marginBottom: "16px",
+  border: "1px solid #eddfc8",
+  boxShadow: "0 2px 12px rgba(160,100,40,0.07)",
+};
+
+const tagStyle = (type) => ({
+  display: "inline-block",
+  fontSize: "11px",
+  padding: "3px 10px",
+  borderRadius: "999px",
+  background:
+    type === "homily" ? "#e8f0fe" : "#f6e4b0",
+  color:
+    type === "homily" ? "#2a5ab5" : "#7a5a10",
+  fontFamily: "sans-serif",
+  marginBottom: "10px",
+  letterSpacing: "0.04em",
+});
+
+const titleStyle = {
+  marginBottom: "5px",
+  fontSize: "17px",
+  fontWeight: "normal",
+  color: "#3d2200",
+};
+
+const speakerStyle = {
+  color: "#9b7040",
+  fontSize: "13px",
+  marginBottom: "14px",
+  fontFamily: "sans-serif",
+};
+
+const playButton = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: "6px",
+  padding: "8px 18px",
+  borderRadius: "999px",
+  border: "none",
+  background:
+    "linear-gradient(135deg, #c97c2e 0%, #a85e18 100%)",
+  color: "#fff8ee",
+  cursor: "pointer",
+  fontSize: "13px",
+  fontFamily: "sans-serif",
+  boxShadow: "0 3px 10px rgba(160,80,20,0.25)",
+};
+
+const emptyText = {
+  textAlign: "center",
+  color: "#b08050",
+  fontStyle: "italic",
+  fontFamily: "sans-serif",
+  padding: "30px 0",
 };

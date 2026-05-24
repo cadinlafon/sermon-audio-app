@@ -1,158 +1,189 @@
 import { useEffect, useState } from "react";
 import {
-collection,
-query,
-orderBy,
-limit,
-onSnapshot,
-getDocs
+  collection,
+  onSnapshot,
+  getDocs
 } from "firebase/firestore";
 
 import { db } from "../../firebase";
 
 export default function Logs() {
+  const [sessions, setSessions] = useState({});
+  const [userMap, setUserMap] = useState({});
 
-const [logs, setLogs] = useState([]);
-const [userMap, setUserMap] = useState({});
+  //////////////////////////////////////////////////
+  // LOAD USERS (UID → NAME)
+  //////////////////////////////////////////////////
+  useEffect(() => {
+    const fetchUsers = async () => {
+      const usersSnap = await getDocs(collection(db, "users"));
 
-//////////////////////////////////////////////////
-// LOAD USERS (UID → NAME MAP)
-//////////////////////////////////////////////////
+      const map = {};
 
-useEffect(() => {
+      usersSnap.docs.forEach((doc) => {
+        const data = doc.data();
 
-const fetchUsers = async () => {
+        map[doc.id] =
+          data.name ||
+          data.fullName ||
+          data.email ||
+          doc.id;
+      });
 
-const usersSnap = await getDocs(collection(db,"users"));
+      setUserMap(map);
+    };
 
-const map = {};
+    fetchUsers();
+  }, []);
 
-usersSnap.docs.forEach(doc => {
+  //////////////////////////////////////////////////
+  // LOAD + GROUP LOGS INTO SESSIONS
+  //////////////////////////////////////////////////
+  useEffect(() => {
+    const unsubscribe = onSnapshot(
+      collection(db, "logs"),
+      (snapshot) => {
+        const grouped = {};
 
-const data = doc.data();
+        snapshot.docs.forEach((doc) => {
+          const data = doc.data();
 
-map[doc.id] =
-data.name ||
-data.fullName ||
-data.email ||
-doc.id;
+          const sessionId = data.sessionId || "unknown";
 
-});
+          if (!grouped[sessionId]) {
+            grouped[sessionId] = [];
+          }
 
-setUserMap(map);
+          grouped[sessionId].push({
+            id: doc.id,
+            ...data,
+          });
+        });
 
+        // sort each session by time
+        Object.keys(grouped).forEach((id) => {
+          grouped[id].sort((a, b) => {
+            const ta = a.createdAt?.seconds || 0;
+            const tb = b.createdAt?.seconds || 0;
+            return ta - tb;
+          });
+        });
+
+        setSessions(grouped);
+      }
+    );
+
+    return () => unsubscribe();
+  }, []);
+
+  //////////////////////////////////////////////////
+  // FORMAT TIME
+  //////////////////////////////////////////////////
+  const formatTime = (timestamp) => {
+    if (!timestamp?.seconds) return "";
+
+    return new Date(timestamp.seconds * 1000).toLocaleString();
+  };
+
+  //////////////////////////////////////////////////
+  // USER NAME
+  //////////////////////////////////////////////////
+  const getUserName = (event) => {
+  if (event.fullName) return event.fullName;
+
+  if (event.userId && userMap[event.userId]) {
+    return userMap[event.userId];
+  }
+
+  if (event.email) return event.email;
+
+  return "Guest";
 };
 
-fetchUsers();
+  //////////////////////////////////////////////////
+  // CALCULATE SESSION DATA
+  //////////////////////////////////////////////////
+  const getSessionInfo = (events) => {
+    const start = events.find((e) => e.event === "session_start");
+    const end = events.find((e) => e.event === "session_end");
 
-},[]);
+    const duration = end?.duration
+      ? `${end.duration}s`
+      : "Active";
 
-//////////////////////////////////////////////////
-// LOAD LOGS
-//////////////////////////////////////////////////
+    const user = getUserName(events[0]);
 
-useEffect(() => {
+    return {
+      start,
+      end,
+      duration,
+      user,
+      count: events.length,
+    };
+  };
 
-const q = query(
-collection(db, "logs"),
-orderBy("timestamp", "desc"),
-limit(100)
-);
+  //////////////////////////////////////////////////
+  // UI
+  //////////////////////////////////////////////////
+  return (
+    <div style={container}>
+      <h2 style={title}>User Sessions</h2>
 
-const unsubscribe = onSnapshot(q, (snapshot) => {
+      {Object.entries(sessions).map(([sessionId, events]) => {
+        const info = getSessionInfo(events);
 
-const logList = snapshot.docs.map(doc => ({
-id: doc.id,
-...doc.data()
-}));
+        return (
+          <div key={sessionId} style={card}>
+            <div style={cardHeader}>
+              <div>
+                <strong>User:</strong> {info.user}
+              </div>
 
-setLogs(logList);
+              <div>
+                <strong>Events:</strong> {info.count}
+              </div>
 
-});
+              <div>
+                <strong>Duration:</strong> {info.duration}
+              </div>
 
-return () => unsubscribe();
+              <div>
+                <strong>Start:</strong>{" "}
+                {formatTime(info.start?.createdAt)}
+              </div>
+            </div>
 
-}, []);
+            <details>
+              <summary style={summary}>
+                View Session Activity
+              </summary>
 
-//////////////////////////////////////////////////
-// FORMAT TIME
-//////////////////////////////////////////////////
+              <div style={eventsContainer}>
+                {events.map((e) => (
+                  <div key={e.id} style={eventRow}>
+                    <div style={time}>
+                      {formatTime(e.createdAt)}
+                    </div>
 
-function formatTime(timestamp) {
+                    <div style={eventType}>
+                      {e.event}
+                    </div>
 
-if (!timestamp) return "";
-
-const date = new Date(timestamp.seconds * 1000);
-
-return date.toLocaleString();
-
-}
-
-//////////////////////////////////////////////////
-// GET USER NAME
-//////////////////////////////////////////////////
-
-function getUserName(log){
-
-if(log.email) return log.email;
-
-if(log.userId && userMap[log.userId]){
-return userMap[log.userId];
-}
-
-return "Guest";
-
-}
-
-//////////////////////////////////////////////////
-// UI
-//////////////////////////////////////////////////
-
-return (
-
-<div style={container}>
-
-<h2 style={title}>Activity Logs</h2>
-
-<div style={table}>
-
-<div style={headerRow}>
-<div style={cell}>Time</div>
-<div style={cell}>Event</div>
-<div style={cell}>User</div>
-<div style={cell}>Details</div>
-</div>
-
-{logs.map(log => (
-
-<div key={log.id} style={row}>
-
-<div style={cell}>
-{formatTime(log.timestamp)}
-</div>
-
-<div style={cell}>
-{log.type || log.event}
-</div>
-
-<div style={wrapCell}>
-{getUserName(log)}
-</div>
-
-<div style={wrapCell}>
-{log.page || log.message || log.mode || "-"}
-</div>
-
-</div>
-
-))}
-
-</div>
-
-</div>
-
-);
-
+                    <div style={details}>
+                      {e.page ||
+                        e.message ||
+                        e.mode ||
+                        "-"}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </details>
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 //////////////////////////////////////////////////
@@ -160,42 +191,60 @@ return (
 //////////////////////////////////////////////////
 
 const container = {
-padding: "30px"
+  padding: "30px",
+  maxWidth: "900px",
+  margin: "0 auto",
 };
 
 const title = {
-marginBottom: "20px"
+  marginBottom: "25px",
 };
 
-const table = {
-display: "flex",
-flexDirection: "column",
-border: "1px solid #ddd"
+const card = {
+  background: "#fff",
+  borderRadius: "12px",
+  padding: "18px",
+  marginBottom: "20px",
+  boxShadow: "0 6px 18px rgba(0,0,0,0.08)",
+  border: "1px solid #eee",
 };
 
-const headerRow = {
-display: "grid",
-gridTemplateColumns: "200px 200px 220px 1fr",
-background: "#f5f5f5",
-fontWeight: "600",
-borderBottom: "1px solid #ddd"
+const cardHeader = {
+  display: "grid",
+  gridTemplateColumns: "repeat(4, 1fr)",
+  gap: "10px",
+  marginBottom: "10px",
+  fontSize: "13px",
 };
 
-const row = {
-display: "grid",
-gridTemplateColumns: "200px 200px 220px 1fr",
-borderBottom: "1px solid #eee"
+const summary = {
+  cursor: "pointer",
+  fontWeight: "600",
+  marginTop: "10px",
 };
 
-const cell = {
-padding: "10px",
-fontSize: "13px"
+const eventsContainer = {
+  marginTop: "12px",
+  borderTop: "1px solid #eee",
 };
 
-const wrapCell = {
-padding: "10px",
-fontSize: "13px",
-wordBreak: "break-all",
-overflowWrap: "anywhere",
-maxWidth: "220px"
+const eventRow = {
+  display: "grid",
+  gridTemplateColumns: "180px 180px 1fr",
+  padding: "8px 0",
+  borderBottom: "1px solid #f1f1f1",
+  fontSize: "13px",
+};
+
+const time = {
+  color: "#666",
+};
+
+const eventType = {
+  fontWeight: "500",
+};
+
+const details = {
+  color: "#444",
+  wordBreak: "break-word",
 };

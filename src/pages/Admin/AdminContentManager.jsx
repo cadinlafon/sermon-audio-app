@@ -1,368 +1,212 @@
 import { useEffect, useState } from "react";
-import { db, storage } from "../../firebase";
+import { db } from "../../firebase";
 
 import {
-collection,
-getDocs,
-deleteDoc,
-doc,
-updateDoc
+  collection,
+  getDocs,
+  updateDoc,
+  doc
 } from "firebase/firestore";
 
-import {
-ref,
-deleteObject,
-uploadBytes,
-getDownloadURL
-} from "firebase/storage";
-
 export default function AdminContentManager() {
+  const [audioList, setAudioList] = useState([]);
+  const [search, setSearch] = useState("");
+  const [audioGroup, setAudioGroup] = useState("sermons");
+  const [sortOrder, setSortOrder] = useState("desc");
 
-const [audioList, setAudioList] = useState([]);
-const [editing, setEditing] = useState(null);
+  //////////////////////////////////////////////////
+  // LOAD AUDIO
+  //////////////////////////////////////////////////
+  const loadAudio = async () => {
+    const snapshot = await getDocs(collection(db, "audio"));
 
-const [editTitle, setEditTitle] = useState("");
-const [editSpeaker, setEditSpeaker] = useState("");
-const [editDate, setEditDate] = useState("");
-const [newFile, setNewFile] = useState(null);
+    const data = snapshot.docs.map((docSnap) => ({
+      id: docSnap.id,
+      ...docSnap.data()
+    }));
 
-const [search, setSearch] = useState("");
-const [audioType, setAudioType] = useState("sermon"); // NEW
+    setAudioList(data);
+  };
 
-const loadAudio = async () => {
+  useEffect(() => {
+    loadAudio();
+  }, []);
 
-const snapshot = await getDocs(collection(db, "audio"));
+  //////////////////////////////////////////////////
+  // FILTER + SORT (BY ORDER FIELD)
+  //////////////////////////////////////////////////
+  const filtered = audioList
+    .filter((a) => {
+      if (audioGroup === "sermons") {
+        return a.type === "sermon" || a.type === "homily";
+      }
+      return a.type === "sundayschool";
+    })
+    .filter((a) =>
+      a.title?.toLowerCase().includes(search.toLowerCase())
+    )
+    .sort((a, b) => {
+      const orderA = a.order ?? 0;
+      const orderB = b.order ?? 0;
 
-const data = snapshot.docs.map((docSnap) => ({
-id: docSnap.id,
-...docSnap.data()
- }));
+      return sortOrder === "desc"
+        ? orderB - orderA
+        : orderA - orderB;
+    });
 
-setAudioList(data);
-};
+  //////////////////////////////////////////////////
+  // 🔥 MOVE ITEM
+  //////////////////////////////////////////////////
+  const moveItem = async (index, direction) => {
+    const newList = [...filtered];
 
-useEffect(() => {
-loadAudio();
-}, []);
+    const targetIndex = direction === "up"
+      ? index - 1
+      : index + 1;
 
-const getStoragePathFromUrl = (url) => {
+    if (targetIndex < 0 || targetIndex >= newList.length) return;
 
-if (!url) return null;
+    const current = newList[index];
+    const target = newList[targetIndex];
 
-const start = url.indexOf("/o/") + 3;
-const end = url.indexOf("?");
+    // swap order values
+    const currentOrder = current.order ?? 0;
+    const targetOrder = target.order ?? 0;
 
-const encodedPath = url.substring(start, end);
+    await updateDoc(doc(db, "audio", current.id), {
+      order: targetOrder
+    });
 
-return decodeURIComponent(encodedPath);
-};
+    await updateDoc(doc(db, "audio", target.id), {
+      order: currentOrder
+    });
 
-const startEdit = (audio) => {
+    loadAudio();
+  };
 
-setEditing(audio.id);
+  //////////////////////////////////////////////////
+  // UI
+  //////////////////////////////////////////////////
+  return (
+    <div style={pageStyle}>
+      <h1>Content Manager</h1>
 
-setEditTitle(audio.title || "");
-setEditSpeaker(audio.speaker || "");
+      {/* TYPE */}
+      <select
+        value={audioGroup}
+        onChange={(e) => setAudioGroup(e.target.value)}
+        style={select}
+      >
+        <option value="sermons">Sermons & Homilies</option>
+        <option value="sunday">Sunday School</option>
+      </select>
 
-if (audio.createdAt?.toDate) {
-const date = audio.createdAt.toDate().toISOString().split("T")[0];
-setEditDate(date);
+      {/* SEARCH */}
+      <input
+        placeholder="Search..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        style={input}
+      />
+
+      {/* SORT TOGGLE */}
+      <button
+        onClick={() =>
+          setSortOrder(sortOrder === "desc" ? "asc" : "desc")
+        }
+        style={button}
+      >
+        {sortOrder === "desc" ? "Newest First" : "Oldest First"}
+      </button>
+
+      {/* LIST */}
+      {filtered.map((audio, index) => (
+        <div key={audio.id} style={card}>
+          <div>
+            <strong>{audio.title}</strong>
+            <div style={{ fontSize: "13px", color: "#666" }}>
+              {audio.speaker}
+            </div>
+          </div>
+
+          {/* 🔥 ARROWS */}
+          <div style={arrowGroup}>
+            <button
+              onClick={() => moveItem(index, "up")}
+              style={arrowBtn}
+            >
+              ⬆️
+            </button>
+
+            <button
+              onClick={() => moveItem(index, "down")}
+              style={arrowBtn}
+            >
+              ⬇️
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }
 
-setNewFile(null);
-};
-
-const saveEdit = async (audio) => {
-
-try {
-
-let updatedData = {
-title: editTitle,
-speaker: editSpeaker
-};
-
-if (editDate) {
-updatedData.createdAt = new Date(editDate);
-}
-
-if (newFile) {
-
-const oldPath = getStoragePathFromUrl(audio.audioURL);
-
-if (oldPath) {
-const oldRef = ref(storage, oldPath);
-await deleteObject(oldRef);
-}
-
-const newPath = `audio/${Date.now()}_${newFile.name}`;
-
-const newRef = ref(storage, newPath);
-
-await uploadBytes(newRef, newFile);
-
-const url = await getDownloadURL(newRef);
-
-updatedData.audioURL = url;
-}
-
-await updateDoc(doc(db, "audio", audio.id), updatedData);
-
-setEditing(null);
-loadAudio();
-
-} catch (error) {
-console.error("Edit failed:", error);
-}
-};
-
-const deleteAudio = async (audio) => {
-
-try {
-
-const path = getStoragePathFromUrl(audio.audioURL);
-
-if (path) {
-const storageRef = ref(storage, path);
-await deleteObject(storageRef);
-}
-
-await deleteDoc(doc(db, "audio", audio.id));
-
-setAudioList(prev => prev.filter(a => a.id !== audio.id));
-
-} catch (error) {
-console.error("Delete failed:", error);
-}
-};
-
-/* FILTER AUDIO */
-
-const filtered = audioList
-.filter(a => a.type === audioType)
-.filter(a =>
-a.title?.toLowerCase().includes(search.toLowerCase())
-);
-
-return (
-
-<div style={pageStyle}>
-
-<h1 style={{ marginBottom: "20px" }}>Content Manager</h1>
-
-{/* AUDIO TYPE DROPDOWN */}
-
-<select
-value={audioType}
-onChange={(e) => setAudioType(e.target.value)}
-style={typeSelect}
->
-<option value="sermon">Sermons</option>
-<option value="homily">Homilys</option>
-<option value="sundayschool">Sunday School</option>
-</select>
-
-{/* SEARCH */}
-
-<input
-placeholder="Search..."
-value={search}
-onChange={(e) => setSearch(e.target.value)}
-style={searchInput}
-/>
-
-{filtered.map((audio) => {
-
-const fileName = audio.audioURL
-?.split("/")
-.pop()
-.split("?")[0];
-
-return (
-
-<div key={audio.id} style={cardStyle}>
-
-{editing === audio.id ? (
-
-<div style={editGrid}>
-
-<input
-value={editTitle}
-onChange={(e) => setEditTitle(e.target.value)}
-placeholder="Title"
-style={inputStyle}
-/>
-
-<input
-value={editSpeaker}
-onChange={(e) => setEditSpeaker(e.target.value)}
-placeholder="Speaker"
-style={inputStyle}
-/>
-
-<input
-type="date"
-value={editDate}
-onChange={(e) => setEditDate(e.target.value)}
-style={inputStyle}
-/>
-
-<div style={{ fontSize: "13px" }}>
-Current File: {fileName}
-</div>
-
-<audio controls src={audio.audioURL} />
-
-<input
-type="file"
-accept="audio/*"
-onChange={(e) => setNewFile(e.target.files[0])}
-/>
-
-<div style={{ display: "flex", gap: "10px" }}>
-<button onClick={() => saveEdit(audio)} style={saveBtn}>
-Save
-</button>
-
-<button onClick={() => setEditing(null)} style={cancelBtn}>
-Cancel
-</button>
-</div>
-
-</div>
-
-) : (
-
-<div style={rowStyle}>
-
-<div style={infoStyle}>
-<strong>{audio.title}</strong>
-<div style={{ fontSize: "13px", color: "#555" }}>
-{audio.speaker}
-</div>
-<div style={{ fontSize: "12px", color: "#888" }}>
-{fileName}
-</div>
-</div>
-
-<audio controls src={audio.audioURL} style={{ width: "250px" }} />
-
-<div style={buttonGroup}>
-
-<button
-onClick={() => startEdit(audio)}
-style={editBtn}
->
-Edit
-</button>
-
-<button
-onClick={() => deleteAudio(audio)}
-style={deleteBtn}
->
-Delete
-</button>
-
-</div>
-
-</div>
-
-)}
-
-</div>
-
-);
-})}
-
-</div>
-);
-}
+//////////////////////////////////////////////////
+// STYLES
+//////////////////////////////////////////////////
 
 const pageStyle = {
-padding: "40px",
-background: "#f3f4f6",
-minHeight: "100vh"
+  padding: "30px",
+  maxWidth: "800px",
+  margin: "0 auto"
 };
 
-const typeSelect = {
-padding: "10px",
-borderRadius: "6px",
-border: "1px solid #ccc",
-marginBottom: "15px"
+const select = {
+  padding: "10px",
+  marginBottom: "10px",
+  borderRadius: "6px"
 };
 
-const searchInput = {
-padding: "10px",
-width: "300px",
-marginBottom: "25px",
-borderRadius: "6px",
-border: "1px solid #ccc"
+const input = {
+  padding: "10px",
+  marginBottom: "10px",
+  display: "block",
+  width: "100%",
+  borderRadius: "6px",
+  border: "1px solid #ccc"
 };
 
-const cardStyle = {
-background: "white",
-padding: "15px",
-borderRadius: "10px",
-marginBottom: "15px",
-boxShadow: "0 2px 8px rgba(0,0,0,0.08)"
+const button = {
+  padding: "10px 16px",
+  marginBottom: "20px",
+  border: "none",
+  background: "#111",
+  color: "#fff",
+  borderRadius: "8px",
+  cursor: "pointer"
 };
 
-const rowStyle = {
-display: "flex",
-alignItems: "center",
-justifyContent: "space-between",
-gap: "20px"
+const card = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  background: "#fff",
+  padding: "16px",
+  marginBottom: "12px",
+  borderRadius: "12px",
+  boxShadow: "0 4px 12px rgba(0,0,0,0.06)"
 };
 
-const infoStyle = {
-minWidth: "220px"
+const arrowGroup = {
+  display: "flex",
+  gap: "8px"
 };
 
-const buttonGroup = {
-display: "flex",
-gap: "10px"
-};
-
-const editGrid = {
-display: "grid",
-gap: "10px"
-};
-
-const inputStyle = {
-padding: "8px",
-borderRadius: "6px",
-border: "1px solid #ccc"
-};
-
-const editBtn = {
-padding: "6px 12px",
-border: "none",
-background: "#2563eb",
-color: "white",
-borderRadius: "6px",
-cursor: "pointer"
-};
-
-const deleteBtn = {
-padding: "6px 12px",
-border: "none",
-background: "#dc2626",
-color: "white",
-borderRadius: "6px",
-cursor: "pointer"
-};
-
-const saveBtn = {
-padding: "6px 12px",
-border: "none",
-background: "#16a34a",
-color: "white",
-borderRadius: "6px"
-};
-
-const cancelBtn = {
-padding: "6px 12px",
-border: "none",
-background: "#6b7280",
-color: "white",
-borderRadius: "6px"
+const arrowBtn = {
+  background: "#f3f4f6",
+  border: "none",
+  padding: "8px 10px",
+  borderRadius: "8px",
+  cursor: "pointer",
+  fontSize: "16px"
 };

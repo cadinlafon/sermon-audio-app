@@ -56,7 +56,7 @@ export default function Home() {
 
     async function fetchData() {
       try {
-        // 🔥 Latest sermon
+        // Latest sermon
         const sermonQ = query(
           collection(db, "audio"),
           orderBy("createdAt", "desc"),
@@ -73,7 +73,7 @@ export default function Home() {
           });
         }
 
-        // 🔥 Notices
+        // Notices
         const noticeQ = query(
           collection(db, "notices"),
           orderBy("createdAt", "desc")
@@ -100,7 +100,7 @@ export default function Home() {
             return n.active !== false && notExpired && passesVisibility;
           });
 
-        // 🔥 pinned first
+        // Pinned first
         filtered.sort((a, b) => (b.pinned === true) - (a.pinned === true));
 
         setNotices(filtered);
@@ -121,39 +121,29 @@ export default function Home() {
   // UI
   //////////////////////////////////////////////////
   return (
-    <>
+    <div style={pageWrapper}>
+
       {/* HERO */}
-      <div
-        style={{
-          width: "100%",
-          height: "30vh",
-          backgroundImage: `url("/hero.jpg")`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
-      />
+      <div style={heroWrapper}>
+        <div style={heroImage} />
+        
+      </div>
 
-      <div style={{ padding: "40px", maxWidth: "800px", margin: "0 auto" }}>
+      <div style={contentArea}>
 
-        {/* 🔥 NOTICES */}
+        {/* NOTICES */}
         {notices.length > 0 && (
           <div style={card}>
-            <h2 style={{ marginBottom: "15px" }}>Notices</h2>
+            <div style={cardHeader}>
+              <span style={cardIcon}>📌</span>
+              <h2 style={cardTitle}>Notices</h2>
+            </div>
 
             {notices.map((n) => (
               <div key={n.id} style={noticeItem}>
-                <h4 style={{ marginBottom: "5px" }}>{n.title}</h4>
-
-                {/* ✅ FIX IS RIGHT HERE */}
-                <p
-                  style={{
-                    color: "#555",
-                    fontSize: "14px",
-                    whiteSpace: "pre-line",
-                  }}
-                >
-                  {n.details}
-                </p>
+                {n.pinned && <span style={pinnedBadge}>Pinned</span>}
+                <h4 style={noticeTitle}>{n.title}</h4>
+                <p style={noticeBody}>{n.details}</p>
 
                 {n.buttonEnabled && (
                   <button
@@ -166,7 +156,7 @@ export default function Home() {
                       }
                     }}
                   >
-                    {n.buttonText || "Learn More"}
+                    {n.buttonText || "Learn More"} →
                   </button>
                 )}
               </div>
@@ -174,20 +164,17 @@ export default function Home() {
           </div>
         )}
 
-        {/* 🔥 LATEST SERMON */}
+        {/* LATEST AUDIO */}
         <div style={card}>
-          <h2 style={{ marginBottom: "10px" }}>Latest Audio</h2>
+          <div style={cardHeader}>
+            <span style={cardIcon}>🎙️</span>
+            <h2 style={cardTitle}>Latest Audio</h2>
+          </div>
 
           {latestSermon ? (
-            <>
-              <h3 style={{ marginBottom: "10px" }}>
-                {latestSermon.title}
-              </h3>
-
-              <p style={{ color: "#666", marginBottom: "15px" }}>
-                {latestSermon.speaker}
-              </p>
-
+            <div style={sermonBlock}>
+              <h3 style={sermonTitle}>{latestSermon.title}</h3>
+              <p style={sermonSpeaker}>{latestSermon.speaker}</p>
               <button
                 onClick={() => {
                   localStorage.setItem(
@@ -198,31 +185,35 @@ export default function Home() {
                 }}
                 style={playButton}
               >
-                Play
+                <span style={playIcon}>▶</span> Play
               </button>
-            </>
+            </div>
           ) : (
-            <p style={{ color: "#777" }}>No sermons uploaded yet</p>
+            <p style={emptyText}>No audio uploaded yet — check back soon.</p>
           )}
         </div>
 
         {/* NAV */}
         <div style={navButtons}>
-          <button onClick={() => navigate("/sermons")} style={buttonStyle}>
-            Sermons
+          <button onClick={() => navigate("/sermons")} style={navButton}>
+            <span style={navButtonIcon}>🎧</span>
+            <span>Sermons</span>
+            <span style={navArrow}>→</span>
           </button>
 
-          <button onClick={() => navigate("/sundayschool")} style={buttonStyle}>
-            Sunday School
-          </button>
-
-          <button onClick={() => navigate("/homilies")} style={buttonStyle}>
-            Homilies
+          <button onClick={() => navigate("/sundayschool")} style={navButton}>
+            <span style={navButtonIcon}>📖</span>
+            <span>Sunday School</span>
+            <span style={navArrow}>→</span>
           </button>
         </div>
 
+        <div style={footerLink}>
+          <a href="/audio-app" style={footerAnchor}>Audio app info</a>
+        </div>
+
       </div>
-    </>
+    </div>
   );
 }
 
@@ -230,57 +221,238 @@ export default function Home() {
 // STYLES
 //////////////////////////////////////////////////
 
+const pageWrapper = {
+  background: "#fdf8f3",
+  minHeight: "100vh",
+  fontFamily: "'Georgia', serif",
+};
+
+const heroWrapper = {
+  position: "relative",
+  width: "100%",
+  height: "34vh",
+  minHeight: "200px",
+  overflow: "hidden",
+};
+
+const heroImage = {
+  position: "absolute",
+  inset: 0,
+  backgroundImage: `url("/hero.jpg")`,
+  backgroundSize: "cover",
+  backgroundPosition: "center",
+};
+
+const heroOverlay = {
+  position: "absolute",
+  inset: 0,
+  background: "linear-gradient(to top, rgba(60,35,10,0.72) 0%, rgba(60,35,10,0.18) 60%, transparent 100%)",
+  display: "flex",
+  flexDirection: "column",
+  justifyContent: "flex-end",
+  padding: "28px 32px",
+};
+
+const heroEyebrow = {
+  margin: "0 0 4px",
+  fontSize: "13px",
+  letterSpacing: "0.12em",
+  textTransform: "uppercase",
+  color: "rgba(255,235,200,0.8)",
+  fontFamily: "'Georgia', serif",
+};
+
+const heroTitle = {
+  margin: 0,
+  fontSize: "clamp(22px, 5vw, 34px)",
+  fontWeight: "normal",
+  color: "#fff8ee",
+  fontFamily: "'Georgia', serif",
+  lineHeight: 1.2,
+};
+
+const contentArea = {
+  padding: "32px 20px 60px",
+  maxWidth: "680px",
+  margin: "0 auto",
+};
+
 const card = {
-  backgroundColor: "#ffffff",
-  borderRadius: "12px",
-  padding: "25px",
-  marginBottom: "40px",
-  boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-  textAlign: "center",
+  backgroundColor: "#fffdf9",
+  borderRadius: "18px",
+  padding: "24px 24px 20px",
+  marginBottom: "24px",
+  border: "1px solid #eddfc8",
+  boxShadow: "0 2px 16px rgba(160,100,40,0.07)",
+};
+
+const cardHeader = {
+  display: "flex",
+  alignItems: "center",
+  gap: "10px",
+  marginBottom: "18px",
+  borderBottom: "1px solid #eddfc8",
+  paddingBottom: "14px",
+};
+
+const cardIcon = {
+  fontSize: "20px",
+  lineHeight: 1,
+};
+
+const cardTitle = {
+  margin: 0,
+  fontSize: "17px",
+  fontWeight: "normal",
+  color: "#5c3a1e",
+  fontFamily: "'Georgia', serif",
+  letterSpacing: "0.01em",
 };
 
 const noticeItem = {
-  background: "#fffbea",
-  border: "1px solid #facc15",
-  padding: "12px",
-  borderRadius: "8px",
+  background: "#fffbee",
+  border: "1px solid #f0d898",
+  padding: "14px 16px",
+  borderRadius: "12px",
   marginBottom: "10px",
-  textAlign: "left",
+};
+
+const pinnedBadge = {
+  display: "inline-block",
+  fontSize: "11px",
+  fontFamily: "sans-serif",
+  background: "#f6e4b0",
+  color: "#7a5a10",
+  borderRadius: "99px",
+  padding: "2px 8px",
+  marginBottom: "6px",
+  letterSpacing: "0.04em",
+};
+
+const noticeTitle = {
+  margin: "0 0 5px",
+  fontSize: "15px",
+  fontWeight: "bold",
+  color: "#3d2600",
+  fontFamily: "'Georgia', serif",
+};
+
+const noticeBody = {
+  margin: "0 0 4px",
+  fontSize: "14px",
+  color: "#6b4c20",
+  lineHeight: 1.6,
+  whiteSpace: "pre-line",
+  fontFamily: "sans-serif",
 };
 
 const noticeButton = {
   marginTop: "10px",
-  padding: "8px 14px",
-  borderRadius: "6px",
-  border: "none",
-  background: "#111",
-  color: "#fff",
+  padding: "7px 14px",
+  borderRadius: "8px",
+  border: "1px solid #c8922a",
+  background: "transparent",
+  color: "#8a5f10",
   cursor: "pointer",
   fontSize: "13px",
+  fontFamily: "sans-serif",
+};
+
+const sermonBlock = {
+  textAlign: "center",
+  padding: "10px 0 6px",
+};
+
+const sermonTitle = {
+  margin: "0 0 6px",
+  fontSize: "20px",
+  fontWeight: "normal",
+  color: "#3d2200",
+  fontFamily: "'Georgia', serif",
+  lineHeight: 1.3,
+};
+
+const sermonSpeaker = {
+  margin: "0 0 20px",
+  fontSize: "14px",
+  color: "#9b7040",
+  fontFamily: "sans-serif",
+  letterSpacing: "0.04em",
 };
 
 const playButton = {
-  padding: "10px 20px",
+  display: "inline-flex",
+  alignItems: "center",
+  gap: "8px",
+  padding: "12px 28px",
   borderRadius: "999px",
   border: "none",
-  background: "#111",
-  color: "#fff",
+  background: "linear-gradient(135deg, #c97c2e 0%, #a85e18 100%)",
+  color: "#fff8ee",
   cursor: "pointer",
+  fontSize: "15px",
+  fontFamily: "sans-serif",
+  letterSpacing: "0.03em",
+  boxShadow: "0 4px 14px rgba(160,80,20,0.3)",
+};
+
+const playIcon = {
+  fontSize: "12px",
+};
+
+const emptyText = {
+  color: "#b08050",
+  fontSize: "14px",
+  fontFamily: "sans-serif",
+  textAlign: "center",
+  padding: "12px 0",
+  fontStyle: "italic",
 };
 
 const navButtons = {
   display: "flex",
   flexDirection: "column",
-  gap: "15px",
-  marginBottom: "50px",
+  gap: "12px",
+  marginBottom: "8px",
 };
 
-const buttonStyle = {
-  padding: "15px",
+const navButton = {
+  display: "flex",
+  alignItems: "center",
+  gap: "12px",
+  width: "100%",
+  padding: "18px 20px",
   fontSize: "16px",
-  borderRadius: "8px",
-  border: "none",
-  backgroundColor: "#2c3e50",
-  color: "white",
+  borderRadius: "14px",
+  border: "1px solid #eddfc8",
+  backgroundColor: "#fffdf9",
+  color: "#3d2200",
   cursor: "pointer",
+  fontFamily: "'Georgia', serif",
+  boxShadow: "0 1px 6px rgba(160,100,40,0.06)",
+  textAlign: "left",
+};
+
+const navButtonIcon = {
+  fontSize: "20px",
+  lineHeight: 1,
+};
+
+const navArrow = {
+  marginLeft: "auto",
+  color: "#c08040",
+  fontSize: "18px",
+};
+
+const footerLink = {
+  textAlign: "center",
+  marginTop: "20px",
+};
+
+const footerAnchor = {
+  fontSize: "11px",
+  color: "#b08050",
+  opacity: 0.7,
+  textDecoration: "none",
+  fontFamily: "sans-serif",
 };

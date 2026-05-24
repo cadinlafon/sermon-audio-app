@@ -3,44 +3,71 @@ import { useEffect } from "react";
 export default function Feedback() {
   useEffect(() => {
     window.scrollTo(0, 0);
+
+    // Load Jotform embed script
+    const script = document.createElement("script");
+    script.src = "https://form.jotform.com/jsform/251326863283157";
+    script.type = "text/javascript";
+    script.async = true;
+
+    const formContainer = document.getElementById("jotform-container");
+
+    if (formContainer) {
+      formContainer.innerHTML = "";
+      formContainer.appendChild(script);
+    }
+
+    return () => {
+      if (formContainer) {
+        formContainer.innerHTML = "";
+      }
+    };
   }, []);
 
   return (
-    <div
-      style={{
-        padding: "40px",
-        maxWidth: "900px",
-        margin: "0 auto",
-        textAlign: "center",
-      }}
-    >
-      <h1 style={{ marginBottom: "10px" }}>Feedback</h1>
+    <div style={page}>
+      <h1 style={pageTitle}>Share Your Feedback</h1>
 
-      <p style={{ color: "#555", marginBottom: "30px" }}>
-        We'd love to hear from you. Please fill out the form below.
+      <p style={pageSubtitle}>
+        We'd love to hear what you think. Your feedback helps us improve.
       </p>
 
-      <div
-        style={{
-          background: "#ffffff",
-          borderRadius: "12px",
-          boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-          padding: "20px",
-        }}
-      >
-        <iframe
-          id="JotFormIFrame-251326863283157"
-          title="Feedback Form"
-          allow="geolocation; microphone; camera; fullscreen; payment"
-          src="https://form.jotform.com/251326863283157"
-          style={{
-            width: "100%",
-            height: "750px",
-            border: "none",
-            borderRadius: "8px",
-          }}
-        />
+      <div style={card}>
+        <div id="jotform-container" />
       </div>
     </div>
   );
 }
+
+const page = {
+  padding: "32px 20px 60px",
+  maxWidth: "860px",
+  margin: "0 auto",
+  background: "#fdf8f3",
+  minHeight: "100vh",
+  fontFamily: "'Georgia', serif",
+  textAlign: "center",
+};
+
+const pageTitle = {
+  fontSize: "28px",
+  fontWeight: "normal",
+  color: "#3d2200",
+  marginBottom: "8px",
+};
+
+const pageSubtitle = {
+  color: "#9b7040",
+  fontFamily: "sans-serif",
+  fontSize: "15px",
+  marginBottom: "28px",
+};
+
+const card = {
+  background: "#fffdf9",
+  borderRadius: "18px",
+  border: "1px solid #eddfc8",
+  boxShadow: "0 2px 14px rgba(160,100,40,0.07)",
+  padding: "16px",
+  overflow: "hidden",
+};

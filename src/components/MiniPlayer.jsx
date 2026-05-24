@@ -1,190 +1,163 @@
-import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAudioPlayer } from "../context/AudioPlayerContext";
+
+import back30 from "../assets/player/back30.png";
+import pauseIcon from "../assets/player/pause.png";
+import playIcon from "../assets/player/play.png";
 
 export default function MiniPlayer() {
   const { current, isPlaying, togglePlay, audioRef } = useAudioPlayer();
-
-  const [progress, setProgress] = useState(0);
-  const [duration, setDuration] = useState(0);
-
-  //////////////////////////////////////////////////
-  // SYNC AUDIO
-  //////////////////////////////////////////////////
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    const update = () => {
-      setProgress(audio.currentTime);
-      setDuration(audio.duration || 0);
-    };
-
-    audio.addEventListener("timeupdate", update);
-    audio.addEventListener("loadedmetadata", update);
-
-    return () => {
-      audio.removeEventListener("timeupdate", update);
-      audio.removeEventListener("loadedmetadata", update);
-    };
-  }, [audioRef, current]);
-
-  //////////////////////////////////////////////////
-  // SEEK
-  //////////////////////////////////////////////////
-  const handleSeek = (e) => {
-    const audio = audioRef.current;
-    const value = Number(e.target.value);
-
-    audio.currentTime = value;
-    setProgress(value);
-  };
-
-  //////////////////////////////////////////////////
-  // JUMP
-  //////////////////////////////////////////////////
-  const jump = (sec) => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    audio.currentTime = Math.max(
-      0,
-      Math.min(audio.duration, audio.currentTime + sec)
-    );
-  };
-
-  //////////////////////////////////////////////////
-  // FORMAT TIME
-  //////////////////////////////////////////////////
-  const format = (time) => {
-    if (!time) return "0:00";
-    const m = Math.floor(time / 60);
-    const s = Math.floor(time % 60);
-    return `${m}:${s.toString().padStart(2, "0")}`;
-  };
+  const navigate = useNavigate();
 
   if (!current) return null;
 
-  //////////////////////////////////////////////////
-  // UI
-  //////////////////////////////////////////////////
+  const jumpBack = (e) => {
+    e.stopPropagation();
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.currentTime = Math.max(0, audio.currentTime - 30);
+  };
+
+  const handlePlay = (e) => {
+    e.stopPropagation();
+    togglePlay();
+  };
+
   return (
-    <div style={container}>
+    <div style={container} onClick={() => navigate("/player")}>
       <audio ref={audioRef} src={current.audioURL} />
 
-      {/* TITLE + SPEAKER */}
-      <div style={info}>
+      {/* warm left accent bar */}
+      <div style={accentBar} />
+
+      <div style={textContainer}>
+        <div style={nowPlayingLabel}>Now Playing</div>
         <div style={title}>{current.title}</div>
         <div style={speaker}>{current.speaker}</div>
       </div>
 
-      {/* CONTROLS */}
       <div style={controls}>
-        <button onClick={() => jump(-30)} style={iconBtn}>⏪</button>
-
-        <button onClick={togglePlay} style={playBtn}>
-          {isPlaying ? "❚❚" : "▶"}
+        <button onClick={jumpBack} style={iconBtn} title="Back 30s">
+          <img src={back30} style={iconImg} alt="Back 30 seconds" />
         </button>
 
-        <button onClick={() => jump(30)} style={iconBtn}>⏩</button>
-      </div>
-
-      {/* SEEK BAR */}
-      <div style={seekWrapper}>
-        <span style={time}>{format(progress)}</span>
-
-        <input
-          type="range"
-          min="0"
-          max={duration || 0}
-          value={progress}
-          onChange={handleSeek}
-          style={seek}
-        />
-
-        <span style={time}>{format(duration)}</span>
+        <button onClick={handlePlay} style={playBtn}>
+          <img
+            src={isPlaying ? pauseIcon : playIcon}
+            style={playIconStyle}
+            alt={isPlaying ? "Pause" : "Play"}
+          />
+        </button>
       </div>
     </div>
   );
 }
 
 //////////////////////////////////////////////////
-// 🎨 STYLES
+// STYLES
 //////////////////////////////////////////////////
 
 const container = {
   position: "fixed",
-  bottom: "0",
-  left: "0",
-  width: "100%",
-  background: "#f3f3f3",
-  borderTop: "1px solid #ddd",
-  padding: "12px 14px",
-  boxShadow: "0 -2px 10px rgba(0,0,0,0.05)",
-  zIndex: 999,
+  bottom: "70px",
+  left: "10px",
+  right: "10px",
+  background: "linear-gradient(135deg, #4a2200 0%, #3d2000 100%)",
+  color: "#fff8ee",
+  borderRadius: "18px",
+  padding: "12px 16px 12px 0",
   display: "flex",
-  flexDirection: "column",
-  gap: "8px",
+  alignItems: "center",
+  justifyContent: "space-between",
+  zIndex: 999,
+  boxShadow: "0 6px 24px rgba(80,35,0,0.35)",
+  cursor: "pointer",
+  overflow: "hidden",
 };
 
-const info = {
-  textAlign: "center",
+const accentBar = {
+  width: "4px",
+  alignSelf: "stretch",
+  background: "linear-gradient(to bottom, #e08930, #c97c2e)",
+  borderRadius: "0 3px 3px 0",
+  marginRight: "14px",
+  flexShrink: 0,
+};
+
+const textContainer = {
+  flex: 1,
+  overflow: "hidden",
+  minWidth: 0,
+};
+
+const nowPlayingLabel = {
+  fontSize: "9px",
+  letterSpacing: "0.12em",
+  textTransform: "uppercase",
+  color: "rgba(255,220,150,0.65)",
+  marginBottom: "2px",
+  fontFamily: "sans-serif",
 };
 
 const title = {
   fontSize: "14px",
   fontWeight: "600",
-  color: "#222",
+  whiteSpace: "nowrap",
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  color: "#fff8ee",
+  fontFamily: "'Georgia', serif",
+  lineHeight: 1.3,
 };
 
 const speaker = {
-  fontSize: "12px",
-  color: "#666",
+  fontSize: "11px",
+  color: "rgba(255,210,140,0.75)",
+  fontFamily: "sans-serif",
+  marginTop: "2px",
+  whiteSpace: "nowrap",
+  overflow: "hidden",
+  textOverflow: "ellipsis",
 };
 
 const controls = {
   display: "flex",
-  justifyContent: "center",
   alignItems: "center",
-  gap: "16px",
+  gap: "10px",
+  flexShrink: 0,
+  marginLeft: "12px",
 };
 
 const iconBtn = {
-  border: "none",
   background: "none",
-  fontSize: "18px",
+  border: "none",
   cursor: "pointer",
+  padding: "4px",
+  display: "flex",
+  alignItems: "center",
+};
+
+const iconImg = {
+  width: "22px",
+  opacity: 0.85,
+  filter: "brightness(0) invert(1)",
 };
 
 const playBtn = {
+  background: "linear-gradient(135deg, #e08930 0%, #c97c2e 100%)",
   border: "none",
-  background: "#111",
-  color: "#fff",
   borderRadius: "50%",
-  width: "42px",
-  height: "42px",
-  cursor: "pointer",
-  fontSize: "16px",
-};
-
-const seekWrapper = {
+  width: "40px",
+  height: "40px",
   display: "flex",
   alignItems: "center",
-  gap: "8px",
-  width: "100%",
+  justifyContent: "center",
+  cursor: "pointer",
+  boxShadow: "0 2px 10px rgba(200,100,20,0.45)",
+  flexShrink: 0,
 };
 
-const seek = {
-  flex: 1,
-  appearance: "none",
-  height: "4px",
-  borderRadius: "4px",
-  background: "#ddd",
-  outline: "none",
-};
-
-const time = {
-  fontSize: "11px",
-  color: "#666",
-  minWidth: "35px",
-  textAlign: "center",
+const playIconStyle = {
+  width: "17px",
+  filter: "brightness(0) invert(1)",
 };
