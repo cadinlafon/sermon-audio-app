@@ -1,316 +1,207 @@
 import { useState, useRef } from "react";
 import { db, storage } from "../../firebase";
+import { collection, addDoc, serverTimestamp, getDocs } from "firebase/firestore";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 
-import {
-  collection,
-  addDoc,
-  serverTimestamp,
-  getDocs,
-} from "firebase/firestore";
-
-import {
-  ref,
-  uploadBytesResumable,
-  getDownloadURL,
-} from "firebase/storage";
+const speakers = ["Jonathan Mcintosh", "Rusty Olps", "Jason Farley", "Mark Thiele"];
 
 export default function UploadAudio() {
   const [title, setTitle] = useState("");
   const [speaker, setSpeaker] = useState("");
   const [type, setType] = useState("sermon");
   const [file, setFile] = useState(null);
-
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
-
   const [duration, setDuration] = useState(null);
-
+  const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef();
 
-  //////////////////////////////////////////////////
-  // ✏️ SPEAKERS
-  //////////////////////////////////////////////////
-  const speakers = [
-    "Jonathan Mcintosh",
-    "Rusty Olps",
-    "Jason Farley",
-    "Mark Thiele",
-  ];
-
-  //////////////////////////////////////////////////
-  // 🎧 DETECT DURATION
-  //////////////////////////////////////////////////
-  const detectDuration = (file) => {
+  const detectDuration = (f) => {
     const audio = document.createElement("audio");
-    audio.src = URL.createObjectURL(file);
-
-    audio.addEventListener("loadedmetadata", () => {
-      const seconds = Math.floor(audio.duration);
-      setDuration(seconds);
-    });
+    audio.src = URL.createObjectURL(f);
+    audio.addEventListener("loadedmetadata", () => setDuration(Math.floor(audio.duration)));
   };
 
-  //////////////////////////////////////////////////
-  // FILE SELECT
-  //////////////////////////////////////////////////
-  const handleFileSelect = (selectedFile) => {
-    if (!selectedFile) return;
-
-    setFile(selectedFile);
-    detectDuration(selectedFile);
+  const handleFileSelect = (f) => {
+    if (!f) return;
+    setFile(f);
+    detectDuration(f);
   };
 
-  //////////////////////////////////////////////////
-  // DRAG EVENTS
-  //////////////////////////////////////////////////
-  const handleDrop = (e) => {
-    e.preventDefault();
-    const droppedFile = e.dataTransfer.files[0];
-    handleFileSelect(droppedFile);
-  };
-
-  const handleDragOver = (e) => {
-    e.preventDefault();
-  };
-
-  //////////////////////////////////////////////////
-  // 🔥 GET NEXT ORDER (KEY FEATURE)
-  //////////////////////////////////////////////////
   const getNextOrder = async () => {
     const snapshot = await getDocs(collection(db, "audio"));
-
     let maxOrder = 0;
-
-    snapshot.forEach((doc) => {
-      const data = doc.data();
-      if (data.order && data.order > maxOrder) {
-        maxOrder = data.order;
-      }
-    });
-
+    snapshot.forEach((doc) => { if (doc.data().order > maxOrder) maxOrder = doc.data().order; });
     return maxOrder + 1;
   };
 
-  //////////////////////////////////////////////////
-  // 🚀 UPLOAD
-  //////////////////////////////////////////////////
   const handleUpload = async () => {
-    if (!file || !title || !speaker) {
-      alert("Title, speaker, and file are required.");
-      return;
-    }
-
+    if (!file || !title || !speaker) { alert("Title, speaker, and file are required."); return; }
     setUploading(true);
-
     try {
-      const storageRef = ref(
-        storage,
-        `audio/${Date.now()}_${file.name}`
-      );
-
+      const storageRef = ref(storage, `audio/${Date.now()}_${file.name}`);
       const uploadTask = uploadBytesResumable(storageRef, file);
-
-      uploadTask.on(
-        "state_changed",
-
-        (snapshot) => {
-          const percent =
-            (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-
-          setProgress(Math.round(percent));
-        },
-
-        (error) => {
-          console.error("Upload error:", error);
-        },
-
+      uploadTask.on("state_changed",
+        (snap) => setProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100)),
+        (err) => console.error(err),
         async () => {
-          const downloadURL = await getDownloadURL(
-            uploadTask.snapshot.ref
-          );
-
-          //////////////////////////////////////////////////
-          // 🔥 SET ORDER (NEW GOES ON TOP)
-          //////////////////////////////////////////////////
+          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
           const order = await getNextOrder();
-
-          await addDoc(collection(db, "audio"), {
-            title,
-            speaker,
-            type,
-            duration,
-            audioURL: downloadURL,
-            order, // 🔥 IMPORTANT
-            createdAt: serverTimestamp(),
-          });
-
-          //////////////////////////////////////////////////
-          // RESET
-          //////////////////////////////////////////////////
-          setTitle("");
-          setSpeaker("");
-          setType("sermon");
-          setFile(null);
-          setDuration(null);
-          setProgress(0);
-
+          await addDoc(collection(db, "audio"), { title, speaker, type, duration, audioURL: downloadURL, order, createdAt: serverTimestamp() });
+          setTitle(""); setSpeaker(""); setType("sermon"); setFile(null); setDuration(null); setProgress(0);
           alert("Upload successful 🎉");
           setUploading(false);
         }
       );
-    } catch (error) {
-      console.error("Upload error:", error);
-      alert("Upload failed.");
-      setUploading(false);
-    }
+    } catch (err) { console.error(err); alert("Upload failed."); setUploading(false); }
   };
 
-  //////////////////////////////////////////////////
-  // UI
-  //////////////////////////////////////////////////
+  const fmt = (s) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
+
   return (
-    <div style={{ maxWidth: "600px" }}>
-      <h1 style={{ marginBottom: "20px" }}>Upload Audio</h1>
-
-      <input
-        type="text"
-        placeholder="Title"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        style={inputStyle}
-      />
-
-      {/* SPEAKER */}
-      <select
-        value={speaker}
-        onChange={(e) => setSpeaker(e.target.value)}
-        style={inputStyle}
-      >
-        <option value="">Select Speaker</option>
-
-        {speakers.map((sp) => (
-          <option key={sp} value={sp}>
-            {sp}
-          </option>
-        ))}
-      </select>
-
-      {/* TYPE */}
-      <select
-        value={type}
-        onChange={(e) => setType(e.target.value)}
-        style={inputStyle}
-      >
-        <option value="sermon">Sermon</option>
-        <option value="homily">Homily</option>
-        <option value="sundayschool">Sunday School</option>
-      </select>
-
-      {/* DROP ZONE */}
-      <div
-        onDrop={handleDrop}
-        onDragOver={handleDragOver}
-        onClick={() => fileInputRef.current.click()}
-        style={dropZoneStyle}
-      >
-        {file ? (
-          <>
-            <div>📁 {file.name}</div>
-
-            {duration && (
-              <div style={{ fontSize: "13px", color: "#666" }}>
-                Duration: {Math.floor(duration / 60)}:
-                {(duration % 60).toString().padStart(2, "0")}
-              </div>
-            )}
-          </>
-        ) : (
-          <div>
-            Drag & Drop Audio Here
-            <br />
-            or click to select
-          </div>
-        )}
+    <div style={page}>
+      <div style={pageHeader}>
+        <h1 style={pageTitle}>Upload Audio</h1>
+        <p style={pageSubtitle}>Add a new sermon, homily, or Sunday School lesson.</p>
       </div>
 
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="audio/mpeg,audio/mp3"
-        style={{ display: "none" }}
-        onChange={(e) => handleFileSelect(e.target.files[0])}
-      />
+      <div style={card}>
+        <div style={fieldGroup}>
+          <label style={fieldLabel}>Title</label>
+          <input
+            placeholder="e.g. The Good Shepherd"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            style={input}
+          />
+        </div>
 
-      {/* PROGRESS */}
-      {uploading && (
-        <>
-          <div style={progressContainer}>
-            <div
-              style={{
-                ...progressBar,
-                width: `${progress}%`,
-              }}
-            />
+        <div style={row2}>
+          <div style={fieldGroup}>
+            <label style={fieldLabel}>Speaker</label>
+            <select value={speaker} onChange={(e) => setSpeaker(e.target.value)} style={input}>
+              <option value="">Select speaker…</option>
+              {speakers.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
           </div>
 
-          <div style={{ marginBottom: "15px" }}>
-            Uploading {progress}%
+          <div style={fieldGroup}>
+            <label style={fieldLabel}>Type</label>
+            <select value={type} onChange={(e) => setType(e.target.value)} style={input}>
+              <option value="sermon">Sermon</option>
+              <option value="homily">Homily</option>
+              <option value="sundayschool">Sunday School</option>
+            </select>
           </div>
-        </>
-      )}
+        </div>
 
-      <button
-        onClick={handleUpload}
-        disabled={uploading}
-        style={buttonStyle}
-      >
-        {uploading ? "Uploading..." : "Upload"}
-      </button>
+        {/* DROP ZONE */}
+        <div style={fieldGroup}>
+          <label style={fieldLabel}>Audio File</label>
+          <div
+            onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFileSelect(e.dataTransfer.files[0]); }}
+            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+            onDragLeave={() => setDragOver(false)}
+            onClick={() => fileInputRef.current.click()}
+            style={{ ...dropZone, ...(dragOver ? dropZoneActive : {}) }}
+          >
+            {file ? (
+              <div style={{ textAlign: "center" }}>
+                <div style={dropIcon}>🎵</div>
+                <div style={dropFileName}>{file.name}</div>
+                {duration && <div style={dropDuration}>Duration: {fmt(duration)}</div>}
+              </div>
+            ) : (
+              <div style={{ textAlign: "center" }}>
+                <div style={dropIcon}>📁</div>
+                <div style={dropText}>Drag & drop your audio file here</div>
+                <div style={dropHint}>or click to browse — MP3 files only</div>
+              </div>
+            )}
+          </div>
+          <input ref={fileInputRef} type="file" accept="audio/mpeg,audio/mp3" style={{ display: "none" }} onChange={(e) => handleFileSelect(e.target.files[0])} />
+        </div>
+
+        {/* PROGRESS */}
+        {uploading && (
+          <div style={fieldGroup}>
+            <div style={progressTrack}>
+              <div style={{ ...progressFill, width: `${progress}%` }} />
+            </div>
+            <p style={progressLabel}>Uploading… {progress}%</p>
+          </div>
+        )}
+
+        <button onClick={handleUpload} disabled={uploading} style={uploading ? { ...uploadBtn, opacity: 0.6 } : uploadBtn}>
+          {uploading ? "Uploading…" : "🚀 Upload"}
+        </button>
+      </div>
     </div>
   );
 }
 
-//////////////////////////////////////////////////
-// STYLES
-//////////////////////////////////////////////////
+const page = { maxWidth: "640px" };
+const pageHeader = { marginBottom: "24px" };
+const pageTitle = { fontSize: "26px", fontWeight: "normal", color: "#3d2200", margin: "0 0 4px", fontFamily: "'Georgia', serif" };
+const pageSubtitle = { fontSize: "14px", color: "#9b7040", fontFamily: "sans-serif", margin: 0 };
 
-const inputStyle = {
-  width: "100%",
-  padding: "10px",
-  marginBottom: "15px",
-  borderRadius: "6px",
-  border: "1px solid #ccc",
+const card = {
+  background: "#fffdf9",
+  border: "1px solid #eddfc8",
+  borderRadius: "18px",
+  padding: "28px",
+  boxShadow: "0 2px 14px rgba(160,100,40,0.07)",
+  display: "flex",
+  flexDirection: "column",
+  gap: "20px",
 };
 
-const dropZoneStyle = {
-  border: "2px dashed #999",
-  borderRadius: "8px",
-  padding: "40px",
-  textAlign: "center",
-  marginBottom: "20px",
+const fieldGroup = { display: "flex", flexDirection: "column", gap: "6px" };
+const fieldLabel = { fontSize: "12px", fontFamily: "sans-serif", color: "#9b7040", letterSpacing: "0.06em", textTransform: "uppercase" };
+
+const row2 = { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" };
+
+const input = {
+  padding: "10px 14px",
+  borderRadius: "10px",
+  border: "1px solid #eddfc8",
+  background: "#fdf8f3",
+  fontSize: "14px",
+  fontFamily: "sans-serif",
+  color: "#3d2200",
+  outline: "none",
+  width: "100%",
+  boxSizing: "border-box",
+};
+
+const dropZone = {
+  border: "2px dashed #eddfc8",
+  borderRadius: "14px",
+  padding: "36px 20px",
   cursor: "pointer",
-  backgroundColor: "#fafafa",
+  background: "#fdf8f3",
+  transition: "border-color 0.2s",
 };
 
-const progressContainer = {
-  width: "100%",
-  height: "10px",
-  backgroundColor: "#eee",
-  borderRadius: "6px",
-  marginBottom: "10px",
-};
+const dropZoneActive = { borderColor: "#c97c2e", background: "#fef3e2" };
+const dropIcon = { fontSize: "32px", marginBottom: "8px" };
+const dropFileName = { fontSize: "14px", fontFamily: "sans-serif", color: "#3d2200", marginBottom: "4px" };
+const dropDuration = { fontSize: "12px", fontFamily: "sans-serif", color: "#9b7040" };
+const dropText = { fontSize: "14px", fontFamily: "sans-serif", color: "#5c3a1e", marginBottom: "4px" };
+const dropHint = { fontSize: "12px", fontFamily: "sans-serif", color: "#b08050" };
 
-const progressBar = {
-  height: "100%",
-  backgroundColor: "#10b981",
-  borderRadius: "6px",
-};
+const progressTrack = { height: "8px", background: "#eddfc8", borderRadius: "999px", overflow: "hidden" };
+const progressFill = { height: "100%", background: "linear-gradient(to right, #e08930, #c97c2e)", borderRadius: "999px", transition: "width 0.2s" };
+const progressLabel = { fontSize: "12px", fontFamily: "sans-serif", color: "#9b7040", margin: "6px 0 0", textAlign: "center" };
 
-const buttonStyle = {
-  padding: "10px 18px",
-  borderRadius: "6px",
+const uploadBtn = {
+  padding: "13px",
+  borderRadius: "12px",
   border: "none",
-  backgroundColor: "#111827",
-  color: "white",
+  background: "linear-gradient(135deg, #c97c2e 0%, #a85e18 100%)",
+  color: "#fff8ee",
+  fontSize: "15px",
+  fontFamily: "sans-serif",
   cursor: "pointer",
+  boxShadow: "0 3px 12px rgba(160,80,20,0.28)",
 };

@@ -1,12 +1,6 @@
 import { useEffect, useState } from "react";
 import { db } from "../../firebase";
-
-import {
-  collection,
-  getDocs,
-  updateDoc,
-  doc
-} from "firebase/firestore";
+import { collection, getDocs, updateDoc, doc } from "firebase/firestore";
 
 export default function AdminContentManager() {
   const [audioList, setAudioList] = useState([]);
@@ -14,199 +8,125 @@ export default function AdminContentManager() {
   const [audioGroup, setAudioGroup] = useState("sermons");
   const [sortOrder, setSortOrder] = useState("desc");
 
-  //////////////////////////////////////////////////
-  // LOAD AUDIO
-  //////////////////////////////////////////////////
   const loadAudio = async () => {
     const snapshot = await getDocs(collection(db, "audio"));
-
-    const data = snapshot.docs.map((docSnap) => ({
-      id: docSnap.id,
-      ...docSnap.data()
-    }));
-
-    setAudioList(data);
+    setAudioList(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })));
   };
 
-  useEffect(() => {
-    loadAudio();
-  }, []);
+  useEffect(() => { loadAudio(); }, []);
 
-  //////////////////////////////////////////////////
-  // FILTER + SORT (BY ORDER FIELD)
-  //////////////////////////////////////////////////
   const filtered = audioList
-    .filter((a) => {
-      if (audioGroup === "sermons") {
-        return a.type === "sermon" || a.type === "homily";
-      }
-      return a.type === "sundayschool";
-    })
-    .filter((a) =>
-      a.title?.toLowerCase().includes(search.toLowerCase())
-    )
-    .sort((a, b) => {
-      const orderA = a.order ?? 0;
-      const orderB = b.order ?? 0;
+    .filter((a) => audioGroup === "sermons" ? (a.type === "sermon" || a.type === "homily") : a.type === "sundayschool")
+    .filter((a) => a.title?.toLowerCase().includes(search.toLowerCase()))
+    .sort((a, b) => sortOrder === "desc" ? (b.order ?? 0) - (a.order ?? 0) : (a.order ?? 0) - (b.order ?? 0));
 
-      return sortOrder === "desc"
-        ? orderB - orderA
-        : orderA - orderB;
-    });
-
-  //////////////////////////////////////////////////
-  // 🔥 MOVE ITEM
-  //////////////////////////////////////////////////
   const moveItem = async (index, direction) => {
     const newList = [...filtered];
-
-    const targetIndex = direction === "up"
-      ? index - 1
-      : index + 1;
-
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
     if (targetIndex < 0 || targetIndex >= newList.length) return;
-
-    const current = newList[index];
-    const target = newList[targetIndex];
-
-    // swap order values
-    const currentOrder = current.order ?? 0;
-    const targetOrder = target.order ?? 0;
-
-    await updateDoc(doc(db, "audio", current.id), {
-      order: targetOrder
-    });
-
-    await updateDoc(doc(db, "audio", target.id), {
-      order: currentOrder
-    });
-
+    const curr = newList[index];
+    const targ = newList[targetIndex];
+    await updateDoc(doc(db, "audio", curr.id), { order: targ.order ?? 0 });
+    await updateDoc(doc(db, "audio", targ.id), { order: curr.order ?? 0 });
     loadAudio();
   };
 
-  //////////////////////////////////////////////////
-  // UI
-  //////////////////////////////////////////////////
   return (
-    <div style={pageStyle}>
-      <h1>Content Manager</h1>
+    <div style={page}>
+      <div style={pageHeader}>
+        <h1 style={pageTitle}>Content Manager</h1>
+        <p style={pageSubtitle}>Reorder how audio appears to listeners.</p>
+      </div>
 
-      {/* TYPE */}
-      <select
-        value={audioGroup}
-        onChange={(e) => setAudioGroup(e.target.value)}
-        style={select}
-      >
-        <option value="sermons">Sermons & Homilies</option>
-        <option value="sunday">Sunday School</option>
-      </select>
+      <div style={toolbar}>
+        <select value={audioGroup} onChange={(e) => setAudioGroup(e.target.value)} style={select}>
+          <option value="sermons">Sermons & Homilies</option>
+          <option value="sunday">Sunday School</option>
+        </select>
 
-      {/* SEARCH */}
-      <input
-        placeholder="Search..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        style={input}
-      />
+        <input
+          placeholder="Search…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          style={searchInput}
+        />
 
-      {/* SORT TOGGLE */}
-      <button
-        onClick={() =>
-          setSortOrder(sortOrder === "desc" ? "asc" : "desc")
-        }
-        style={button}
-      >
-        {sortOrder === "desc" ? "Newest First" : "Oldest First"}
-      </button>
+        <button onClick={() => setSortOrder(sortOrder === "desc" ? "asc" : "desc")} style={pillBtn}>
+          {sortOrder === "desc" ? "Newest first" : "Oldest first"}
+        </button>
+      </div>
 
-      {/* LIST */}
-      {filtered.map((audio, index) => (
-        <div key={audio.id} style={card}>
-          <div>
-            <strong>{audio.title}</strong>
-            <div style={{ fontSize: "13px", color: "#666" }}>
-              {audio.speaker}
+      <div style={list}>
+        {filtered.map((audio, index) => (
+          <div key={audio.id} style={card}>
+            <div style={cardLeft}>
+              <div style={orderBadge}>#{audio.order ?? "—"}</div>
+              <div>
+                <div style={cardTitle}>{audio.title}</div>
+                <div style={cardSub}>{audio.speaker}</div>
+              </div>
+            </div>
+            <div style={arrowGroup}>
+              <button onClick={() => moveItem(index, "up")} style={arrowBtn} title="Move up">▲</button>
+              <button onClick={() => moveItem(index, "down")} style={arrowBtn} title="Move down">▼</button>
             </div>
           </div>
-
-          {/* 🔥 ARROWS */}
-          <div style={arrowGroup}>
-            <button
-              onClick={() => moveItem(index, "up")}
-              style={arrowBtn}
-            >
-              ⬆️
-            </button>
-
-            <button
-              onClick={() => moveItem(index, "down")}
-              style={arrowBtn}
-            >
-              ⬇️
-            </button>
-          </div>
-        </div>
-      ))}
+        ))}
+        {filtered.length === 0 && <p style={empty}>No items match your search.</p>}
+      </div>
     </div>
   );
 }
 
-//////////////////////////////////////////////////
-// STYLES
-//////////////////////////////////////////////////
+const page = { maxWidth: "800px" };
+const pageHeader = { marginBottom: "24px" };
+const pageTitle = { fontSize: "26px", fontWeight: "normal", color: "#3d2200", margin: "0 0 4px", fontFamily: "'Georgia', serif" };
+const pageSubtitle = { fontSize: "14px", color: "#9b7040", fontFamily: "sans-serif", margin: 0 };
 
-const pageStyle = {
-  padding: "30px",
-  maxWidth: "800px",
-  margin: "0 auto"
-};
+const toolbar = { display: "flex", gap: "10px", marginBottom: "20px", flexWrap: "wrap" };
 
 const select = {
-  padding: "10px",
-  marginBottom: "10px",
-  borderRadius: "6px"
+  padding: "9px 14px", borderRadius: "10px", border: "1px solid #eddfc8",
+  background: "#fffdf9", fontSize: "13px", fontFamily: "sans-serif", color: "#3d2200",
 };
 
-const input = {
-  padding: "10px",
-  marginBottom: "10px",
-  display: "block",
-  width: "100%",
-  borderRadius: "6px",
-  border: "1px solid #ccc"
+const searchInput = {
+  flex: 1, padding: "9px 14px", borderRadius: "10px", border: "1px solid #eddfc8",
+  background: "#fffdf9", fontSize: "13px", fontFamily: "sans-serif", color: "#3d2200", outline: "none",
 };
 
-const button = {
-  padding: "10px 16px",
-  marginBottom: "20px",
-  border: "none",
-  background: "#111",
-  color: "#fff",
-  borderRadius: "8px",
-  cursor: "pointer"
+const pillBtn = {
+  padding: "9px 16px", borderRadius: "10px", border: "1px solid #c8922a",
+  background: "transparent", color: "#7a4f10", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer",
 };
+
+const list = { display: "flex", flexDirection: "column", gap: "10px" };
 
 const card = {
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-  background: "#fff",
-  padding: "16px",
-  marginBottom: "12px",
-  borderRadius: "12px",
-  boxShadow: "0 4px 12px rgba(0,0,0,0.06)"
+  display: "flex", justifyContent: "space-between", alignItems: "center",
+  background: "#fffdf9", border: "1px solid #eddfc8", borderRadius: "14px",
+  padding: "14px 18px", boxShadow: "0 2px 8px rgba(160,100,40,0.06)",
 };
 
-const arrowGroup = {
-  display: "flex",
-  gap: "8px"
+const cardLeft = { display: "flex", alignItems: "center", gap: "14px" };
+
+const orderBadge = {
+  width: "32px", height: "32px", borderRadius: "8px",
+  background: "#f6e4b0", color: "#7a5a10", fontSize: "11px",
+  fontFamily: "sans-serif", display: "flex", alignItems: "center",
+  justifyContent: "center", flexShrink: 0,
 };
+
+const cardTitle = { fontSize: "15px", color: "#3d2200", fontFamily: "'Georgia', serif", marginBottom: "2px" };
+const cardSub = { fontSize: "12px", color: "#9b7040", fontFamily: "sans-serif" };
+
+const arrowGroup = { display: "flex", gap: "6px" };
 
 const arrowBtn = {
-  background: "#f3f4f6",
-  border: "none",
-  padding: "8px 10px",
-  borderRadius: "8px",
-  cursor: "pointer",
-  fontSize: "16px"
+  width: "32px", height: "32px", borderRadius: "8px",
+  border: "1px solid #eddfc8", background: "#fdf8f3",
+  color: "#7a4f10", cursor: "pointer", fontSize: "12px",
+  display: "flex", alignItems: "center", justifyContent: "center",
 };
+
+const empty = { textAlign: "center", color: "#b08050", fontFamily: "sans-serif", fontStyle: "italic", padding: "30px 0" };

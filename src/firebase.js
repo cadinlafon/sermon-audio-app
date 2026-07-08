@@ -11,6 +11,8 @@ import { getStorage } from "firebase/storage";
 
 import { getMessaging } from "firebase/messaging";
 
+import { getFunctions } from "firebase/functions";
+
 const firebaseConfig = {
 
 apiKey: "AIzaSyBhhdR6mms3JdLhXkl283k9yjm7zyLafpk",
@@ -37,3 +39,5 @@ export const storage = getStorage(app);
 // PUSH NOTIFICATIONS
 export const messaging = getMessaging(app);
 
+// FIREBASE FUNCTIONS
+export const functions = getFunctions(app);

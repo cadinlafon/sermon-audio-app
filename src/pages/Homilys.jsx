@@ -7,13 +7,13 @@ import {
   serverTimestamp,
   query,
   where,
-  orderBy,
 } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { useAudioPlayer } from "../context/AudioPlayerContext";
 
 export default function Homilies() {
   const [homilies, setHomilies] = useState([]);
+  const [notices, setNotices] = useState([]);
   const [user, setUser] = useState(null);
 
   const [search, setSearch] = useState("");
@@ -22,31 +22,70 @@ export default function Homilies() {
 
   const { playSermon } = useAudioPlayer();
 
+  ////////////////////////////////////////////////
+  // AUTH
+  ////////////////////////////////////////////////
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, setUser);
     return () => unsubscribe();
   }, []);
 
+  ////////////////////////////////////////////////
+  // FETCH AUDIO
+  ////////////////////////////////////////////////
   useEffect(() => {
     async function fetchHomilies() {
       const q = query(
         collection(db, "audio"),
-        where("type", "==", "homily"),
-        orderBy("createdAt", sortOrder)
+        where("type", "==", "homily")
       );
+
       const snapshot = await getDocs(q);
-      setHomilies(
-        snapshot.docs.map((docItem) => ({ id: docItem.id, ...docItem.data() }))
-      );
+
+      const data = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      data.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+      setHomilies(data);
     }
+
     fetchHomilies();
-  }, [sortOrder]);
+  }, []);
 
-  const speakers = [...new Set(homilies.map((h) => h.speaker).filter(Boolean))];
+  ////////////////////////////////////////////////
+  // FETCH NOTICES
+  ////////////////////////////////////////////////
+  useEffect(() => {
+    async function fetchNotices() {
+      const snap = await getDocs(collection(db, "pageNotices"));
 
+      const data = snap.docs.map((d) => ({
+        id: d.id,
+        ...d.data(),
+      }));
+
+      const filtered = data.filter(
+        (n) =>
+          n.enabled &&
+          (n.page === "homilies" || n.page === "all")
+      );
+
+      setNotices(filtered);
+    }
+
+    fetchNotices();
+  }, []);
+
+  ////////////////////////////////////////////////
+  // PLAY
+  ////////////////////////////////////////////////
   const handlePlay = async (item) => {
     playSermon(item);
+
     if (!user) return;
+
     await addDoc(collection(db, "appUsage"), {
       sermonId: item.id,
       userId: user.uid,
@@ -54,19 +93,36 @@ export default function Homilies() {
     });
   };
 
+  ////////////////////////////////////////////////
+  // FILTER
+  ////////////////////////////////////////////////
+  const speakers = [
+    ...new Set(homilies.map((h) => h.speaker).filter(Boolean)),
+  ];
+
   const filtered = homilies.filter((item) => {
-    const matchesSearch = item.title?.toLowerCase().includes(search.toLowerCase());
-    const matchesSpeaker = speakerFilter === "all" || item.speaker === speakerFilter;
-    return matchesSearch && matchesSpeaker;
+    return (
+      item.title?.toLowerCase().includes(search.toLowerCase()) &&
+      (speakerFilter === "all" || item.speaker === speakerFilter)
+    );
   });
 
+  const displayList =
+    sortOrder === "desc" ? filtered : [...filtered].reverse();
+
+  ////////////////////////////////////////////////
+  // UI
+  ////////////////////////////////////////////////
   return (
     <div style={page}>
       <h1 style={pageTitle}>Homilies</h1>
 
+      {/* CONTROLS */}
       <div style={controls}>
         <button
-          onClick={() => setSortOrder(sortOrder === "desc" ? "asc" : "desc")}
+          onClick={() =>
+            setSortOrder(sortOrder === "desc" ? "asc" : "desc")
+          }
           style={pillButton}
         >
           {sortOrder === "desc" ? "Oldest first" : "Newest first"}
@@ -79,28 +135,65 @@ export default function Homilies() {
           style={inputStyle}
         />
 
-        <select value={speakerFilter} onChange={(e) => setSpeakerFilter(e.target.value)} style={inputStyle}>
+        <select
+          value={speakerFilter}
+          onChange={(e) => setSpeakerFilter(e.target.value)}
+          style={inputStyle}
+        >
           <option value="all">All speakers</option>
-          {speakers.map((s) => (<option key={s}>{s}</option>))}
+          {speakers.map((s) => (
+            <option key={s}>{s}</option>
+          ))}
         </select>
       </div>
 
-      {filtered.length === 0 && (
-        <p style={emptyText}>Nothing found — try adjusting your filters.</p>
-      )}
+      {/* 🔥 NOTICES (TOP) */}
+      {notices
+        .filter((n) => n.position === "top")
+        .map((n) => (
+          <div key={n.id} style={noticeBox}>
+            <strong>{n.title}</strong>
+            <p>{n.message}</p>
+          </div>
+        ))}
 
-      {filtered.map((item) => (
+      {/* LIST */}
+      {displayList.map((item) => (
         <div key={item.id} style={card}>
           <h3 style={titleStyle}>{item.title}</h3>
           <p style={speakerStyle}>{item.speaker}</p>
-          <button onClick={() => handlePlay(item)} style={playButton}>
-            <span style={{ fontSize: "11px" }}>▶</span> Play
+
+          <button
+            onClick={() => handlePlay(item)}
+            style={playButton}
+          >
+            ▶ Play
           </button>
         </div>
       ))}
+
+      {/* 🔥 NOTICES (BOTTOM) */}
+      {notices
+        .filter((n) => n.position === "bottom")
+        .map((n) => (
+          <div key={n.id} style={noticeBox}>
+            <strong>{n.title}</strong>
+            <p>{n.message}</p>
+          </div>
+        ))}
     </div>
   );
 }
+
+/* STYLES */
+
+const noticeBox = {
+  background: "#fff3cd",
+  border: "1px solid #ffeeba",
+  padding: "15px",
+  borderRadius: "10px",
+  marginBottom: "15px",
+};
 
 const page = {
   padding: "32px 20px 60px",
@@ -108,89 +201,46 @@ const page = {
   margin: "0 auto",
   background: "#fdf8f3",
   minHeight: "100vh",
-  fontFamily: "'Georgia', serif",
 };
 
 const pageTitle = {
   textAlign: "center",
   marginBottom: "28px",
-  fontSize: "28px",
-  fontWeight: "normal",
-  color: "#3d2200",
 };
 
 const controls = {
   display: "flex",
   gap: "10px",
-  marginBottom: "28px",
+  marginBottom: "20px",
   flexWrap: "wrap",
   justifyContent: "center",
 };
 
 const pillButton = {
   padding: "9px 18px",
-  borderRadius: "999px",
-  border: "1px solid #c8922a",
-  background: "transparent",
-  color: "#7a4f10",
-  cursor: "pointer",
-  fontSize: "13px",
-  fontFamily: "sans-serif",
 };
 
 const inputStyle = {
   padding: "9px 16px",
-  borderRadius: "999px",
-  border: "1px solid #eddfc8",
-  fontSize: "13px",
-  fontFamily: "sans-serif",
-  background: "#fffdf9",
-  color: "#3d2200",
-  outline: "none",
 };
 
 const card = {
-  background: "#fffdf9",
+  background: "#fff",
   borderRadius: "18px",
-  padding: "22px 22px 18px",
-  marginBottom: "16px",
-  border: "1px solid #eddfc8",
-  boxShadow: "0 2px 12px rgba(160,100,40,0.07)",
+  padding: "20px",
+  marginBottom: "12px",
 };
 
 const titleStyle = {
-  marginBottom: "5px",
-  fontSize: "17px",
-  fontWeight: "normal",
-  color: "#3d2200",
+  fontSize: "16px",
 };
 
 const speakerStyle = {
-  color: "#9b7040",
   fontSize: "13px",
-  marginBottom: "14px",
-  fontFamily: "sans-serif",
+  color: "#777",
 };
 
 const playButton = {
-  display: "inline-flex",
-  alignItems: "center",
-  gap: "6px",
-  padding: "8px 18px",
-  borderRadius: "999px",
-  border: "none",
-  background: "linear-gradient(135deg, #c97c2e 0%, #a85e18 100%)",
-  color: "#fff8ee",
-  cursor: "pointer",
-  fontSize: "13px",
-  fontFamily: "sans-serif",
-  boxShadow: "0 3px 10px rgba(160,80,20,0.25)",
-};
-
-const emptyText = {
-  textAlign: "center",
-  color: "#b08050",
-  fontStyle: "italic",
-  fontFamily: "sans-serif",
-  padding: "30px 0",
+  marginTop: "10px",
+  padding: "8px 16px",
 };

@@ -1,23 +1,20 @@
 import { useState } from "react";
 import {
   createUserWithEmailAndPassword,
-  signInWithPopup
+  signInWithPopup,
 } from "firebase/auth";
-
 import {
   doc,
   setDoc,
   serverTimestamp,
   addDoc,
   collection,
-  getDoc
+  getDoc,
 } from "firebase/firestore";
-
 import { auth, db, googleProvider } from "../firebase";
 import googleLogo from "../assets/auth/google-logo.png";
 
 export default function SignUp() {
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
@@ -32,19 +29,11 @@ export default function SignUp() {
       setError("Please fill out all fields.");
       return;
     }
-
     try {
       setLoading(true);
       setError("");
-
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
-
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-
       await setDoc(doc(db, "users", user.uid), {
         uid: user.uid,
         fullName,
@@ -52,20 +41,17 @@ export default function SignUp() {
         role: "user",
         loginMethod: "email",
         emailVerified: true,
-        createdAt: serverTimestamp()
+        createdAt: serverTimestamp(),
       });
-
       await addDoc(collection(db, "logs"), {
         type: "account_created",
         userId: user.uid,
         email: user.email,
-        timestamp: serverTimestamp()
+        timestamp: serverTimestamp(),
       });
-
       setEmail("");
       setPassword("");
       setFullName("");
-
     } catch (err) {
       setError(err.message);
     } finally {
@@ -80,10 +66,8 @@ export default function SignUp() {
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
-
       const userRef = doc(db, "users", user.uid);
       const snap = await getDoc(userRef);
-
       if (!snap.exists()) {
         await setDoc(userRef, {
           uid: user.uid,
@@ -92,19 +76,17 @@ export default function SignUp() {
           role: "user",
           loginMethod: "google",
           emailVerified: true,
-          createdAt: serverTimestamp()
+          createdAt: serverTimestamp(),
         });
-
         await addDoc(collection(db, "logs"), {
           type: "account_created_google",
           userId: user.uid,
           email: user.email,
-          timestamp: serverTimestamp()
+          timestamp: serverTimestamp(),
         });
       }
-
     } catch (err) {
-      setError("Google signup failed");
+      setError("Google sign-up failed. Please try again.");
     }
   };
 
@@ -112,105 +94,139 @@ export default function SignUp() {
   // UI
   //////////////////////////////////////////////////
   return (
-    <div style={container}>
-
-      <div style={card}>
-        <h2 style={{ marginBottom: "15px" }}>Create Account</h2>
-
-        <input
-          type="text"
-          placeholder="Full Name"
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
-          style={input}
-        />
-
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          style={input}
-        />
-
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          style={input}
-        />
-
-        <button
-          onClick={handleSignUp}
-          disabled={loading}
-          style={primaryButton}
-        >
-          {loading ? "Creating..." : "Sign Up"}
-        </button>
-
-        <div style={divider}>or</div>
-
-        <button
-          onClick={signUpWithGoogle}
-          style={googleButton}
-        >
-          <img src={googleLogo} style={{ width: "20px" }} />
-          Continue with Google
-        </button>
-
-        {error && (
-          <p style={{ color: "red", fontSize: "12px", marginTop: "10px" }}>
-            {error}
-          </p>
-        )}
+    <div style={page}>
+      {/* HEADER BAND */}
+      <div style={heroBand}>
+        <p style={eyebrow}>Palouse Fellowship</p>
+        <h1 style={heroTitle}>Create Account</h1>
+        <p style={heroSub}>Save sermons, track your listens, and more.</p>
       </div>
 
+      <div style={contentArea}>
+        <div style={card}>
+
+          {/* GOOGLE */}
+          <button onClick={signUpWithGoogle} style={googleButton}>
+            <img src={googleLogo} style={{ width: "18px", flexShrink: 0 }} alt="Google" />
+            Continue with Google
+          </button>
+
+          <div style={dividerRow}>
+            <div style={dividerLine} />
+            <span style={dividerText}>or</span>
+            <div style={dividerLine} />
+          </div>
+
+          {/* EMAIL FORM */}
+          <div style={fieldGroup}>
+            <label style={fieldLabel}>Full Name</label>
+            <input
+              type="text"
+              placeholder="Your name"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              style={inputStyle}
+            />
+          </div>
+
+          <div style={fieldGroup}>
+            <label style={fieldLabel}>Email</label>
+            <input
+              type="email"
+              placeholder="you@email.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              style={inputStyle}
+            />
+          </div>
+
+          <div style={fieldGroup}>
+            <label style={fieldLabel}>Password</label>
+            <input
+              type="password"
+              placeholder="Choose a password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              style={inputStyle}
+            />
+          </div>
+
+          {error && <p style={errorText}>{error}</p>}
+
+          <button
+            onClick={handleSignUp}
+            disabled={loading}
+            style={loading ? { ...primaryButton, opacity: 0.7 } : primaryButton}
+          >
+            {loading ? "Creating account…" : "Create Account"}
+          </button>
+
+        </div>
+
+        <p style={footerNote}>
+          Already have an account?{" "}
+          <a href="/login" style={footerLink}>Sign in</a>
+        </p>
+      </div>
     </div>
   );
 }
 
 //////////////////////////////////////////////////
-// STYLES (MATCH NAVBAR DROPDOWN)
+// STYLES
 //////////////////////////////////////////////////
 
-const container = {
-  display: "flex",
-  justifyContent: "center",
-  alignItems: "center",
-  padding: "60px 20px"
+const page = {
+  background: "#fdf8f3",
+  minHeight: "100vh",
+  fontFamily: "'Georgia', serif",
+};
+
+const heroBand = {
+  background: "linear-gradient(135deg, #6b3a10 0%, #3d2200 100%)",
+  padding: "40px 24px 36px",
+  textAlign: "center",
+};
+
+const eyebrow = {
+  margin: "0 0 6px",
+  fontSize: "12px",
+  letterSpacing: "0.14em",
+  textTransform: "uppercase",
+  color: "rgba(255,235,190,0.65)",
+  fontFamily: "sans-serif",
+};
+
+const heroTitle = {
+  margin: "0 0 8px",
+  fontSize: "28px",
+  fontWeight: "normal",
+  color: "#fff8ee",
+};
+
+const heroSub = {
+  margin: 0,
+  fontSize: "15px",
+  color: "rgba(255,235,190,0.75)",
+  fontFamily: "sans-serif",
+};
+
+const contentArea = {
+  padding: "32px 20px 60px",
+  maxWidth: "440px",
+  margin: "0 auto",
 };
 
 const card = {
-  width: "100%",
-  maxWidth: "380px",
-  background: "#fff",
-  border: "1px solid #ddd",
-  borderRadius: "10px",
-  padding: "25px",
-  boxShadow: "0 10px 22px rgba(0,0,0,0.08)",
+  background: "#fffdf9",
+  borderRadius: "20px",
+  padding: "28px 24px",
+  border: "1px solid #eddfc8",
+  boxShadow: "0 4px 20px rgba(160,100,40,0.08)",
   display: "flex",
   flexDirection: "column",
-  gap: "10px"
-};
-
-const input = {
-  border: "1px solid #ddd",
-  borderRadius: "8px",
-  padding: "10px",
-  fontSize: "13px",
-  background: "#fafafa"
-};
-
-const primaryButton = {
-  background: "#111",
-  color: "#fff",
-  border: "none",
-  padding: "10px",
-  fontWeight: "600",
-  cursor: "pointer",
-  borderRadius: "6px",
-  marginTop: "5px"
+  gap: "14px",
+  marginBottom: "20px",
 };
 
 const googleButton = {
@@ -218,17 +234,88 @@ const googleButton = {
   alignItems: "center",
   justifyContent: "center",
   gap: "10px",
-  border: "1px solid #ddd",
-  background: "#fff",
-  padding: "10px",
+  padding: "12px",
+  borderRadius: "12px",
+  border: "1px solid #eddfc8",
+  background: "#fdf8f3",
+  color: "#3d2200",
   cursor: "pointer",
-  fontWeight: "600",
-  borderRadius: "6px"
+  fontSize: "14px",
+  fontFamily: "sans-serif",
 };
 
-const divider = {
-  textAlign: "center",
+const dividerRow = {
+  display: "flex",
+  alignItems: "center",
+  gap: "12px",
+};
+
+const dividerLine = {
+  flex: 1,
+  height: "1px",
+  background: "#eddfc8",
+};
+
+const dividerText = {
   fontSize: "12px",
-  color: "#777",
-  margin: "10px 0"
+  color: "#b08050",
+  fontFamily: "sans-serif",
+};
+
+const fieldGroup = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "6px",
+};
+
+const fieldLabel = {
+  fontSize: "11px",
+  letterSpacing: "0.08em",
+  textTransform: "uppercase",
+  color: "#b08050",
+  fontFamily: "sans-serif",
+};
+
+const inputStyle = {
+  padding: "12px 14px",
+  borderRadius: "10px",
+  border: "1px solid #eddfc8",
+  fontSize: "14px",
+  fontFamily: "sans-serif",
+  background: "#fdf8f3",
+  color: "#3d2200",
+  outline: "none",
+};
+
+const errorText = {
+  fontSize: "13px",
+  color: "#a32d2d",
+  fontFamily: "sans-serif",
+  margin: 0,
+};
+
+const primaryButton = {
+  padding: "13px",
+  borderRadius: "12px",
+  border: "none",
+  background: "linear-gradient(135deg, #c97c2e 0%, #a85e18 100%)",
+  color: "#fff8ee",
+  cursor: "pointer",
+  fontSize: "15px",
+  fontFamily: "sans-serif",
+  boxShadow: "0 4px 14px rgba(160,80,20,0.28)",
+  letterSpacing: "0.02em",
+};
+
+const footerNote = {
+  textAlign: "center",
+  fontSize: "14px",
+  color: "#9b7040",
+  fontFamily: "sans-serif",
+};
+
+const footerLink = {
+  color: "#c97c2e",
+  textDecoration: "none",
+  fontWeight: "bold",
 };

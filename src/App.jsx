@@ -32,8 +32,10 @@ import AdminAccess from "./pages/AdminAccess";
 import Player from "./pages/Player";
 import SuggestFeature from "./pages/SuggestFeature";
 import Contact from "./pages/Contact";
+import Account from "./pages/Settings/Account";
 
 // Admin
+import PageNotices from "./pages/Admin/PageNotices";
 import AdminGate from "./pages/Admin/AdminGate";
 import AdminLayout from "./pages/Admin/AdminLayout";
 import Dashboard from "./pages/Admin/Dashboard";
@@ -46,6 +48,7 @@ import Logs from "./pages/Admin/Logs";
 import AdminNotifications from "./pages/Admin/AdminNotifications";
 import AdminSuggestions from "./pages/Admin/AdminSuggestions";
 import AdminNotices from "./pages/Admin/AdminNotices";
+import SendNotifactions from "./pages/Admin/SendNotifactions";
 
 
 function App() {
@@ -218,6 +221,7 @@ const sessionId = crypto.randomUUID();
           <Route path="/suggest" element={<SuggestFeature />} />
           <Route path="/audio-app" element={<AudioAppLanding />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/Account" element={<Account />} />
 
           {/* ADMIN */}
           <Route
@@ -232,10 +236,12 @@ const sessionId = crypto.randomUUID();
               <Route path="users" element={<Users />} />
               <Route path="analytics" element={<Analytics />} />
               <Route path="notifications" element={<AdminNotifications />} />
+              <Route path="send-notifications" element={<SendNotifactions />} />
               <Route path="settings" element={<AdminSettings />} />
               <Route path="logs" element={<Logs />} />
               <Route path="suggestions" element={<AdminSuggestions />} />
               <Route path="notices" element={<AdminNotices />} />
+              <Route path="pagenotices" element={<PageNotices />} />
             </Route>
           </Route>
         </Routes>

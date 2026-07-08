@@ -10,6 +10,9 @@ export default defineConfig({
 
       workbox: {
         navigateFallback: '/index.html',
+        navigateFallbackDenylist: [
+          /\/[^/?]+\.[^/]+$/,
+        ],
 
         // 🔥 DON'T CACHE SITEMAP
         globIgnores: ['**/sitemap*.xml'],

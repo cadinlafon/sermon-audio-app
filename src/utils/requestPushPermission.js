@@ -23,7 +23,10 @@ if (!user) return;
 
 await setDoc(
   doc(db, "users", user.uid),
-  { pushToken: token },
+  {
+    fcmToken: token,
+    pushToken: token,
+  },
   { merge: true }
 );
 

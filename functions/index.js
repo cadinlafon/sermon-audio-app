@@ -1,56 +1,62 @@
-const functions = require("firebase-functions");
-const admin = require("firebase-admin");
+const { initializeApp } = require("firebase-admin/app");
+const { getFirestore, FieldValue } = require("firebase-admin/firestore");
+const { getMessaging } = require("firebase-admin/messaging");
+const { HttpsError, onCall } = require("firebase-functions/v2/https");
 
-admin.initializeApp();
+initializeApp();
 
-exports.sendPushNotification = functions.https.onCall(async (data, context) => {
-  // Only admins allowed
-  if (!context.auth) {
-    throw new functions.https.HttpsError("unauthenticated", "Not logged in");
+exports.sendPushNotification = onCall(async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Not logged in");
   }
 
-  const userDoc = await admin.firestore()
-    .collection("users")
-    .doc(context.auth.uid)
-    .get();
+  const db = getFirestore();
+  const userDoc = await db.collection("users").doc(request.auth.uid).get();
 
   if (!userDoc.exists || userDoc.data().role !== "admin") {
-    throw new functions.https.HttpsError("permission-denied", "Not admin");
+    throw new HttpsError("permission-denied", "Not admin");
   }
 
-  const { title, body, targetUserId } = data;
+  const { title, body, targetUserId } = request.data;
 
-  let tokens = [];
+  if (!title || !body || !targetUserId) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Title, body, and targetUserId are required"
+    );
+  }
+
+  const tokens = [];
 
   if (targetUserId === "all") {
-    const usersSnap = await admin.firestore().collection("users").get();
+    const usersSnap = await db.collection("users").get();
 
-    usersSnap.forEach(doc => {
-      const t = doc.data().fcmToken;
-      if (t) tokens.push(t);
+    usersSnap.forEach((doc) => {
+      const token = doc.data().fcmToken || doc.data().pushToken;
+      if (token) tokens.push(token);
     });
   } else {
-    const targetDoc = await admin.firestore()
-      .collection("users")
-      .doc(targetUserId)
-      .get();
+    const targetDoc = await db.collection("users").doc(targetUserId).get();
+    const token = targetDoc.data()?.fcmToken || targetDoc.data()?.pushToken;
 
-    const t = targetDoc.data()?.fcmToken;
-    if (t) tokens.push(t);
+    if (token) tokens.push(token);
   }
 
-  // 🚨 SAVE NOTIFICATION (THIS IS WHAT YOU WERE MISSING)
-  await admin.firestore().collection("notifications").add({
+  await db.collection("notifications").add({
     title,
     body,
     targetUserId,
-    createdAt: admin.firestore.FieldValue.serverTimestamp()
+    createdAt: FieldValue.serverTimestamp(),
   });
 
-  if (tokens.length === 0) return { success: true };
+  if (tokens.length === 0) {
+    return {
+      success: true,
+      sent: 0,
+    };
+  }
 
-  // Send push
-  await admin.messaging().sendEachForMulticast({
+  const response = await getMessaging().sendEachForMulticast({
     tokens,
     notification: {
       title,
@@ -58,5 +64,9 @@ exports.sendPushNotification = functions.https.onCall(async (data, context) => {
     },
   });
 
-  return { success: true };
+  return {
+    success: true,
+    sent: response.successCount,
+    failed: response.failureCount,
+  };
 });
