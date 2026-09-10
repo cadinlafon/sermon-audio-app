@@ -1,9 +1,9 @@
 import { useNavigate } from "react-router-dom";
 import { useAudioPlayer } from "../context/AudioPlayerContext";
 
-import back30 from "../assets/player/back30.png";
-import pauseIcon from "../assets/player/pause.png";
-import playIcon from "../assets/player/play.png";
+import back30 from "../assets/Player/back30.png";
+import pauseIcon from "../assets/Player/pause.png";
+import playIcon from "../assets/Player/play.png";
 
 export default function MiniPlayer() {
   const { current, isPlaying, togglePlay, audioRef } = useAudioPlayer();
@@ -25,8 +25,6 @@ export default function MiniPlayer() {
 
   return (
     <div style={container} onClick={() => navigate("/player")}>
-      <audio ref={audioRef} src={current.audioURL} />
-
       {/* warm left accent bar */}
       <div style={accentBar} />
 

@@ -5,10 +5,13 @@ import {
   getDocs,
   query,
   where,
-  orderBy
+  orderBy,
+  doc,
+  getDoc,
 } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { useAudioPlayer } from "../context/AudioPlayerContext";
+import AudioCard from "../components/AudioCard";
 
 export default function Saved() {
   const [user, setUser] = useState(null);
@@ -36,7 +39,19 @@ export default function Saved() {
           orderBy("createdAt", "desc")
         );
         const snap = await getDocs(q);
-        setSaved(snap.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+        const savedAudio = await Promise.all(snap.docs.map(async (savedDoc) => {
+          const savedItem = savedDoc.data();
+          // Older saves contained only the title and speaker. Fill them from
+          // the source document so every saved card has the full feature set.
+          const audioDoc = savedItem.sermonId ? await getDoc(doc(db, "audio", savedItem.sermonId)) : null;
+          return {
+            ...savedItem,
+            ...(audioDoc?.exists() ? audioDoc.data() : {}),
+            id: savedItem.sermonId || savedDoc.id,
+            savedDocId: savedDoc.id,
+          };
+        }));
+        setSaved(savedAudio);
       } catch (err) {
         console.error("Error fetching saved:", err);
       } finally {
@@ -64,6 +79,10 @@ export default function Saved() {
     );
   }
 
+  const saveSummaryLocally = (id, aiSummary) => {
+    setSaved((items) => items.map((item) => item.id === id ? { ...item, aiSummary } : item));
+  };
+
   //////////////////////////////////////////////////
   // UI
   //////////////////////////////////////////////////
@@ -87,13 +106,13 @@ export default function Saved() {
       )}
 
       {saved.map((item) => (
-        <div key={item.id} style={card}>
-          <h3 style={titleStyle}>{item.title}</h3>
-          <p style={speakerStyle}>{item.speaker}</p>
-          <button onClick={() => playSermon(item)} style={playButton}>
-            <span style={{ fontSize: "11px" }}>▶</span> Play
-          </button>
-        </div>
+        <AudioCard
+          key={item.savedDocId || item.id}
+          audio={item}
+          onPlay={playSermon}
+          onSummarySaved={saveSummaryLocally}
+          onSaveChange={(isSaved, id) => !isSaved && setSaved((items) => items.filter((savedItem) => savedItem.id !== id))}
+        />
       ))}
     </div>
   );
@@ -166,42 +185,4 @@ const emptyBody = {
   lineHeight: 1.7,
   fontFamily: "sans-serif",
   margin: 0,
-};
-
-const card = {
-  background: "#fffdf9",
-  borderRadius: "18px",
-  padding: "22px 22px 18px",
-  marginBottom: "16px",
-  border: "1px solid #eddfc8",
-  boxShadow: "0 2px 12px rgba(160,100,40,0.07)",
-};
-
-const titleStyle = {
-  marginBottom: "5px",
-  fontSize: "17px",
-  fontWeight: "normal",
-  color: "#3d2200",
-};
-
-const speakerStyle = {
-  color: "#9b7040",
-  fontSize: "13px",
-  marginBottom: "14px",
-  fontFamily: "sans-serif",
-};
-
-const playButton = {
-  display: "inline-flex",
-  alignItems: "center",
-  gap: "6px",
-  padding: "8px 18px",
-  borderRadius: "999px",
-  border: "none",
-  background: "linear-gradient(135deg, #c97c2e 0%, #a85e18 100%)",
-  color: "#fff8ee",
-  cursor: "pointer",
-  fontSize: "13px",
-  fontFamily: "sans-serif",
-  boxShadow: "0 3px 10px rgba(160,80,20,0.25)",
 };

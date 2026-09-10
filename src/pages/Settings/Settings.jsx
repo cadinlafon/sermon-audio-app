@@ -1,107 +1,28 @@
-import { useState } from "react";
-
 import Account from "./Account";
-import Notifications from "./Notifications";
-import Privacy from "./Privacy";
-import About from "./About";
-import HelpCenter from "./HelpCenter";
+
 export default function Settings() {
-
-const [page, setPage] = useState("account");
-
-const renderPage = () => {
-
-switch (page) {
-
-case "account":
-return <Account />;
-
-case "help":
-return <HelpCenter />;
-
-case "notifications":
-return <Notifications />;
-
-case "privacy":
-return <Privacy />;
-
-case "about":
-return <About />;
-
-default:
-return <Account />;
-
+  return (
+    <div style={pageWrapper}>
+      <div style={contentArea}>
+        <div style={pageHeader}>
+          <h1 style={pageTitle}>Settings</h1>
+        </div>
+        <Account />
+      </div>
+    </div>
+  );
 }
 
+const pageWrapper = {
+  background: "#fdf8f3",
+  minHeight: "100vh",
 };
 
-return (
-
-<div style={container}>
-
-{/* SIDEBAR */}
-
-<div style={sidebar}>
-
-<h2 style={{ marginBottom: "25px" }}>Settings</h2>
-
-<button onClick={() => setPage("account")} style={navBtn}>
-Account
-</button>
-
-
-
-<button onClick={() => setPage("notifications")} style={navBtn}>
-Notifications
-</button>
-
-
-<button onClick={() => setPage("help")} style={navBtn}>
-Help Center
-</button>
-
-<button onClick={() => setPage("about")} style={navBtn}>
-About
-</button>
-
-</div>
-
-{/* PAGE CONTENT */}
-
-<div style={content}>
-{renderPage()}
-</div>
-
-</div>
-
-);
-
-}
-
-const container = {
-display: "flex",
-minHeight: "100vh"
+const contentArea = {
+  padding: "32px 20px 60px",
+  maxWidth: "680px",
+  margin: "0 auto",
 };
 
-const sidebar = {
-width: "220px",
-background: "#f3f4f6",
-padding: "30px",
-display: "flex",
-flexDirection: "column",
-gap: "10px"
-};
-
-const content = {
-flex: 1,
-padding: "40px"
-};
-
-const navBtn = {
-padding: "10px",
-border: "none",
-background: "#e5e7eb",
-borderRadius: "6px",
-cursor: "pointer",
-textAlign: "left"
-};
+const pageHeader = { marginBottom: "20px" };
+const pageTitle = { fontSize: "26px", fontWeight: "normal", color: "#3d2200", margin: 0, fontFamily: "'Georgia', serif" };

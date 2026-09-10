@@ -13,10 +13,13 @@ export const toggleSaveSermon = async (userId, sermon) => {
     await deleteDoc(ref);
     return false;
   } else {
-    // ✅ Save
+    // Store the complete audio record so a saved item can be played and
+    // summarized just like it can from its original listing.
+    const { id, ...audio } = sermon;
     await setDoc(ref, {
+      ...audio,
       userId,
-      sermonId: sermon.id,
+      sermonId: id,
       title: sermon.title || "Unknown",
       speaker: sermon.speaker || "Unknown",
       createdAt: serverTimestamp()

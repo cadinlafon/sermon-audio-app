@@ -10,6 +10,7 @@ import {
 } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { useAudioPlayer } from "../context/AudioPlayerContext";
+import AudioCard from "../components/AudioCard";
 
 export default function Homilies() {
   const [homilies, setHomilies] = useState([]);
@@ -93,6 +94,10 @@ export default function Homilies() {
     });
   };
 
+  const saveSummaryLocally = (id, aiSummary) => {
+    setHomilies((items) => items.map((item) => item.id === id ? { ...item, aiSummary } : item));
+  };
+
   ////////////////////////////////////////////////
   // FILTER
   ////////////////////////////////////////////////
@@ -159,17 +164,7 @@ export default function Homilies() {
 
       {/* LIST */}
       {displayList.map((item) => (
-        <div key={item.id} style={card}>
-          <h3 style={titleStyle}>{item.title}</h3>
-          <p style={speakerStyle}>{item.speaker}</p>
-
-          <button
-            onClick={() => handlePlay(item)}
-            style={playButton}
-          >
-            ▶ Play
-          </button>
-        </div>
+        <AudioCard key={item.id} audio={item} onPlay={handlePlay} onSummarySaved={saveSummaryLocally} />
       ))}
 
       {/* 🔥 NOTICES (BOTTOM) */}
@@ -222,25 +217,4 @@ const pillButton = {
 
 const inputStyle = {
   padding: "9px 16px",
-};
-
-const card = {
-  background: "#fff",
-  borderRadius: "18px",
-  padding: "20px",
-  marginBottom: "12px",
-};
-
-const titleStyle = {
-  fontSize: "16px",
-};
-
-const speakerStyle = {
-  fontSize: "13px",
-  color: "#777",
-};
-
-const playButton = {
-  marginTop: "10px",
-  padding: "8px 16px",
 };

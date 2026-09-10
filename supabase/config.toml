@@ -1,0 +1,12 @@
+[functions.summarize-audio]
+# This function authenticates Firebase ID tokens itself. Supabase JWT verification
+# must remain off because this app uses Firebase Auth, not Supabase Auth.
+verify_jwt = false
+
+[functions.audio-admin]
+# Same as above: authenticates the Firebase ID token itself.
+verify_jwt = false
+
+[functions.audio-download-url]
+# Same as above: authenticates the Firebase ID token itself.
+verify_jwt = false

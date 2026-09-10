@@ -7,17 +7,39 @@ import {
   doc,
   setDoc,
   serverTimestamp,
-  addDoc,
-  collection,
   getDoc,
 } from "firebase/firestore";
 import { auth, db, googleProvider } from "../firebase";
 import googleLogo from "../assets/auth/google-logo.png";
+import { logEvent } from "../utils/logEvent";
+import { getTrafficData } from "../utils/trafficSource";
+
+const REFERRAL_OPTIONS = [
+  "Church Email",
+  "QR Code / Printed Ad",
+  "Facebook",
+  "Instagram",
+  "YouTube",
+  "Google Search",
+  "ChatGPT",
+  "Claude",
+  "Gemini",
+  "TikTok",
+  "Reddit",
+  "Church Website",
+  "Friend or Family Member",
+  "Pastor / Church Staff",
+  "Church Bulletin",
+  "Flyer / Poster",
+  "Word of Mouth",
+  "Other",
+];
 
 export default function SignUp() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [referralSource, setReferralSource] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -25,15 +47,27 @@ export default function SignUp() {
   // EMAIL SIGNUP
   //////////////////////////////////////////////////
   const handleSignUp = async () => {
-    if (!fullName || !email || !password) {
+    if (!fullName || !email || !password || !referralSource) {
       setError("Please fill out all fields.");
       return;
     }
+
     try {
       setLoading(true);
       setError("");
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+
       const user = userCredential.user;
+
+      // Attribute this signup to whichever referral source
+      // first brought this visitor to the app.
+      const traffic = getTrafficData();
+
       await setDoc(doc(db, "users", user.uid), {
         uid: user.uid,
         fullName,
@@ -41,17 +75,31 @@ export default function SignUp() {
         role: "user",
         loginMethod: "email",
         emailVerified: true,
+
+        // User-provided answer
+        howDidYouFindUs: referralSource,
+
+        // Automatic traffic attribution
+        referral: {
+          source: traffic.firstTrafficSource,
+          medium: traffic.firstTrafficMedium,
+          campaign: traffic.firstTrafficCampaign,
+          platform: traffic.firstPlatform,
+        },
+
         createdAt: serverTimestamp(),
       });
-      await addDoc(collection(db, "logs"), {
-        type: "account_created",
+
+      await logEvent("account_created", {
         userId: user.uid,
         email: user.email,
-        timestamp: serverTimestamp(),
+        referralSource,
       });
+
       setEmail("");
       setPassword("");
       setFullName("");
+      setReferralSource("");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -63,12 +111,24 @@ export default function SignUp() {
   // GOOGLE SIGNUP
   //////////////////////////////////////////////////
   const signUpWithGoogle = async () => {
+    if (!referralSource) {
+      setError("Please select how you found this app first.");
+      return;
+    }
+
     try {
+      setLoading(true);
+      setError("");
+
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
+
       const userRef = doc(db, "users", user.uid);
       const snap = await getDoc(userRef);
+
       if (!snap.exists()) {
+        const traffic = getTrafficData();
+
         await setDoc(userRef, {
           uid: user.uid,
           fullName: user.displayName,
@@ -76,17 +136,31 @@ export default function SignUp() {
           role: "user",
           loginMethod: "google",
           emailVerified: true,
+
+          // User-provided answer
+          howDidYouFindUs: referralSource,
+
+          // Automatic traffic attribution
+          referral: {
+            source: traffic.firstTrafficSource,
+            medium: traffic.firstTrafficMedium,
+            campaign: traffic.firstTrafficCampaign,
+            platform: traffic.firstPlatform,
+          },
+
           createdAt: serverTimestamp(),
         });
-        await addDoc(collection(db, "logs"), {
-          type: "account_created_google",
+
+        await logEvent("account_created_google", {
           userId: user.uid,
           email: user.email,
-          timestamp: serverTimestamp(),
+          referralSource,
         });
       }
     } catch (err) {
       setError("Google sign-up failed. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -99,15 +173,25 @@ export default function SignUp() {
       <div style={heroBand}>
         <p style={eyebrow}>Palouse Fellowship</p>
         <h1 style={heroTitle}>Create Account</h1>
-        <p style={heroSub}>Save sermons, track your listens, and more.</p>
+        <p style={heroSub}>
+          Save sermons, track your listens, and more.
+        </p>
       </div>
 
       <div style={contentArea}>
         <div style={card}>
 
           {/* GOOGLE */}
-          <button onClick={signUpWithGoogle} style={googleButton}>
-            <img src={googleLogo} style={{ width: "18px", flexShrink: 0 }} alt="Google" />
+          <button
+            onClick={signUpWithGoogle}
+            style={googleButton}
+            disabled={loading}
+          >
+            <img
+              src={googleLogo}
+              style={{ width: "18px", flexShrink: 0 }}
+              alt="Google"
+            />
             Continue with Google
           </button>
 
@@ -151,21 +235,50 @@ export default function SignUp() {
             />
           </div>
 
+          {/* HOW DID YOU FIND US */}
+          <div style={fieldGroup}>
+            <label style={fieldLabel}>
+              How did you find this app?
+            </label>
+
+            <select
+              value={referralSource}
+              onChange={(e) => setReferralSource(e.target.value)}
+              style={selectStyle}
+              disabled={loading}
+            >
+              <option value="">
+                Select an option...
+              </option>
+
+              {REFERRAL_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </div>
+
           {error && <p style={errorText}>{error}</p>}
 
           <button
             onClick={handleSignUp}
             disabled={loading}
-            style={loading ? { ...primaryButton, opacity: 0.7 } : primaryButton}
+            style={
+              loading
+                ? { ...primaryButton, opacity: 0.7 }
+                : primaryButton
+            }
           >
             {loading ? "Creating account…" : "Create Account"}
           </button>
-
         </div>
 
         <p style={footerNote}>
           Already have an account?{" "}
-          <a href="/login" style={footerLink}>Sign in</a>
+          <a href="/login" style={footerLink}>
+            Sign in
+          </a>
         </p>
       </div>
     </div>
@@ -183,7 +296,8 @@ const page = {
 };
 
 const heroBand = {
-  background: "linear-gradient(135deg, #6b3a10 0%, #3d2200 100%)",
+  background:
+    "linear-gradient(135deg, #6b3a10 0%, #3d2200 100%)",
   padding: "40px 24px 36px",
   textAlign: "center",
 };
@@ -287,6 +401,12 @@ const inputStyle = {
   outline: "none",
 };
 
+const selectStyle = {
+  ...inputStyle,
+  cursor: "pointer",
+  appearance: "auto",
+};
+
 const errorText = {
   fontSize: "13px",
   color: "#a32d2d",
@@ -298,7 +418,8 @@ const primaryButton = {
   padding: "13px",
   borderRadius: "12px",
   border: "none",
-  background: "linear-gradient(135deg, #c97c2e 0%, #a85e18 100%)",
+  background:
+    "linear-gradient(135deg, #c97c2e 0%, #a85e18 100%)",
   color: "#fff8ee",
   cursor: "pointer",
   fontSize: "15px",

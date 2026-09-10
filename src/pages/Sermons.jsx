@@ -10,6 +10,7 @@ import {
 } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { useAudioPlayer } from "../context/AudioPlayerContext";
+import AudioCard from "../components/AudioCard";
 
 export default function Sermons() {
   const [sermons, setSermons] = useState([]);
@@ -56,6 +57,10 @@ export default function Sermons() {
     await addDoc(collection(db, "appUsage"), { sermonId: sermon.id, userId: user.uid, createdAt: serverTimestamp() });
   };
 
+  const saveSummaryLocally = (id, aiSummary) => {
+    setSermons((items) => items.map((item) => item.id === id ? { ...item, aiSummary } : item));
+  };
+
   const filtered = sermons.filter((sermon) =>
     sermon.title?.toLowerCase().includes(search.toLowerCase()) &&
     (speakerFilter === "all" || sermon.speaker === speakerFilter) &&
@@ -94,14 +99,7 @@ export default function Sermons() {
       {displayList.length === 0 && <p style={emptyText}>Nothing found — try adjusting your filters.</p>}
 
       {displayList.map((sermon) => (
-        <div key={sermon.id} style={card}>
-          <span style={tagStyle(sermon.type)}>{sermon.type === "homily" ? "Homily" : "Sermon"}</span>
-          <h3 style={titleStyle}>{sermon.title}</h3>
-          <p style={speakerStyle}>{sermon.speaker}</p>
-          <button onClick={() => handlePlay(sermon)} style={playButton}>
-            <span style={{ fontSize: "11px" }}>▶</span> Play
-          </button>
-        </div>
+        <AudioCard key={sermon.id} audio={sermon} onPlay={handlePlay} onSummarySaved={saveSummaryLocally} />
       ))}
 
       {notices.filter((n) => n.position === "bottom").map((n) => (
@@ -122,9 +120,4 @@ const inputStyle = { padding: "9px 16px", borderRadius: "999px", border: "1px so
 const noticeBox = { background: "#fffbee", border: "1px solid #f0d898", borderRadius: "14px", padding: "14px 18px", marginBottom: "14px" };
 const noticeTitle = { fontSize: "15px", color: "#3d2200", fontFamily: "'Georgia', serif" };
 const noticeMsg = { fontSize: "13px", color: "#7a5530", fontFamily: "sans-serif", lineHeight: 1.6, margin: "4px 0 0" };
-const card = { position: "relative", background: "#fffdf9", borderRadius: "18px", padding: "22px 22px 18px", marginBottom: "16px", border: "1px solid #eddfc8", boxShadow: "0 2px 12px rgba(160,100,40,0.07)" };
-const tagStyle = (type) => ({ display: "inline-block", fontSize: "11px", padding: "3px 10px", borderRadius: "999px", background: type === "homily" ? "#e8f0fe" : "#f6e4b0", color: type === "homily" ? "#2a5ab5" : "#7a5a10", fontFamily: "sans-serif", marginBottom: "10px", letterSpacing: "0.04em" });
-const titleStyle = { marginBottom: "5px", fontSize: "17px", fontWeight: "normal", color: "#3d2200" };
-const speakerStyle = { color: "#9b7040", fontSize: "13px", marginBottom: "14px", fontFamily: "sans-serif" };
-const playButton = { display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 18px", borderRadius: "999px", border: "none", background: "linear-gradient(135deg, #c97c2e 0%, #a85e18 100%)", color: "#fff8ee", cursor: "pointer", fontSize: "13px", fontFamily: "sans-serif", boxShadow: "0 3px 10px rgba(160,80,20,0.25)" };
 const emptyText = { textAlign: "center", color: "#b08050", fontStyle: "italic", fontFamily: "sans-serif", padding: "30px 0" };

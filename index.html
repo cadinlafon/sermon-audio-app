@@ -1,38 +1,116 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="description" content="Listen to sermons and homilies from Palouse Fellowship. Stream audio, save favorites, and grow in faith anytime." />
-<meta property="og:title" content="PF Church App – Palouse Fellowship" />
-<meta name="robots" content="index, follow" />
-<meta property="og:title" content="PF Church App – Sermons & Audio" />
-<meta property="og:description" content="Listen to sermons and homilies from Palouse Fellowship anytime." />
-<meta property="og:image" content="/icons/icon-512.png" />
-<meta property="og:url" content="https://app.palousefellowship.com" />
-<meta property="og:type" content="website" />
 
-<link rel="icon" type="image/png" href="/unnamed.png" />
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-VZECMRJDK0"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
 
-<link rel="manifest" href="/manifest.json" />
-<meta name="theme-color" content="#000000" />
+    gtag('config', 'G-VZECMRJDK0');
+  </script>
 
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8" />
 
-<title>PF Church App – Sermons & Audio | Palouse Fellowship</title>
-<!-- Microsoft Clarity -->
-<script type="text/javascript">
-(function(c,l,a,r,i,t,y){
-  c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-  t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-  y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-})(window, document, "clarity", "script", "vs7cr4m9ne");
-</script>
+  <meta
+    name="description"
+    content="Listen to sermons and homilies from Palouse Fellowship. Stream audio, save favorites, and grow in faith anytime."
+  />
+
+  <meta
+    name="robots"
+    content="index, follow"
+  />
+
+  <!-- Open Graph / Social Sharing -->
+  <meta
+    property="og:title"
+    content="PF Church App – Sermons & Audio"
+  />
+
+  <meta
+    property="og:description"
+    content="Listen to sermons and homilies from Palouse Fellowship anytime."
+  />
+
+  <meta
+    property="og:image"
+    content="/icons/icon-512.png"
+  />
+
+  <meta
+    property="og:url"
+    content="https://app.palousefellowship.com"
+  />
+
+  <meta
+    property="og:type"
+    content="website"
+  />
+
+  <!-- App Icon -->
+  <link
+    rel="icon"
+    type="image/png"
+    href="/unnamed.png"
+  />
+
+  <!-- PWA Manifest -->
+  <link
+    rel="manifest"
+    href="/manifest.json"
+  />
+
+  <meta
+    name="theme-color"
+    content="#000000"
+  />
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
+
+  <title>
+    PF Church App – Sermons & Audio | Palouse Fellowship
+  </title>
+
+  <style>
+    @keyframes uploadSlide {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(250%); }
+    }
+  </style>
+
+
+  <!-- Microsoft Clarity -->
+  <script type="text/javascript">
+    (function(c,l,a,r,i,t,y){
+      c[a]=c[a]||function(){
+        (c[a].q=c[a].q||[]).push(arguments)
+      };
+
+      t=l.createElement(r);
+      t.async=1;
+      t.src="https://www.clarity.ms/tag/"+i;
+
+      y=l.getElementsByTagName(r)[0];
+      y.parentNode.insertBefore(t,y);
+    })(window, document, "clarity", "script", "vs7cr4m9ne");
+  </script>
 
 </head>
 
 <body>
-<div id="root"></div>
 
-<script type="module" src="/src/main.jsx"></script>
+  <div id="root"></div>
+
+  <script
+    type="module"
+    src="/src/main.jsx"
+  ></script>
+
 </body>
 </html>

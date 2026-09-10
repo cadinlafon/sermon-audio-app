@@ -1,22 +1,32 @@
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db, auth } from "../firebase";
+import { getTrafficData } from "./trafficSource";
 
 export async function logEvent(event, data = {}) {
   try {
     //////////////////////////////////////////////////
     // SESSION
     //////////////////////////////////////////////////
+
     let sessionId = localStorage.getItem("sessionId");
 
     if (!sessionId) {
       sessionId = crypto.randomUUID();
+
       localStorage.setItem("sessionId", sessionId);
       localStorage.setItem("sessionStart", Date.now());
     }
 
     //////////////////////////////////////////////////
-    // USER INFO 🔥 (THIS WAS MISSING)
+    // VISITOR / TRAFFIC SOURCE
     //////////////////////////////////////////////////
+
+    const trafficData = getTrafficData();
+
+    //////////////////////////////////////////////////
+    // USER INFO
+    //////////////////////////////////////////////////
+
     const currentUser = auth.currentUser;
 
     let userData = {
@@ -28,21 +38,72 @@ export async function logEvent(event, data = {}) {
     if (currentUser) {
       userData.userId = currentUser.uid;
       userData.email = currentUser.email || null;
-
-      // OPTIONAL: if you stored fullName in Firestore
-      // we’ll rely on Logs.jsx mapping instead (better performance)
     }
+
+    //////////////////////////////////////////////////
+    // DEVICE INFO
+    //////////////////////////////////////////////////
+
+    const device = {
+      userAgent: navigator.userAgent,
+      language: navigator.language || null,
+      platform: navigator.platform || null,
+      screenWidth: window.screen?.width || null,
+      screenHeight: window.screen?.height || null,
+      timezone:
+        Intl.DateTimeFormat().resolvedOptions().timeZone || null,
+
+      isMobile:
+        /Android|iPhone|iPad|iPod/i.test(navigator.userAgent),
+
+      isStandalone:
+        window.matchMedia("(display-mode: standalone)").matches ||
+        window.navigator.standalone === true,
+    };
 
     //////////////////////////////////////////////////
     // LOG OBJECT
     //////////////////////////////////////////////////
+
     const logData = {
       event,
       ...data,
 
       sessionId,
 
-      ...userData, // 🔥 attach user info
+      visitorId: trafficData.visitorId,
+
+      firstTrafficSource:
+        trafficData.firstTrafficSource,
+
+      firstTrafficMedium:
+        trafficData.firstTrafficMedium,
+
+      firstTrafficCampaign:
+        trafficData.firstTrafficCampaign,
+
+      latestTrafficSource:
+        trafficData.latestTrafficSource,
+
+      latestTrafficMedium:
+        trafficData.latestTrafficMedium,
+
+      latestTrafficCampaign:
+        trafficData.latestTrafficCampaign,
+
+      // Normalized platform buckets (facebook, instagram, youtube,
+      // chatgpt, claude, google, direct, etc.) — this is what the
+      // Referrals admin page groups by, so it doesn't need to
+      // re-derive it from raw source strings every time it loads.
+      firstPlatform: trafficData.firstPlatform,
+      latestPlatform: trafficData.latestPlatform,
+
+      trafficCapturedAt:
+        trafficData.trafficCapturedAt,
+
+      ...userData,
+
+      device,
 
       page: window.location.pathname,
 

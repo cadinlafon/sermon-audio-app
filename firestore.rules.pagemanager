@@ -1,0 +1,32 @@
+// Page Manager security rules
+//
+// This project has no firestore.rules file checked into the repo —
+// its Firestore security rules are managed directly in the Firebase
+// console (Build > Firestore Database > Rules), outside of this
+// codebase. This file is NOT deployed automatically.
+//
+// To lock down the new "pages" collection, open your existing rules
+// in the Firebase console and merge in the `match /pages/...` block
+// below (inside your existing `service cloud.firestore { match
+// /databases/{database}/documents { ... } }` wrapper). Keep every
+// other rule you already have — this only adds rules for the two
+// new paths Page Manager uses.
+//
+// Everyone can READ page config (the app needs it to render
+// navigation for logged-out visitors too). Only admins can WRITE it.
+// Adjust `isAdmin()` if your project already defines an equivalent
+// helper function.
+
+match /pages/{pageId} {
+  allow read: if true;
+  allow write: if request.auth != null &&
+    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
+
+  match /history/{entryId} {
+    allow read: if request.auth != null &&
+      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
+    allow create: if request.auth != null &&
+      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
+    allow update, delete: if false;
+  }
+}

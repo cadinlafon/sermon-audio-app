@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { db, auth } from "../firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, onSnapshot } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 
 const BADGES = [
@@ -15,6 +15,7 @@ export default function Stats() {
   const [user, setUser] = useState(null);
   const [stats, setStats] = useState(null);
   const [authLoaded, setAuthLoaded] = useState(false);
+  const [error, setError] = useState("");
 
   //////////////////////////////////////////////////
   // AUTH
@@ -31,34 +32,43 @@ export default function Stats() {
   // FETCH STATS
   //////////////////////////////////////////////////
   useEffect(() => {
-    if (!user) return;
-
-    async function fetchStats() {
-      const ref = doc(db, "userStats", user.uid);
-      const snap = await getDoc(ref);
-
-      if (!snap.exists()) {
-        setStats({ totalHours: 0, topSermons: [], favoriteSpeaker: "N/A" });
-        return;
-      }
-
-      const data = snap.data();
-      const totalHours = (data.totalSeconds || 0) / 3600;
-
-      const sermons = data.sermons || {};
-      const topSermons = Object.entries(sermons)
-        .map(([id, s]) => ({ title: s.title, count: s.count || 0 }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 3);
-
-      const speakers = data.speakers || {};
-      const favoriteSpeaker =
-        Object.entries(speakers).sort((a, b) => b[1] - a[1])[0]?.[0] || "N/A";
-
-      setStats({ totalHours, topSermons, favoriteSpeaker });
+    if (!user) {
+      setStats(null);
+      return undefined;
     }
 
-    fetchStats();
+    setError("");
+    return onSnapshot(
+      doc(db, "userStats", user.uid),
+      (snap) => {
+        const data = snap.exists() ? snap.data() : {};
+        const sermons = Object.values(data.sermons || {})
+          .filter((sermon) => sermon && typeof sermon === "object")
+          .map((sermon) => ({
+            title: sermon.title || "Untitled",
+            speaker: sermon.speaker || "Unknown",
+            count: Number(sermon.count) || 0,
+            seconds: Number(sermon.seconds) || 0,
+          }));
+        const topSermons = [...sermons]
+          .sort((a, b) => b.count - a.count || b.seconds - a.seconds)
+          .slice(0, 3);
+        const favoriteSpeaker = [...sermons]
+          .sort((a, b) => b.seconds - a.seconds || b.count - a.count)[0]?.speaker || "N/A";
+
+        setStats({
+          totalHours: (Number(data.totalSeconds) || 0) / 3600,
+          totalPlays: Number(data.totalPlays) || sermons.reduce((total, sermon) => total + sermon.count, 0),
+          topSermons,
+          favoriteSpeaker,
+        });
+      },
+      (snapshotError) => {
+        console.error("Unable to load stats:", snapshotError);
+        setError("We couldn't load your stats. Please refresh and try again.");
+        setStats({ totalHours: 0, totalPlays: 0, topSermons: [], favoriteSpeaker: "N/A" });
+      }
+    );
   }, [user]);
 
   //////////////////////////////////////////////////
@@ -131,10 +141,12 @@ export default function Stats() {
           <span style={tileLabel}>Hours listened</span>
         </div>
         <div style={tile}>
-          <span style={tileNumber}>{stats.topSermons.reduce((a, s) => a + s.count, 0) || "—"}</span>
+          <span style={tileNumber}>{stats.totalPlays}</span>
           <span style={tileLabel}>Total plays</span>
         </div>
       </div>
+
+      {error && <p style={errorText} role="alert">{error}</p>}
 
       {/* FAVORITE SPEAKER */}
       <div style={card}>
@@ -159,6 +171,14 @@ export default function Stats() {
               <span style={sermonCount}>{s.count} {s.count === 1 ? "play" : "plays"}</span>
             </div>
           ))}
+        </div>
+      )}
+
+      {stats.topSermons.length === 0 && (
+        <div style={emptyStatsCard}>
+          <span style={emptyIcon}>🎧</span>
+          <h2 style={emptyTitle}>Your journey starts here</h2>
+          <p style={emptyBody}>Play a sermon and your listening time, favorite speaker, and badges will appear here.</p>
         </div>
       )}
 
@@ -229,6 +249,14 @@ const loadingText = {
   padding: "30px 0",
 };
 
+const errorText = {
+  color: "#a33622",
+  fontSize: "13px",
+  fontFamily: "sans-serif",
+  textAlign: "center",
+  margin: "-16px 0 20px",
+};
+
 const emptyCard = {
   background: "#fffdf9",
   borderRadius: "20px",
@@ -238,6 +266,12 @@ const emptyCard = {
   boxShadow: "0 2px 14px rgba(160,100,40,0.07)",
   maxWidth: "480px",
   margin: "0 auto",
+};
+
+const emptyStatsCard = {
+  ...emptyCard,
+  padding: "28px 24px",
+  marginBottom: "20px",
 };
 
 const emptyIcon = {

@@ -4,6 +4,8 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import { ShutdownProvider } from "./context/ShutdownContext";
 import { AudioPlayerProvider } from "./context/AudioPlayerContext";
+import { AuthProvider } from "./context/AuthContext";
+import { PagesProvider } from "./context/PagesContext";
 import { registerSW } from "virtual:pwa-register";
 
 //////////////////////////////////////////////////
@@ -23,11 +25,15 @@ registerSW({
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <BrowserRouter>
-      <ShutdownProvider>
-        <AudioPlayerProvider>
-          <App />
-        </AudioPlayerProvider>
-      </ShutdownProvider>
+      <AuthProvider>
+        <PagesProvider>
+          <ShutdownProvider>
+            <AudioPlayerProvider>
+              <App />
+            </AudioPlayerProvider>
+          </ShutdownProvider>
+        </PagesProvider>
+      </AuthProvider>
     </BrowserRouter>
   </React.StrictMode>
 );

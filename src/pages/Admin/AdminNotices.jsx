@@ -1,14 +1,17 @@
 import { useEffect, useState } from "react";
 import { db } from "../../firebase";
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from "firebase/firestore";
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, where } from "firebase/firestore";
 
-const blankForm = { title: "", details: "", buttonEnabled: false, buttonText: "", buttonType: "url", buttonValue: "", active: true, pinned: false, audience: "all" };
+const blankForm = { title: "", details: "", buttonEnabled: false, buttonText: "", buttonType: "url", buttonValue: "", active: true, pinned: false, audience: "all", inputEnabled: false, inputMessage: "", inputPlaceholder: "", inputButtonText: "" };
 
 export default function AdminNotices() {
   const [notices, setNotices] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(blankForm);
+  const [viewingSubmissions, setViewingSubmissions] = useState(null);
+  const [submissions, setSubmissions] = useState([]);
+  const [loadingSubmissions, setLoadingSubmissions] = useState(false);
 
   const loadNotices = async () => {
     const snap = await getDocs(collection(db, "notices"));
@@ -20,7 +23,7 @@ export default function AdminNotices() {
   useEffect(() => { loadNotices(); }, []);
 
   const openCreate = () => { setEditing(null); setForm(blankForm); setShowForm(true); };
-  const openEdit = (n) => { setEditing(n); setForm(n); setShowForm(true); };
+  const openEdit = (n) => { setEditing(n); setForm({ ...blankForm, ...n }); setShowForm(true); };
   const closeForm = () => { setShowForm(false); setEditing(null); };
 
   const handleSave = async () => {
@@ -30,9 +33,32 @@ export default function AdminNotices() {
     closeForm(); loadNotices();
   };
 
-  const handleDelete = async (id) => { if (!window.confirm("Delete this notice?")) return; await deleteDoc(doc(db, "notices", id)); loadNotices(); };
+  const handleDelete = async (id) => {
+    if (!window.confirm("Delete this notice?")) return;
+    await deleteDoc(doc(db, "notices", id));
+    const subsSnap = await getDocs(query(collection(db, "noticeSubmissions"), where("noticeId", "==", id)));
+    await Promise.all(subsSnap.docs.map((d) => deleteDoc(doc(db, "noticeSubmissions", d.id))));
+    loadNotices();
+  };
   const toggleActive = async (n) => { await updateDoc(doc(db, "notices", n.id), { active: !n.active }); loadNotices(); };
   const togglePin = async (n) => { await updateDoc(doc(db, "notices", n.id), { pinned: !n.pinned }); loadNotices(); };
+
+  const openSubmissions = async (n) => {
+    setViewingSubmissions(n);
+    setLoadingSubmissions(true);
+    try {
+      const snap = await getDocs(query(collection(db, "noticeSubmissions"), where("noticeId", "==", n.id)));
+      const data = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      data.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+      setSubmissions(data);
+    } catch (err) {
+      console.error("Error loading submissions:", err);
+      setSubmissions([]);
+    } finally {
+      setLoadingSubmissions(false);
+    }
+  };
+  const closeSubmissions = () => { setViewingSubmissions(null); setSubmissions([]); };
 
   const f = (k) => (e) => setForm({ ...form, [k]: e.target.type === "checkbox" ? e.target.checked : e.target.value });
 
@@ -83,6 +109,18 @@ export default function AdminNotices() {
               </>
             )}
 
+            <div style={checkRow}>
+              <label style={checkLabel}><input type="checkbox" checked={form.inputEnabled} onChange={f("inputEnabled")} /> Input (collect submissions)</label>
+            </div>
+
+            {form.inputEnabled && (
+              <>
+                <Field label="Input Message"><textarea value={form.inputMessage} onChange={f("inputMessage")} style={{ ...input, height: "70px", resize: "vertical" }} placeholder="Submit your email to get emails when…" /></Field>
+                <Field label="Input Placeholder"><input value={form.inputPlaceholder} onChange={f("inputPlaceholder")} style={input} placeholder="e.g. Email here" /></Field>
+                <Field label="Submit Button Text"><input value={form.inputButtonText} onChange={f("inputButtonText")} style={input} placeholder="e.g. Submit" /></Field>
+              </>
+            )}
+
             <div style={modalActions}>
               <button style={saveBtn} onClick={handleSave}>Save</button>
               <button style={cancelBtn} onClick={closeForm}>Cancel</button>
@@ -109,12 +147,43 @@ export default function AdminNotices() {
             <button style={actionBtn} onClick={() => openEdit(n)}>Edit</button>
             <button style={actionBtn} onClick={() => toggleActive(n)}>{n.active ? "Disable" : "Enable"}</button>
             <button style={actionBtn} onClick={() => togglePin(n)}>{n.pinned ? "Unpin" : "Pin"}</button>
+            {n.inputEnabled && <button style={actionBtn} onClick={() => openSubmissions(n)}>Submissions</button>}
             <button style={{ ...actionBtn, color: "#dc2626", borderColor: "#fca5a5" }} onClick={() => handleDelete(n.id)}>Delete</button>
           </div>
         </div>
       ))}
 
       {notices.length === 0 && <p style={empty}>No notices yet. Create one above.</p>}
+
+      {/* SUBMISSIONS MODAL */}
+      {viewingSubmissions && (
+        <div style={modalBg}>
+          <div style={modal}>
+            <h2 style={modalTitle}>Submissions — {viewingSubmissions.title}</h2>
+            <p style={pageSubtitle}>Submissions ({submissions.length})</p>
+
+            {loadingSubmissions && <p style={empty}>Loading…</p>}
+
+            {!loadingSubmissions && submissions.length === 0 && (
+              <p style={empty}>No submissions yet.</p>
+            )}
+
+            {!loadingSubmissions && submissions.map((s) => (
+              <div key={s.id} style={submissionRow}>
+                <span style={submissionValue}>{s.value}</span>
+                <span style={submissionMeta}>
+                  {s.userEmail ? `${s.userEmail} · ` : ""}
+                  {s.createdAt?.seconds ? new Date(s.createdAt.seconds * 1000).toLocaleString() : "—"}
+                </span>
+              </div>
+            ))}
+
+            <div style={modalActions}>
+              <button style={cancelBtn} onClick={closeSubmissions}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -153,3 +222,6 @@ const cardDetails = { fontSize: "13px", color: "#7a5530", fontFamily: "sans-seri
 const cardActions = { display: "flex", gap: "8px", flexWrap: "wrap", borderTop: "1px solid #f0e4d0", paddingTop: "12px" };
 const actionBtn = { padding: "6px 12px", borderRadius: "8px", border: "1px solid #eddfc8", background: "transparent", color: "#5c3a1e", fontSize: "12px", fontFamily: "sans-serif", cursor: "pointer" };
 const empty = { textAlign: "center", color: "#b08050", fontFamily: "sans-serif", fontStyle: "italic", padding: "40px 0" };
+const submissionRow = { display: "flex", flexDirection: "column", gap: "3px", padding: "10px 0", borderBottom: "1px solid #f0e4d0" };
+const submissionValue = { fontSize: "14px", color: "#3d2200", fontFamily: "sans-serif", wordBreak: "break-word" };
+const submissionMeta = { fontSize: "11px", color: "#9b7040", fontFamily: "sans-serif" };

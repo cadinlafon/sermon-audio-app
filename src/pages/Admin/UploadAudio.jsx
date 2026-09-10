@@ -1,59 +1,76 @@
 import { useState, useRef } from "react";
-import { db, storage } from "../../firebase";
-import { collection, addDoc, serverTimestamp, getDocs } from "firebase/firestore";
-import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import { db } from "../../firebase";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { uploadPrivateAudio } from "../../utils/privateAudioUpload";
+import { getNextAudioOrder } from "../../utils/audioOrder";
+import BulkUploadAudio from "./BulkUploadAudio";
 
 const speakers = ["Jonathan Mcintosh", "Rusty Olps", "Jason Farley", "Mark Thiele"];
 
 export default function UploadAudio() {
+  const [mode, setMode] = useState("single");
   const [title, setTitle] = useState("");
   const [speaker, setSpeaker] = useState("");
   const [type, setType] = useState("sermon");
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
-  const [progress, setProgress] = useState(0);
+  const [progress, setProgress] = useState(null);
   const [duration, setDuration] = useState(null);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef();
 
   const detectDuration = (f) => {
     const audio = document.createElement("audio");
-    audio.src = URL.createObjectURL(f);
-    audio.addEventListener("loadedmetadata", () => setDuration(Math.floor(audio.duration)));
+    const objectUrl = URL.createObjectURL(f);
+    audio.src = objectUrl;
+    audio.addEventListener("loadedmetadata", () => {
+      setDuration(Number.isFinite(audio.duration) ? Math.floor(audio.duration) : null);
+      URL.revokeObjectURL(objectUrl);
+    }, { once: true });
+    audio.addEventListener("error", () => {
+      setDuration(null);
+      URL.revokeObjectURL(objectUrl);
+    }, { once: true });
   };
 
   const handleFileSelect = (f) => {
     if (!f) return;
+    if (!f.type.startsWith("audio/")) {
+      alert("Please choose an audio file.");
+      return;
+    }
     setFile(f);
     detectDuration(f);
-  };
-
-  const getNextOrder = async () => {
-    const snapshot = await getDocs(collection(db, "audio"));
-    let maxOrder = 0;
-    snapshot.forEach((doc) => { if (doc.data().order > maxOrder) maxOrder = doc.data().order; });
-    return maxOrder + 1;
   };
 
   const handleUpload = async () => {
     if (!file || !title || !speaker) { alert("Title, speaker, and file are required."); return; }
     setUploading(true);
+    setProgress(null);
     try {
-      const storageRef = ref(storage, `audio/${Date.now()}_${file.name}`);
-      const uploadTask = uploadBytesResumable(storageRef, file);
-      uploadTask.on("state_changed",
-        (snap) => setProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100)),
-        (err) => console.error(err),
-        async () => {
-          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-          const order = await getNextOrder();
-          await addDoc(collection(db, "audio"), { title, speaker, type, duration, audioURL: downloadURL, order, createdAt: serverTimestamp() });
-          setTitle(""); setSpeaker(""); setType("sermon"); setFile(null); setDuration(null); setProgress(0);
-          alert("Upload successful 🎉");
-          setUploading(false);
-        }
-      );
-    } catch (err) { console.error(err); alert("Upload failed."); setUploading(false); }
+      const audioStorageKey = await uploadPrivateAudio(file, setProgress);
+
+      setProgress(100);
+
+      const order = await getNextAudioOrder();
+      await addDoc(collection(db, "audio"), {
+        title,
+        speaker,
+        type,
+        duration,
+        audioStorageKey,
+        order,
+        createdAt: serverTimestamp(),
+      });
+
+      setTitle(""); setSpeaker(""); setType("sermon"); setFile(null); setDuration(null);
+      alert("Upload successful 🎉");
+    } catch (err) {
+      console.error(err);
+      alert("Upload failed.");
+    }
+    setUploading(false);
+    setProgress(null);
   };
 
   const fmt = (s) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
@@ -65,6 +82,24 @@ export default function UploadAudio() {
         <p style={pageSubtitle}>Add a new sermon, homily, or Sunday School lesson.</p>
       </div>
 
+      <div style={modeRow}>
+        <button
+          style={mode === "single" ? { ...modeBtn, ...modeBtnActive } : modeBtn}
+          onClick={() => setMode("single")}
+        >
+          Single Upload
+        </button>
+        <button
+          style={mode === "bulk" ? { ...modeBtn, ...modeBtnActive } : modeBtn}
+          onClick={() => setMode("bulk")}
+        >
+          Bulk Upload
+        </button>
+      </div>
+
+      {mode === "bulk" && <BulkUploadAudio speakers={speakers} />}
+
+      {mode === "single" && (
       <div style={card}>
         <div style={fieldGroup}>
           <label style={fieldLabel}>Title</label>
@@ -115,20 +150,30 @@ export default function UploadAudio() {
               <div style={{ textAlign: "center" }}>
                 <div style={dropIcon}>📁</div>
                 <div style={dropText}>Drag & drop your audio file here</div>
-                <div style={dropHint}>or click to browse — MP3 files only</div>
+                <div style={dropHint}>or click to browse — MP3, M4A, WAV, or OGG</div>
               </div>
             )}
           </div>
-          <input ref={fileInputRef} type="file" accept="audio/mpeg,audio/mp3" style={{ display: "none" }} onChange={(e) => handleFileSelect(e.target.files[0])} />
+          <input ref={fileInputRef} type="file" accept="audio/*" style={{ display: "none" }} onChange={(e) => handleFileSelect(e.target.files[0])} />
         </div>
 
-        {/* PROGRESS */}
+        {/* UPLOADING STATE */}
         {uploading && (
           <div style={fieldGroup}>
             <div style={progressTrack}>
-              <div style={{ ...progressFill, width: `${progress}%` }} />
+              {progress === null ? (
+                <div style={progressFillIndeterminate} />
+              ) : (
+                <div style={{ ...progressFillDeterminate, width: `${progress}%` }} />
+              )}
             </div>
-            <p style={progressLabel}>Uploading… {progress}%</p>
+            <p style={progressLabel}>
+              {progress === null
+                ? "Preparing upload…"
+                : progress < 100
+                ? `Uploading… ${progress}%`
+                : "Finishing up…"}
+            </p>
           </div>
         )}
 
@@ -136,6 +181,7 @@ export default function UploadAudio() {
           {uploading ? "Uploading…" : "🚀 Upload"}
         </button>
       </div>
+      )}
     </div>
   );
 }
@@ -144,6 +190,10 @@ const page = { maxWidth: "640px" };
 const pageHeader = { marginBottom: "24px" };
 const pageTitle = { fontSize: "26px", fontWeight: "normal", color: "#3d2200", margin: "0 0 4px", fontFamily: "'Georgia', serif" };
 const pageSubtitle = { fontSize: "14px", color: "#9b7040", fontFamily: "sans-serif", margin: 0 };
+
+const modeRow = { display: "flex", gap: "8px", marginBottom: "20px" };
+const modeBtn = { padding: "8px 16px", borderRadius: "999px", border: "1px solid #eddfc8", background: "#fdf8f3", color: "#7a4f10", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer" };
+const modeBtnActive = { background: "linear-gradient(135deg, #c97c2e, #a85e18)", color: "#fff8ee", border: "none" };
 
 const card = {
   background: "#fffdf9",
@@ -191,7 +241,19 @@ const dropText = { fontSize: "14px", fontFamily: "sans-serif", color: "#5c3a1e",
 const dropHint = { fontSize: "12px", fontFamily: "sans-serif", color: "#b08050" };
 
 const progressTrack = { height: "8px", background: "#eddfc8", borderRadius: "999px", overflow: "hidden" };
-const progressFill = { height: "100%", background: "linear-gradient(to right, #e08930, #c97c2e)", borderRadius: "999px", transition: "width 0.2s" };
+const progressFillIndeterminate = {
+  height: "100%",
+  width: "40%",
+  background: "linear-gradient(to right, #e08930, #c97c2e)",
+  borderRadius: "999px",
+  animation: "uploadSlide 1.1s ease-in-out infinite",
+};
+const progressFillDeterminate = {
+  height: "100%",
+  background: "linear-gradient(to right, #e08930, #c97c2e)",
+  borderRadius: "999px",
+  transition: "width 0.2s ease-out",
+};
 const progressLabel = { fontSize: "12px", fontFamily: "sans-serif", color: "#9b7040", margin: "6px 0 0", textAlign: "center" };
 
 const uploadBtn = {

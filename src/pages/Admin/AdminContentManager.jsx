@@ -1,12 +1,40 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { db } from "../../firebase";
-import { collection, getDocs, updateDoc, doc } from "firebase/firestore";
+import { collection, getDocs, updateDoc, deleteDoc, doc } from "firebase/firestore";
+import { deletePrivateAudio, uploadPrivateAudio } from "../../utils/privateAudioUpload";
+
+const speakers = ["Jonathan Mcintosh", "Rusty Olps", "Jason Farley", "Mark Thiele"];
+
+function toDateInputValue(audio) {
+  if (audio.date) return audio.date;
+  if (audio.createdAt?.seconds) {
+    return new Date(audio.createdAt.seconds * 1000).toISOString().slice(0, 10);
+  }
+  return "";
+}
+
+function formatDisplayDate(audio) {
+  const value = audio.date || (audio.createdAt?.seconds ? new Date(audio.createdAt.seconds * 1000).toISOString().slice(0, 10) : null);
+  if (!value) return "No date";
+  const [y, m, d] = value.split("-");
+  return `${m}/${d}/${y}`;
+}
 
 export default function AdminContentManager() {
   const [audioList, setAudioList] = useState([]);
   const [search, setSearch] = useState("");
   const [audioGroup, setAudioGroup] = useState("sermons");
   const [sortOrder, setSortOrder] = useState("desc");
+
+  // Edit modal state
+  const [editing, setEditing] = useState(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editSpeaker, setEditSpeaker] = useState("");
+  const [editType, setEditType] = useState("sermon");
+  const [editDate, setEditDate] = useState("");
+  const [editFile, setEditFile] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const editFileInputRef = useRef();
 
   const loadAudio = async () => {
     const snapshot = await getDocs(collection(db, "audio"));
@@ -31,11 +59,61 @@ export default function AdminContentManager() {
     loadAudio();
   };
 
+  // ── Edit ──────────────────────────────────────────
+  const openEdit = (audio) => {
+    setEditing(audio);
+    setEditTitle(audio.title || "");
+    setEditSpeaker(audio.speaker || "");
+    setEditType(audio.type || "sermon");
+    setEditDate(toDateInputValue(audio));
+    setEditFile(null);
+  };
+
+  const closeEdit = () => { setEditing(null); setEditFile(null); };
+
+  const saveEdit = async () => {
+    if (!editTitle || !editSpeaker) { alert("Title and speaker are required."); return; }
+    setSaving(true);
+    try {
+      const updates = { title: editTitle, speaker: editSpeaker, type: editType, date: editDate };
+      let previousStorageKey;
+
+      if (editFile) {
+        updates.audioStorageKey = await uploadPrivateAudio(editFile);
+        previousStorageKey = editing.audioStorageKey;
+      }
+
+      await updateDoc(doc(db, "audio", editing.id), updates);
+      // Preserve a playable existing recording if the Firestore update fails.
+      // A failed cleanup only leaves an orphaned private file; it never breaks playback.
+      if (previousStorageKey) await deletePrivateAudio(previousStorageKey);
+      closeEdit();
+      loadAudio();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to save changes.");
+    }
+    setSaving(false);
+  };
+
+  // ── Delete ────────────────────────────────────────
+  const handleDelete = async (audio) => {
+    if (!window.confirm(`Delete "${audio.title}"? This cannot be undone.`)) return;
+    try {
+      await deletePrivateAudio(audio.audioStorageKey);
+      await deleteDoc(doc(db, "audio", audio.id));
+      loadAudio();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete.");
+    }
+  };
+
   return (
     <div style={page}>
       <div style={pageHeader}>
         <h1 style={pageTitle}>Content Manager</h1>
-        <p style={pageSubtitle}>Reorder how audio appears to listeners.</p>
+        <p style={pageSubtitle}>Reorder, edit, or remove audio listeners see.</p>
       </div>
 
       <div style={toolbar}>
@@ -63,17 +141,86 @@ export default function AdminContentManager() {
               <div style={orderBadge}>#{audio.order ?? "—"}</div>
               <div>
                 <div style={cardTitle}>{audio.title}</div>
-                <div style={cardSub}>{audio.speaker}</div>
+                <div style={cardSub}>{audio.speaker} · {formatDisplayDate(audio)}</div>
               </div>
             </div>
-            <div style={arrowGroup}>
+            <div style={actionGroup}>
               <button onClick={() => moveItem(index, "up")} style={arrowBtn} title="Move up">▲</button>
               <button onClick={() => moveItem(index, "down")} style={arrowBtn} title="Move down">▼</button>
+              <button onClick={() => openEdit(audio)} style={editBtn} title="Edit">Edit</button>
+              <button onClick={() => handleDelete(audio)} style={deleteBtn} title="Delete">Delete</button>
             </div>
           </div>
         ))}
         {filtered.length === 0 && <p style={empty}>No items match your search.</p>}
       </div>
+
+      {/* EDIT MODAL */}
+      {editing && (
+        <div style={modalOverlay}>
+          <div style={modal}>
+            <div style={modalHeader}>
+              <h3 style={modalTitle}>Edit Audio</h3>
+              <button onClick={closeEdit} style={closeBtn}>✕</button>
+            </div>
+
+            <div style={modalBody}>
+              <Field label="Title">
+                <input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} style={input} />
+              </Field>
+
+              <Field label="Date">
+                <input type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} style={input} />
+              </Field>
+
+              <div style={row2}>
+                <Field label="Speaker">
+                  <select value={editSpeaker} onChange={(e) => setEditSpeaker(e.target.value)} style={input}>
+                    <option value="">Select speaker…</option>
+                    {speakers.map((s) => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </Field>
+
+                <Field label="Type">
+                  <select value={editType} onChange={(e) => setEditType(e.target.value)} style={input}>
+                    <option value="sermon">Sermon</option>
+                    <option value="homily">Homily</option>
+                    <option value="sundayschool">Sunday School</option>
+                  </select>
+                </Field>
+              </div>
+
+              <Field label="Audio File">
+                <button onClick={() => editFileInputRef.current.click()} style={outlineBtn}>
+                  {editFile ? "Change selected file" : "Replace audio file…"}
+                </button>
+                <input
+                  ref={editFileInputRef}
+                  type="file"
+                  accept="audio/mpeg,audio/mp3"
+                  style={{ display: "none" }}
+                  onChange={(e) => setEditFile(e.target.files[0])}
+                />
+                {editFile && <div style={fileNameHint}>Selected: {editFile.name}</div>}
+                {!editFile && <div style={fileNameHint}>Leave blank to keep the current audio file.</div>}
+              </Field>
+
+              <button onClick={saveEdit} disabled={saving} style={saving ? { ...saveBtn, opacity: 0.6 } : saveBtn}>
+                {saving ? "Saving…" : "Save Changes"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Field({ label, children }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+      <label style={fieldLabel}>{label}</label>
+      {children}
     </div>
   );
 }
@@ -105,7 +252,7 @@ const list = { display: "flex", flexDirection: "column", gap: "10px" };
 const card = {
   display: "flex", justifyContent: "space-between", alignItems: "center",
   background: "#fffdf9", border: "1px solid #eddfc8", borderRadius: "14px",
-  padding: "14px 18px", boxShadow: "0 2px 8px rgba(160,100,40,0.06)",
+  padding: "14px 18px", boxShadow: "0 2px 8px rgba(160,100,40,0.06)", flexWrap: "wrap", gap: "10px",
 };
 
 const cardLeft = { display: "flex", alignItems: "center", gap: "14px" };
@@ -120,7 +267,7 @@ const orderBadge = {
 const cardTitle = { fontSize: "15px", color: "#3d2200", fontFamily: "'Georgia', serif", marginBottom: "2px" };
 const cardSub = { fontSize: "12px", color: "#9b7040", fontFamily: "sans-serif" };
 
-const arrowGroup = { display: "flex", gap: "6px" };
+const actionGroup = { display: "flex", gap: "6px", flexWrap: "wrap" };
 
 const arrowBtn = {
   width: "32px", height: "32px", borderRadius: "8px",
@@ -129,4 +276,63 @@ const arrowBtn = {
   display: "flex", alignItems: "center", justifyContent: "center",
 };
 
+const editBtn = {
+  padding: "0 14px", height: "32px", borderRadius: "8px",
+  border: "1px solid #c8922a", background: "transparent",
+  color: "#7a4f10", cursor: "pointer", fontSize: "12px", fontFamily: "sans-serif",
+};
+
+const deleteBtn = {
+  padding: "0 14px", height: "32px", borderRadius: "8px",
+  border: "1px solid #f0b4b4", background: "transparent",
+  color: "#c23c3c", cursor: "pointer", fontSize: "12px", fontFamily: "sans-serif",
+};
+
 const empty = { textAlign: "center", color: "#b08050", fontFamily: "sans-serif", fontStyle: "italic", padding: "30px 0" };
+
+// Modal
+const modalOverlay = {
+  position: "fixed", inset: 0, background: "rgba(40,18,0,0.5)",
+  display: "flex", justifyContent: "center", alignItems: "center",
+  zIndex: 2000, padding: "20px",
+};
+
+const modal = {
+  background: "#fffdf9", border: "1px solid #eddfc8", borderRadius: "20px",
+  width: "100%", maxWidth: "440px", overflow: "hidden",
+  boxShadow: "0 8px 32px rgba(40,18,0,0.25)", maxHeight: "90vh", display: "flex", flexDirection: "column",
+};
+
+const modalHeader = {
+  display: "flex", justifyContent: "space-between", alignItems: "center",
+  padding: "16px 20px", borderBottom: "1px solid #eddfc8", background: "#fdf8f3",
+};
+
+const modalTitle = { margin: 0, fontSize: "17px", fontWeight: "normal", color: "#3d2200", fontFamily: "'Georgia', serif" };
+const closeBtn = { background: "none", border: "none", fontSize: "16px", color: "#9b7040", cursor: "pointer", lineHeight: 1 };
+const modalBody = { padding: "20px", display: "flex", flexDirection: "column", gap: "14px", overflowY: "auto" };
+
+const fieldLabel = { fontSize: "11px", fontFamily: "sans-serif", color: "#9b7040", letterSpacing: "0.06em", textTransform: "uppercase" };
+
+const row2 = { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" };
+
+const input = {
+  padding: "10px 14px", borderRadius: "10px", border: "1px solid #eddfc8",
+  background: "#fdf8f3", fontSize: "14px", fontFamily: "sans-serif", color: "#3d2200",
+  outline: "none", width: "100%", boxSizing: "border-box",
+};
+
+const outlineBtn = {
+  padding: "10px 18px", borderRadius: "10px", border: "1px solid #c8922a",
+  background: "transparent", color: "#7a4f10", fontSize: "14px",
+  fontFamily: "sans-serif", cursor: "pointer", alignSelf: "flex-start",
+};
+
+const fileNameHint = { fontSize: "12px", fontFamily: "sans-serif", color: "#9b7040", fontStyle: "italic" };
+
+const saveBtn = {
+  padding: "11px 20px", borderRadius: "10px", border: "none",
+  background: "linear-gradient(135deg, #c97c2e 0%, #a85e18 100%)",
+  color: "#fff8ee", fontSize: "14px", fontFamily: "sans-serif",
+  cursor: "pointer", boxShadow: "0 3px 10px rgba(160,80,20,0.25)",
+};

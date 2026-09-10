@@ -2,10 +2,18 @@ import { useEffect, useState } from "react";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "../../firebase";
 
+const AUDIENCE_OPTIONS = [
+  { value: "guest", label: "Guests" },
+  { value: "user", label: "Users" },
+  { value: "admin", label: "Admins" },
+];
+
 export default function Settings() {
   const [shutdown, setShutdown] = useState(false);
   const [message, setMessage] = useState("");
   const [returnDate, setReturnDate] = useState("");
+  const [audioAiEnabled, setAudioAiEnabled] = useState(true);
+  const [audioAiAudiences, setAudioAiAudiences] = useState(["guest", "user", "admin"]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -21,6 +29,8 @@ export default function Settings() {
           setShutdown(data.shutdown || false);
           setMessage(data.message || "");
           if (data.returnDate) setReturnDate(data.returnDate.toDate().toISOString().slice(0, 16));
+          if (data.audioAiEnabled !== undefined) setAudioAiEnabled(data.audioAiEnabled);
+          if (data.audioAiAudiences !== undefined) setAudioAiAudiences(data.audioAiAudiences);
         }
       } catch (err) { console.error("Failed to load config:", err); }
       setLoading(false);
@@ -28,10 +38,19 @@ export default function Settings() {
     fetchConfig();
   }, []);
 
+  const toggleAudience = (value) => {
+    setAudioAiAudiences((current) =>
+      current.includes(value) ? current.filter((v) => v !== value) : [...current, value]
+    );
+  };
+
   const handleSave = async () => {
     setSaving(true);
     try {
-      await updateDoc(configRef, { shutdown, message, returnDate: returnDate ? new Date(returnDate) : null });
+      await updateDoc(configRef, {
+        shutdown, message, returnDate: returnDate ? new Date(returnDate) : null,
+        audioAiEnabled, audioAiAudiences,
+      });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err) { console.error(err); alert("Error saving settings."); }
@@ -91,6 +110,43 @@ export default function Settings() {
             style={input}
           />
         </Field>
+      </div>
+
+      <div style={{ ...card, marginTop: "20px" }}>
+        <div style={sectionHeader}>
+          <span style={sectionIcon}>✦</span>
+          <h2 style={sectionTitle}>Audio AI</h2>
+        </div>
+
+        <div style={toggleRow}>
+          <div>
+            <div style={toggleLabel}>Enable Audio AI</div>
+            <div style={toggleHint}>When off, the AI summary buttons are hidden on every audio page.</div>
+          </div>
+          <button
+            onClick={() => setAudioAiEnabled(!audioAiEnabled)}
+            style={audioAiEnabled ? { ...toggle, ...toggleOn } : toggle}
+            aria-label="Toggle Audio AI"
+          >
+            <div style={audioAiEnabled ? { ...toggleKnob, transform: "translateX(22px)" } : toggleKnob} />
+          </button>
+        </div>
+
+        <Field label="Who can use it">
+          <div style={checkRow}>
+            {AUDIENCE_OPTIONS.map((opt) => (
+              <label key={opt.value} style={checkLabel}>
+                <input
+                  type="checkbox"
+                  checked={audioAiAudiences.includes(opt.value)}
+                  onChange={() => toggleAudience(opt.value)}
+                  disabled={!audioAiEnabled}
+                />
+                {opt.label}
+              </label>
+            ))}
+          </div>
+        </Field>
 
         <div style={saveRow}>
           <button onClick={handleSave} disabled={saving} style={saving ? { ...saveBtn, opacity: 0.6 } : saveBtn}>
@@ -127,6 +183,8 @@ const toggleKnob = { position: "absolute", top: "3px", left: "3px", width: "20px
 const statusBanner = { padding: "10px 14px", borderRadius: "10px", fontSize: "13px", fontFamily: "sans-serif" };
 
 const fieldLabel = { fontSize: "11px", fontFamily: "sans-serif", color: "#9b7040", letterSpacing: "0.06em", textTransform: "uppercase" };
+const checkRow = { display: "flex", gap: "16px", flexWrap: "wrap" };
+const checkLabel = { display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", fontFamily: "sans-serif", color: "#5c3a1e", cursor: "pointer" };
 const input = { padding: "10px 12px", borderRadius: "10px", border: "1px solid #eddfc8", background: "#fdf8f3", fontSize: "14px", fontFamily: "sans-serif", color: "#3d2200", outline: "none", width: "100%", boxSizing: "border-box" };
 const saveRow = { display: "flex", alignItems: "center", gap: "14px" };
 const saveBtn = { padding: "12px 24px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, #c97c2e, #a85e18)", color: "#fff8ee", fontSize: "14px", fontFamily: "sans-serif", cursor: "pointer", boxShadow: "0 3px 10px rgba(160,80,20,0.25)" };

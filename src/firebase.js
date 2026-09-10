@@ -1,43 +1,25 @@
+// Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
-
-import { 
-getAuth,
-GoogleAuthProvider
-} from "firebase/auth";
-
+import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
-
-import { getStorage } from "firebase/storage";
-
+import { getFunctions } from "firebase/functions";
 import { getMessaging } from "firebase/messaging";
 
-import { getFunctions } from "firebase/functions";
-
+// Your web app's Firebase configuration
 const firebaseConfig = {
-
-apiKey: "AIzaSyBhhdR6mms3JdLhXkl283k9yjm7zyLafpk",
+  apiKey: "AIzaSyBhhdR6mms3JdLhXkl283k9yjm7zyLafpk",
   authDomain: "palousefellowshipsermonapp.firebaseapp.com",
   projectId: "palousefellowshipsermonapp",
   storageBucket: "palousefellowshipsermonapp.firebasestorage.app",
   messagingSenderId: "591678059434",
-  appId: "1:591678059434:web:dfa8631fab9a2295f831d3",
-
+  appId: "1:591678059434:web:dfa8631fab9a2295f831d3"
 };
 
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// AUTH
 export const auth = getAuth(app);
-export const googleProvider = new GoogleAuthProvider();
-
-// FIRESTORE
 export const db = getFirestore(app);
-
-// STORAGE (THIS FIXES YOUR ERROR)
-export const storage = getStorage(app);
-
-// PUSH NOTIFICATIONS
-export const messaging = getMessaging(app);
-
-// FIREBASE FUNCTIONS
 export const functions = getFunctions(app);
+export const messaging = getMessaging(app);
+export const googleProvider = new GoogleAuthProvider();

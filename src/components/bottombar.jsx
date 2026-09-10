@@ -3,10 +3,24 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "../firebase";
+import { usePages } from "../context/PagesContext";
+import {
+  getDisplayName,
+  isVisibleInNav,
+  sortForNavigation,
+  BADGE_COLORS,
+} from "../lib/pageManager";
+
+// A page's icon is either a legacy /navigation/*.png path or an
+// emoji chosen in Page Manager's icon picker.
+function iconProp(icon) {
+  return icon && icon.startsWith("/") ? { src: icon } : { icon };
+}
 
 export default function BottomBar() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { pages } = usePages();
 
   const [showMore, setShowMore] = useState(false);
   const [user, setUser] = useState(null);
@@ -33,6 +47,15 @@ export default function BottomBar() {
 
     return () => unsubscribe();
   }, []);
+
+  //////////////////////////////////////////////////
+  // PAGE MANAGER — DYNAMIC NAV LISTS
+  //////////////////////////////////////////////////
+  const visiblePages = (pages || []).filter(isVisibleInNav);
+  const primaryPages = sortForNavigation(visiblePages.filter((p) => p.navSlot === "primary"));
+  const morePages = sortForNavigation(visiblePages.filter((p) => p.navSlot === "more"));
+  const settingsPage = (pages || []).find((p) => p.id === "settings");
+  const settingsHidden = settingsPage ? !isVisibleInNav(settingsPage) : false;
 
   //////////////////////////////////////////////////
   // NAV
@@ -64,24 +87,18 @@ export default function BottomBar() {
     <>
       {/* BOTTOM BAR */}
       <div style={bar}>
-        <NavButton
-          src="/navigation/home.png"
-          label="Home"
-          active={isActive("/")}
-          onClick={() => go("/")}
-        />
-        <NavButton
-          src="/navigation/sermons.png"
-          label="Sermons"
-          active={isActive("/sermons")}
-          onClick={() => go("/sermons")}
-        />
-        <NavButton
-          src="/navigation/sundayschool.png"
-          label="Sunday School"
-          active={isActive("/sundayschool")}
-          onClick={() => go("/sundayschool")}
-        />
+        {primaryPages.map((p) => (
+          <NavButton
+            key={p.id}
+            {...iconProp(p.icon)}
+            label={getDisplayName(p)}
+            badge={p.badgeEnabled ? { text: p.badgeText, color: p.badgeColor } : null}
+            locked={p.status === "locked"}
+            active={isActive(p.route)}
+            onClick={() => go(p.route)}
+          />
+        ))}
+
         <NavButton
           src="/navigation/more.png"
           label="More"
@@ -100,23 +117,34 @@ export default function BottomBar() {
 
             <p style={sheetTitle}>More</p>
 
-            {/* TOP ROW */}
-            <div style={grid}>
-              <SheetButton icon="ℹ️" label="About" onClick={() => go("/about")} />
-              <SheetButton icon="💬" label="Feedback" onClick={() => go("/feedback")} />
-              <SheetButton icon="✉️" label="Contact" onClick={() => go("/contact")} />
-            </div>
+            {/* PAGE MANAGER CONTROLLED PAGES */}
+            {morePages.length > 0 && (
+              <div style={grid}>
+                {morePages.map((p) => (
+                  <SheetButton
+                    key={p.id}
+                    icon={p.icon}
+                    label={getDisplayName(p)}
+                    badge={p.badgeEnabled ? { text: p.badgeText, color: p.badgeColor } : null}
+                    locked={p.status === "locked"}
+                    onClick={() => go(p.route)}
+                  />
+                ))}
+              </div>
+            )}
 
             <div style={divider} />
 
             {/* BOTTOM ROW */}
             <div style={grid}>
-              <SheetButton
-                icon="⚙️"
-                label="Settings"
-                onClick={handleSettingsClick}
-                muted={!user}
-              />
+              {!settingsHidden && (
+                <SheetButton
+                  icon="⚙️"
+                  label="Settings"
+                  onClick={handleSettingsClick}
+                  muted={!user}
+                />
+              )}
               {isAdmin && (
                 <SheetButton icon="🛡️" label="Admin" onClick={() => go("/admin")} />
               )}
@@ -136,22 +164,60 @@ export default function BottomBar() {
 // SUB-COMPONENTS
 //////////////////////////////////////////////////
 
-function NavButton({ src, label, active, onClick }) {
+function NavBadge({ badge }) {
+  if (!badge || !badge.text) return null;
+  const colors = BADGE_COLORS[badge.color] || BADGE_COLORS.amber;
+
+  return (
+    <span
+      style={{
+        position: "absolute",
+        top: "-6px",
+        right: "-10px",
+        fontSize: "8px",
+        fontWeight: "700",
+        padding: "1px 5px",
+        borderRadius: "999px",
+        background: colors.bg,
+        color: colors.color,
+        fontFamily: "sans-serif",
+        whiteSpace: "nowrap",
+        boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
+      }}
+    >
+      {badge.text}
+    </span>
+  );
+}
+
+function NavButton({ src, icon, label, active, onClick, badge, locked }) {
   return (
     <button style={navBtn} onClick={onClick}>
-      <img src={src} style={navIcon(active)} alt={label} />
+      <span style={iconWrap}>
+        {src ? (
+          <img src={src} style={navIcon(active)} alt={label} />
+        ) : (
+          <span style={navEmoji(active)}>{icon}</span>
+        )}
+        {locked && <span style={lockDot}>🔒</span>}
+        <NavBadge badge={badge} />
+      </span>
       <span style={navLabel(active)}>{label}</span>
     </button>
   );
 }
 
-function SheetButton({ icon, label, onClick, muted }) {
+function SheetButton({ icon, label, onClick, muted, badge, locked }) {
   return (
     <button
       style={{ ...sheetBtn, ...(muted ? sheetBtnMuted : {}) }}
       onClick={onClick}
     >
-      <span style={sheetBtnIcon}>{icon}</span>
+      <span style={iconWrap}>
+        <span style={sheetBtnIcon}>{icon}</span>
+        {locked && <span style={lockDot}>🔒</span>}
+        <NavBadge badge={badge} />
+      </span>
       <span style={sheetBtnLabel}>{label}</span>
     </button>
   );
@@ -187,6 +253,19 @@ const navBtn = {
   minWidth: 0,
 };
 
+const iconWrap = {
+  position: "relative",
+  display: "inline-flex",
+};
+
+const lockDot = {
+  position: "absolute",
+  bottom: "-4px",
+  right: "-6px",
+  fontSize: "9px",
+  lineHeight: 1,
+};
+
 const navIcon = (active) => ({
   width: "22px",
   height: "22px",
@@ -194,6 +273,12 @@ const navIcon = (active) => ({
   filter: active
     ? "sepia(1) saturate(3) hue-rotate(5deg) brightness(0.7)"
     : "none",
+});
+
+const navEmoji = (active) => ({
+  fontSize: "20px",
+  lineHeight: "22px",
+  opacity: active ? 1 : 0.45,
 });
 
 const navLabel = (active) => ({
@@ -255,6 +340,7 @@ const grid = {
   display: "grid",
   gridTemplateColumns: "repeat(3, 1fr)",
   gap: "10px",
+  marginBottom: "4px",
 };
 
 const sheetBtn = {

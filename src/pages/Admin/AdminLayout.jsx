@@ -1,18 +1,23 @@
 import { Link, Outlet, useLocation } from "react-router-dom";
 
 const navLinks = [
-  { to: "/admin/dashboard",     label: "Dashboard",        icon: "📊" },
-  { to: "/admin/upload",        label: "Upload Audio",     icon: "🎙️" },
-  { to: "/admin/content",       label: "Content Manager",  icon: "📂" },
-  { to: "/admin/users",         label: "Users",            icon: "👥" },
-  { to: "/admin/analytics",     label: "Analytics",        icon: "📈" },
-  { to: "/admin/notifications", label: "Notifications",    icon: "🔔" },
-  { to: "/admin/send-notifications", label: "Send Push",       icon: "📣" },
-  { to: "/admin/notices",       label: "Notices",          icon: "📌" },
-  { to: "/admin/pagenotices",   label: "Page Notices",     icon: "📄" },
-  { to: "/admin/suggestions",   label: "Suggestions",      icon: "💡" },
-  { to: "/admin/logs",          label: "Logs",             icon: "📋" },
-  { to: "/admin/settings",      label: "Settings",         icon: "⚙️" },
+  { to: "/admin/dashboard", label: "Dashboard", icon: "📊" },
+  { to: "/admin/upload", label: "Upload Audio", icon: "🎙️" },
+  { to: "/admin/content", label: "Content Manager", icon: "📂" },
+  { to: "/admin/users", label: "Users", icon: "👥" },
+  { to: "/admin/analytics", label: "Analytics", icon: "📈" },
+  { to: "/admin/notifications", label: "Notifications", icon: "🔔" },
+  { to: "/admin/send-notifications", label: "Send Push", icon: "📣" },
+  { to: "/admin/notices", label: "Notices", icon: "📌" },
+  { to: "/admin/doctrine", label: "Doctrine Campaign", icon: "📖" },
+  { to: "/admin/resources", label: "Resources", icon: "📚" },
+  { to: "/admin/pagemanager", label: "Page Manager", icon: "🧭" },
+  { to: "/admin/pagenotices", label: "Page Notices", icon: "📄" },
+  { to: "/admin/suggestions", label: "Suggestions", icon: "💡" },
+  { to: "/admin/logs", label: "Logs", icon: "📋" },
+  { to: "/admin/referrals", label: "Referrals", icon: "📣" },
+  { to: "/admin/entrance-points", label: "Entrance Points", icon: "🔗" },
+  { to: "/admin/settings", label: "Settings", icon: "⚙️" },
 ];
 
 export default function AdminLayout() {
@@ -24,6 +29,7 @@ export default function AdminLayout() {
       <aside style={sidebar}>
         <div style={sidebarTop}>
           <div style={brandMark}>PF</div>
+
           <div>
             <div style={brandName}>Palouse Fellowship</div>
             <div style={brandSub}>Admin Panel</div>
@@ -33,20 +39,28 @@ export default function AdminLayout() {
         <nav style={nav}>
           {navLinks.map(({ to, label, icon }) => {
             const active = location.pathname.startsWith(to);
+
             return (
-              <Link key={to} to={to} style={active ? { ...link, ...linkActive } : link}>
+              <Link
+                key={to}
+                to={to}
+                style={active ? { ...link, ...linkActive } : link}
+              >
                 <span style={linkIcon}>{icon}</span>
                 <span>{label}</span>
+
                 {active && <span style={activeDot} />}
               </Link>
             );
           })}
         </nav>
 
-        <Link to="/" style={backToApp}>← Back to App</Link>
+        <Link to="/" style={backToApp}>
+          ← Back to App
+        </Link>
       </aside>
 
-      {/* MAIN */}
+      {/* MAIN CONTENT */}
       <main style={main}>
         <Outlet />
       </main>
@@ -54,7 +68,10 @@ export default function AdminLayout() {
   );
 }
 
-// ── Styles ──────────────────────────────────────────────
+// ─────────────────────────────────────────────
+// Styles
+// ─────────────────────────────────────────────
+
 const shell = {
   display: "flex",
   minHeight: "100vh",

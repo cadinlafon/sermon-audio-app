@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import NoticeInputForm from "../components/NoticeInputForm";
 import { db, auth } from "../firebase";
 import {
   collection,
@@ -56,21 +57,20 @@ export default function Home() {
 
     async function fetchData() {
       try {
-        // Latest sermon
+        // Latest sermon (type === "sermon" only — homilies/Sunday School excluded)
         const sermonQ = query(
           collection(db, "audio"),
           orderBy("createdAt", "desc"),
-          limit(1)
+          limit(15)
         );
 
         const sermonSnap = await getDocs(sermonQ);
+        const latest = sermonSnap.docs
+          .map((d) => ({ id: d.id, ...d.data() }))
+          .find((a) => a.type === "sermon");
 
-        if (!sermonSnap.empty) {
-          const docItem = sermonSnap.docs[0];
-          setLatestSermon({
-            id: docItem.id,
-            ...docItem.data(),
-          });
+        if (latest) {
+          setLatestSermon(latest);
         }
 
         // Notices
@@ -159,6 +159,8 @@ export default function Home() {
                     {n.buttonText || "Learn More"} →
                   </button>
                 )}
+
+                {n.inputEnabled && <NoticeInputForm notice={n} user={user} />}
               </div>
             ))}
           </div>
@@ -168,7 +170,7 @@ export default function Home() {
         <div style={card}>
           <div style={cardHeader}>
             <span style={cardIcon}>🎙️</span>
-            <h2 style={cardTitle}>Latest Audio</h2>
+            <h2 style={cardTitle}>Latest Sermon</h2>
           </div>
 
           {latestSermon ? (
@@ -189,7 +191,7 @@ export default function Home() {
               </button>
             </div>
           ) : (
-            <p style={emptyText}>No audio uploaded yet — check back soon.</p>
+            <p style={emptyText}>No sermons uploaded yet — check back soon.</p>
           )}
         </div>
 

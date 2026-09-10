@@ -1,0 +1,27 @@
+[
+  {
+    "corsRuleName": "privateAudioWeb",
+    "allowedOrigins": [
+      "https://app.palousefellowship.com",
+      "http://localhost:5173"
+    ],
+    "allowedHeaders": [
+      "authorization",
+      "range",
+      "content-type",
+      "x-bz-file-name",
+      "x-bz-content-sha1"
+    ],
+    "allowedOperations": [
+      "b2_download_file_by_name",
+      "b2_upload_file"
+    ],
+    "exposeHeaders": [
+      "accept-ranges",
+      "content-length",
+      "content-range",
+      "content-type"
+    ],
+    "maxAgeSeconds": 3600
+  }
+]
