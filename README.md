@@ -2,7 +2,7 @@
 
 A powerful web application for streaming, organizing, and listening to sermons with real-time analytics and engagement tracking. Built with React and Firebase, the app provides both frontend and backend capabilities through Firebase Cloud Functions.
 
-**Live Demo**: https://sermon-audio-app.vercel.app
+**Live Demo**: https://app.palousefellowship.com
 
 ## 🎯 Features
 
