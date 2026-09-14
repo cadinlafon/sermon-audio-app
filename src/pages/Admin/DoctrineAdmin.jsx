@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { db } from "../../firebase";
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, getDoc, setDoc, serverTimestamp, deleteField } from "firebase/firestore";
 import { uploadPrivateAudio, deletePrivateAudio } from "../../utils/privateAudioUpload";
 import { uploadPublicImage, deletePublicImage } from "../../utils/imageUpload";
 
@@ -13,8 +13,7 @@ const blankForm = {
   docsLink: "",
   memorization: "",
   notes: "",
-  audioStorageKey: "",
-  audioFileName: "",
+  audioFiles: [],
   imageURL: "",
   imageStorageKey: "",
   questions: [],
@@ -25,12 +24,13 @@ export default function DoctrineAdmin() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState(null);
-  const originalAudioKey = useRef("");
+  const originalAudioKeys = useRef([]);
   const originalImageKey = useRef("");
 
-  const [audioUploading, setAudioUploading] = useState(false);
+  const [uploadingAudioId, setUploadingAudioId] = useState(null);
   const [audioProgress, setAudioProgress] = useState(null);
   const audioInputRef = useRef();
+  const pendingUploadId = useRef(null);
 
   const [imageUploading, setImageUploading] = useState(false);
   const [imageProgress, setImageProgress] = useState(null);
@@ -42,11 +42,18 @@ export default function DoctrineAdmin() {
       if (snap.exists()) {
         // A stray "id" data field was saved by mistake in the past —
         // strip it so it can never shadow the real document id again.
-        const { id: _staleId, ...rest } = snap.data();
+        // Legacy docs also carried a single audioStorageKey/audioFileName
+        // pair instead of the audioFiles list — migrate that into the new
+        // shape rather than dropping it.
+        const { id: _staleId, audioStorageKey: legacyKey, audioFileName: legacyName, ...rest } = snap.data();
         void _staleId;
-        const data = { ...blankForm, ...rest, questions: rest.questions || [] };
+        let audioFiles = Array.isArray(rest.audioFiles) ? rest.audioFiles : [];
+        if (audioFiles.length === 0 && legacyKey) {
+          audioFiles = [{ id: crypto.randomUUID(), label: legacyName || "", audioStorageKey: legacyKey, audioFileName: legacyName || "" }];
+        }
+        const data = { ...blankForm, ...rest, questions: rest.questions || [], audioFiles };
         setForm(data);
-        originalAudioKey.current = data.audioStorageKey || "";
+        originalAudioKeys.current = audioFiles.map((a) => a.audioStorageKey).filter(Boolean);
         originalImageKey.current = data.imageStorageKey || "";
       }
       setLoading(false);
@@ -60,30 +67,63 @@ export default function DoctrineAdmin() {
   };
 
   //////////////////////////////////////////////////
-  // AUDIO
+  // AUDIO (multiple files)
   //////////////////////////////////////////////////
-  const handleAudioSelect = async (file) => {
+  const addAudioFile = () => {
+    setForm((f) => ({
+      ...f,
+      audioFiles: [...f.audioFiles, { id: crypto.randomUUID(), label: "", audioStorageKey: "", audioFileName: "" }],
+    }));
+  };
+
+  const updateAudioLabel = (id, value) => {
+    setForm((f) => ({
+      ...f,
+      audioFiles: f.audioFiles.map((a) => (a.id === id ? { ...a, label: value } : a)),
+    }));
+  };
+
+  const triggerAudioUpload = (id) => {
+    pendingUploadId.current = id;
+    audioInputRef.current.click();
+  };
+
+  const handleAudioSelect = async (id, file) => {
     if (!file) return;
     if (!file.type.startsWith("audio/")) {
       alert("Please choose an audio file.");
       return;
     }
 
-    setAudioUploading(true);
+    setUploadingAudioId(id);
     setAudioProgress(null);
     try {
       const audioStorageKey = await uploadPrivateAudio(file, setAudioProgress);
-      setForm((f) => ({ ...f, audioStorageKey, audioFileName: file.name }));
+      setForm((f) => ({
+        ...f,
+        audioFiles: f.audioFiles.map((a) => (a.id === id ? { ...a, audioStorageKey, audioFileName: file.name } : a)),
+      }));
     } catch (err) {
       console.error(err);
       alert("Audio upload failed.");
     }
-    setAudioUploading(false);
+    setUploadingAudioId(null);
     setAudioProgress(null);
   };
 
-  const handleAudioRemove = () => {
-    setForm((f) => ({ ...f, audioStorageKey: "", audioFileName: "" }));
+  const removeAudioFile = (id) => {
+    setForm((f) => ({ ...f, audioFiles: f.audioFiles.filter((a) => a.id !== id) }));
+  };
+
+  const moveAudioFile = (id, direction) => {
+    setForm((f) => {
+      const index = f.audioFiles.findIndex((a) => a.id === id);
+      const newIndex = index + direction;
+      if (newIndex < 0 || newIndex >= f.audioFiles.length) return f;
+      const audioFiles = [...f.audioFiles];
+      [audioFiles[index], audioFiles[newIndex]] = [audioFiles[newIndex], audioFiles[index]];
+      return { ...f, audioFiles };
+    });
   };
 
   //////////////////////////////////////////////////
@@ -146,21 +186,30 @@ export default function DoctrineAdmin() {
       // DOC_ID, and a stray "id" field previously caused a real bug.
       const { id: _ignoredId, ...formWithoutId } = form;
       void _ignoredId;
+      // Drop entries that were added but never finished uploading, and
+      // never write the old single-audio fields back — audioFiles is the
+      // only shape going forward (see the migration in the load effect).
+      const audioFiles = form.audioFiles.filter((a) => a.audioStorageKey);
       const payload = {
         ...formWithoutId,
+        audioFiles,
+        audioStorageKey: deleteField(),
+        audioFileName: deleteField(),
         questions: form.questions.map((q) => q.trim()).filter(Boolean),
         updatedAt: serverTimestamp(),
       };
 
       await setDoc(doc(db, "doctrineWeeks", DOC_ID), payload, { merge: true });
 
-      if (originalAudioKey.current && originalAudioKey.current !== form.audioStorageKey) {
-        deletePrivateAudio(originalAudioKey.current).catch((err) => console.error("Couldn't delete old doctrine audio:", err));
-      }
+      const currentAudioKeys = audioFiles.map((a) => a.audioStorageKey);
+      const removedAudioKeys = originalAudioKeys.current.filter((k) => !currentAudioKeys.includes(k));
+      removedAudioKeys.forEach((key) => {
+        deletePrivateAudio(key).catch((err) => console.error("Couldn't delete old doctrine audio:", err));
+      });
       if (originalImageKey.current && originalImageKey.current !== form.imageStorageKey) {
         deletePublicImage(originalImageKey.current).catch((err) => console.error("Couldn't delete old doctrine image:", err));
       }
-      originalAudioKey.current = form.audioStorageKey || "";
+      originalAudioKeys.current = currentAudioKeys;
       originalImageKey.current = form.imageStorageKey || "";
 
       showToast("Saved successfully.");
@@ -285,43 +334,71 @@ export default function DoctrineAdmin() {
           />
         </Field>
 
-        <Field label="Audio">
-          {form.audioStorageKey ? (
-            <div style={fileRow}>
-              <span style={fileRowName}>🎵 {form.audioFileName || "Audio file"}</span>
-              <div style={rowActions}>
-                <button type="button" style={smallBtn} onClick={() => audioInputRef.current.click()} disabled={audioUploading}>
-                  Replace
-                </button>
-                <button type="button" style={{ ...smallBtn, color: "#dc2626", borderColor: "#fca5a5" }} onClick={handleAudioRemove} disabled={audioUploading}>
-                  Remove
-                </button>
-              </div>
-            </div>
-          ) : (
-            <button type="button" style={uploadBtn} onClick={() => audioInputRef.current.click()} disabled={audioUploading}>
-              {audioUploading ? "Uploading…" : "🎙️ Upload Audio File"}
-            </button>
-          )}
+        <Field label="Audio Files">
+          <div style={audioFilesStack}>
+            {form.audioFiles.map((a, i) => {
+              const isUploading = uploadingAudioId === a.id;
+              return (
+                <div key={a.id} style={audioFileCard}>
+                  <div style={audioFileHeader}>
+                    <span style={audioFileIndex}>{i + 1}.</span>
+                    <input
+                      value={a.label}
+                      onChange={(e) => updateAudioLabel(a.id, e.target.value)}
+                      style={input}
+                      placeholder='Label (e.g. "Session 1")'
+                    />
+                  </div>
 
-          {audioUploading && (
-            <div style={progressTrack}>
-              <div
-                style={{
-                  ...progressFill,
-                  width: audioProgress === null ? "40%" : `${audioProgress}%`,
-                  ...(audioProgress === null ? { animation: "uploadSlide 1.1s ease-in-out infinite" } : {}),
-                }}
-              />
-            </div>
-          )}
+                  {a.audioStorageKey ? (
+                    <div style={fileRow}>
+                      <span style={fileRowName}>🎵 {a.audioFileName || "Audio file"}</span>
+                    </div>
+                  ) : (
+                    <p style={hintText}>No file uploaded yet.</p>
+                  )}
+
+                  {isUploading && (
+                    <div style={progressTrack}>
+                      <div
+                        style={{
+                          ...progressFill,
+                          width: audioProgress === null ? "40%" : `${audioProgress}%`,
+                          ...(audioProgress === null ? { animation: "uploadSlide 1.1s ease-in-out infinite" } : {}),
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  <div style={rowActions}>
+                    <button type="button" style={smallBtn} onClick={() => triggerAudioUpload(a.id)} disabled={isUploading}>
+                      {isUploading ? "Uploading…" : a.audioStorageKey ? "Replace" : "Upload"}
+                    </button>
+                    <button type="button" style={smallBtn} onClick={() => moveAudioFile(a.id, -1)} disabled={i === 0}>↑</button>
+                    <button type="button" style={smallBtn} onClick={() => moveAudioFile(a.id, 1)} disabled={i === form.audioFiles.length - 1}>↓</button>
+                    <button type="button" style={{ ...smallBtn, color: "#dc2626", borderColor: "#fca5a5" }} onClick={() => removeAudioFile(a.id)} disabled={isUploading}>
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <button type="button" style={addQuestionBtn} onClick={addAudioFile}>
+            + Add Audio File
+          </button>
 
           <input
             ref={audioInputRef}
             type="file"
             accept="audio/*"
             style={{ display: "none" }}
-            onChange={(e) => { handleAudioSelect(e.target.files[0]); e.target.value = ""; }}
+            onChange={(e) => {
+              const file = e.target.files[0];
+              e.target.value = "";
+              if (pendingUploadId.current) handleAudioSelect(pendingUploadId.current, file);
+            }}
           />
         </Field>
 
@@ -392,6 +469,11 @@ const progressTrack = { height: "6px", background: "#eddfc8", borderRadius: "999
 const progressFill = { height: "100%", background: "linear-gradient(to right, #e08930, #c97c2e)", borderRadius: "999px", transition: "width 0.2s ease-out" };
 
 const imagePreview = { width: "100%", height: "160px", objectFit: "cover", borderRadius: "10px", border: "1px solid #eddfc8", marginBottom: "8px", display: "block" };
+
+const audioFilesStack = { display: "flex", flexDirection: "column", gap: "10px", marginBottom: "10px" };
+const audioFileCard = { display: "flex", flexDirection: "column", gap: "8px", padding: "12px", borderRadius: "12px", border: "1px solid #eddfc8", background: "#fdf8f3" };
+const audioFileHeader = { display: "flex", alignItems: "center", gap: "8px" };
+const audioFileIndex = { fontSize: "13px", fontFamily: "sans-serif", color: "#9b7040", flexShrink: 0, width: "16px", textAlign: "right" };
 
 const questionsStack = { display: "flex", flexDirection: "column", gap: "8px", marginBottom: "8px" };
 const questionRow = { display: "flex", alignItems: "center", gap: "8px" };

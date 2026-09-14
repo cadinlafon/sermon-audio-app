@@ -23,10 +23,26 @@ export default function Doctrine() {
   useEffect(() => {
     async function fetchContent() {
       const snap = await getDoc(doc(db, "doctrineWeeks", "current"));
+      if (!snap.exists()) {
+        setContent(null);
+        setLoading(false);
+        return;
+      }
+
+      const data = snap.data();
+      // Legacy docs carried a single audioStorageKey/audioFileName pair
+      // instead of an audioFiles list — show it the same way rather than
+      // requiring the admin to re-save first.
+      const audioFiles = Array.isArray(data.audioFiles) && data.audioFiles.length > 0
+        ? data.audioFiles
+        : data.audioStorageKey
+        ? [{ id: snap.id, label: data.audioFileName || "", audioStorageKey: data.audioStorageKey }]
+        : [];
+
       // Spread order matters: snap.data() may carry a stray "id" field
       // saved by mistake in the past, so the real snap.id must come last
       // to win.
-      setContent(snap.exists() ? { ...snap.data(), id: snap.id } : null);
+      setContent({ ...data, audioFiles, id: snap.id });
       setLoading(false);
     }
 
@@ -93,15 +109,22 @@ export default function Doctrine() {
           open={openSections.audio}
           onToggle={() => toggle("audio")}
         >
-          {content.audioStorageKey ? (
-            <AudioPlayerRow
-              content={content}
-              current={current}
-              isPlaying={isPlaying}
-              playSermon={playSermon}
-              togglePlay={togglePlay}
-              playError={playError}
-            />
+          {content.audioFiles && content.audioFiles.length > 0 ? (
+            <div style={audioList}>
+              {content.audioFiles.map((audio, i) => (
+                <AudioPlayerRow
+                  key={audio.id || audio.audioStorageKey}
+                  audio={audio}
+                  index={i}
+                  content={content}
+                  current={current}
+                  isPlaying={isPlaying}
+                  playSermon={playSermon}
+                  togglePlay={togglePlay}
+                  playError={playError}
+                />
+              ))}
+            </div>
           ) : (
             <p style={emptySection}>No audio uploaded yet.</p>
           )}
@@ -164,21 +187,23 @@ export default function Doctrine() {
 // AUDIO PLAYBACK
 ////////////////////////////////////////////////
 
-function AudioPlayerRow({ content, current, isPlaying, playSermon, togglePlay, playError }) {
-  const isCurrent = current?.id === content.id;
+function AudioPlayerRow({ audio, index, content, current, isPlaying, playSermon, togglePlay, playError }) {
+  const trackId = audio.id || audio.audioStorageKey;
+  const isCurrent = current?.id === trackId;
+  const label = audio.label || `Track ${index + 1}`;
 
   const handleClick = () => {
     if (isCurrent) {
       togglePlay();
     } else {
-      playSermon({ id: content.id, title: content.title, speaker: content.speaker, collection: "doctrineWeeks", audioStorageKey: content.audioStorageKey });
+      playSermon({ id: trackId, title: audio.label || content.title, speaker: content.speaker, collection: "doctrineWeeks", audioStorageKey: audio.audioStorageKey });
     }
   };
 
   return (
-    <div>
+    <div style={audioRow}>
       <button style={playButton} onClick={handleClick}>
-        {isCurrent && isPlaying ? "⏸ Pause" : "▶ Play Audio"}
+        {isCurrent && isPlaying ? "⏸ Pause" : `▶ ${label}`}
       </button>
       {isCurrent && <p style={nowPlayingText}>Now playing.</p>}
       {isCurrent && playError && <p style={playErrorText}>{playError}</p>}
@@ -360,6 +385,14 @@ const empty = {
   fontStyle: "italic",
   padding: "40px 0",
 };
+
+const audioList = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "14px",
+};
+
+const audioRow = {};
 
 const playButton = {
   padding: "10px 20px",
