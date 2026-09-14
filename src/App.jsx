@@ -39,6 +39,7 @@ import AudioAppLanding from "./pages/AudioAppLanding";
 import Doctrine from "./pages/Doctrine";
 import Resources from "./pages/Resources";
 import ResourceDetail from "./pages/ResourceDetail";
+import DevInfo from "./pages/DevInfo";
 
 // Admin
 import PageNotices from "./pages/Admin/PageNotices";
@@ -486,6 +487,15 @@ function App() {
             element={
               <PageGate id="settings">
                 <Settings />
+              </PageGate>
+            }
+          />
+
+          <Route
+            path="/dev-info"
+            element={
+              <PageGate id="dev-info">
+                <DevInfo />
               </PageGate>
             }
           />

@@ -148,6 +148,7 @@ export default function BottomBar() {
               {isAdmin && (
                 <SheetButton icon="🛡️" label="Admin" onClick={() => go("/admin")} />
               )}
+              <SheetButton icon="🧑‍💻" label="Dev Info" onClick={() => go("/dev-info")} />
             </div>
 
             <button style={closeBtn} onClick={() => setShowMore(false)}>
