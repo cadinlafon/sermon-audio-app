@@ -7,7 +7,7 @@ import { useAudioPlayer } from "../context/AudioPlayerContext";
 import AiSummary from "./AiSummary";
 
 export default function AudioCard({ audio, onPlay, onSummarySaved, onSaveChange }) {
-  const { playNext } = useAudioPlayer();
+  const { playNext, current, isPlaying, togglePlay, duration, currentTime } = useAudioPlayer();
   const [isSaved, setIsSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
@@ -67,6 +67,7 @@ export default function AudioCard({ audio, onPlay, onSummarySaved, onSaveChange 
 
   const label = audio.type === "sundayschool" ? "Sunday School" : audio.type === "homily" ? "Homily" : "Sermon";
   const status = progress?.status || "not-started";
+  const isThisTrack = current?.id === audio.id;
 
   const handlePlayNext = () => {
     playNext(audio);
@@ -75,6 +76,10 @@ export default function AudioCard({ audio, onPlay, onSummarySaved, onSaveChange 
   };
 
   const handlePlayClick = () => {
+    if (isThisTrack) {
+      togglePlay();
+      return;
+    }
     if (status === "in-progress" && progress?.position) {
       onPlay(audio, { resumeAt: progress.position });
     } else {
@@ -103,7 +108,15 @@ export default function AudioCard({ audio, onPlay, onSummarySaved, onSaveChange 
     }
   };
 
-  const progressPercent = progress?.duration ? Math.min(100, (progress.position / progress.duration) * 100) : 0;
+  // While this card's track is the one actually loaded, show the live
+  // position instead of the last-saved snapshot — otherwise the bar
+  // would sit frozen next to a "Pause" button that implies it's moving.
+  const progressPercent = isThisTrack && duration
+    ? Math.min(100, (currentTime / duration) * 100)
+    : progress?.duration
+    ? Math.min(100, (progress.position / progress.duration) * 100)
+    : 0;
+  const showProgressBar = isThisTrack ? isPlaying || currentTime > 0 : status === "in-progress";
 
   return (
     <div style={card}>
@@ -115,7 +128,7 @@ export default function AudioCard({ audio, onPlay, onSummarySaved, onSaveChange 
       <h3 style={titleStyle}>{audio.title}</h3>
       <p style={speakerStyle}>{audio.speaker}</p>
 
-      {status === "in-progress" && (
+      {showProgressBar && (
         <div style={resumeTrack}>
           <div style={{ ...resumeFill, width: `${progressPercent}%` }} />
         </div>
@@ -123,8 +136,17 @@ export default function AudioCard({ audio, onPlay, onSummarySaved, onSaveChange 
 
       <div style={playRow}>
         <button onClick={handlePlayClick} style={playButton}>
-          <span style={{ fontSize: "11px" }}>{status === "completed" ? "↻" : "▶"}</span>
-          {status === "completed" ? "Play Again" : status === "in-progress" ? "Resume" : "Play"}
+          {isThisTrack ? (
+            <>
+              <span style={{ fontSize: "11px" }}>{isPlaying ? "❚❚" : "▶"}</span>
+              {isPlaying ? "Pause" : "Play"}
+            </>
+          ) : (
+            <>
+              <span style={{ fontSize: "11px" }}>{status === "completed" ? "↻" : "▶"}</span>
+              {status === "completed" ? "Play Again" : status === "in-progress" ? "Resume" : "Play"}
+            </>
+          )}
         </button>
         <button onClick={handlePlayNext} style={playNextButton}>
           {queued ? "✓ Added" : "+ Play Next"}
