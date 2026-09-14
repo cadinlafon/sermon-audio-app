@@ -4,20 +4,15 @@ const GROQ_API_URL = "https://api.groq.com/openai/v1";
 const MAX_TRANSCRIPT_CHARS = 110_000;
 // Groq's free-tier hard cap on the transcription API is 25MB, for both
 // the "url" and direct-upload parameters — this app's Groq key is on
-// that tier. There's no way to make Groq accept a bigger single file
-// on free tier, so anything past this goes through transcribeByChunks
-// below instead: split into pieces each under this size, transcribe
-// each separately, and stitch the transcripts together.
-const MAX_SINGLE_UPLOAD_BYTES = 25 * 1024 * 1024;
-const MAX_CHUNK_BYTES = 20 * 1024 * 1024; // a little headroom under Groq's cap
-// Kept conservative on purpose: this Supabase project is on the free
-// plan, which caps a single Edge Function invocation at 150s of total
-// wall-clock time — that has to cover the failed URL attempt, every
-// sequential chunk upload+transcription, and the summarization call
-// afterward. 4 chunks (~80MB) leaves real headroom in that budget;
-// pushing higher risks the whole request timing out and failing
-// outright rather than partially succeeding.
-const MAX_CHUNKS = 4;
+// that tier, and there's no way to make Groq accept a bigger single
+// file there. (A byte-range chunking approach was tried and reverted:
+// splitting an already-encoded audio file at arbitrary byte offsets
+// doesn't produce a file any decoder — Groq included — can parse past
+// the first piece; real chunking would need actual audio transcoding,
+// which isn't available in this Deno Edge Function runtime — no
+// ffmpeg/native binaries, and the 2-second CPU cap rules out a
+// WASM-based decoder too.)
+const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
 const allowedTypes = new Set(["sermon", "homily", "sundayschool"]);
 
 // PF_-prefixed since this Supabase project is shared with other apps —
@@ -238,94 +233,6 @@ async function parseTranscriptionText(response: Response) {
   return data.text;
 }
 
-// A HEAD request to learn the file size up front, so transcribe() can
-// decide single-shot vs. chunked without downloading anything yet.
-// Every host validateAudioUrl allows (Supabase Storage, Firebase
-// Storage, Backblaze B2) supports HEAD with Content-Length.
-async function probeAudioSize(audioUrl: string): Promise<number | null> {
-  try {
-    const headResponse = await fetch(audioUrl, { method: "HEAD", redirect: "error" });
-    if (!headResponse.ok) return null;
-    const size = Number(headResponse.headers.get("content-length") ?? 0);
-    return size > 0 ? size : null;
-  } catch (error) {
-    console.warn("HEAD probe for audio size failed", error);
-    return null;
-  }
-}
-
-function buildTranscriptionForm(file: File) {
-  const form = new FormData();
-  form.append("file", file);
-  form.append("model", "whisper-large-v3-turbo");
-  form.append("language", "en");
-  form.append("temperature", "0");
-  form.append("response_format", "json");
-  return form;
-}
-
-// A few storage providers serve audio to browsers but reject Groq's own
-// remote fetch of the url — download it ourselves and upload directly.
-// Returns null (not an error) when the file turns out too big for a
-// single request, so the caller can fall through to chunking instead.
-async function transcribeSingleShot(audioUrl: string, fileName: string) {
-  let audioResponse: Response;
-  try {
-    audioResponse = await fetch(audioUrl, { redirect: "error" });
-  } catch (error) {
-    console.warn("Direct audio fetch failed", error);
-    return null;
-  }
-  if (!audioResponse.ok) return null;
-
-  const audioBlob = await audioResponse.blob();
-  if (audioBlob.size > MAX_SINGLE_UPLOAD_BYTES) return null;
-
-  const file = new File([audioBlob], fileName, { type: audioBlob.type || "audio/mpeg" });
-  return sendTranscriptionRequest(buildTranscriptionForm(file));
-}
-
-async function transcribeChunk(blob: Blob, fileName: string) {
-  const file = new File([blob], fileName, { type: blob.type || "audio/mpeg" });
-  const response = await sendTranscriptionRequest(buildTranscriptionForm(file));
-  if (!response.ok) {
-    const details = await response.text().catch(() => "");
-    throw new Error(`Chunk transcription failed (${response.status}): ${details}`);
-  }
-  const data = await response.json();
-  if (!data.text || typeof data.text !== "string") throw new Error("Chunk returned no text");
-  return data.text as string;
-}
-
-// Groq's free-tier cap is per request, not per recording — so a file
-// too big for one call is split into consecutive byte ranges (via
-// HTTP Range requests, fetched one at a time to keep memory bounded),
-// each transcribed separately, then joined. A byte-boundary split can
-// land mid audio-frame, losing at most a fraction of a second right at
-// each cut — an acceptable trade for turning "can't summarize this at
-// all" into "summarized, with a couple of barely-noticeable gaps."
-// Sequential rather than parallel, to stay simple and avoid tripping
-// Groq's own per-key rate limits.
-async function transcribeByChunks(audioUrl: string, totalSize: number, fileName: string) {
-  const numChunks = Math.min(MAX_CHUNKS, Math.ceil(totalSize / MAX_CHUNK_BYTES));
-  const chunkSize = Math.ceil(totalSize / numChunks);
-  const parts: string[] = [];
-
-  for (let i = 0; i < numChunks; i++) {
-    const start = i * chunkSize;
-    const end = Math.min(start + chunkSize, totalSize) - 1;
-    const rangeResponse = await fetch(audioUrl, { headers: { Range: `bytes=${start}-${end}` }, redirect: "error" });
-    if (!rangeResponse.ok && rangeResponse.status !== 206) {
-      throw new Error(`Range fetch failed for chunk ${i + 1}/${numChunks} (${rangeResponse.status})`);
-    }
-    const blob = await rangeResponse.blob();
-    const text = await transcribeChunk(blob, fileName);
-    parts.push(text.trim());
-  }
-
-  return parts.join(" ");
-}
-
 async function transcribe(audioUrl: string) {
   const form = new FormData();
   // Groq's transcription API supports a URL, avoiding an unnecessary
@@ -347,40 +254,44 @@ async function transcribe(audioUrl: string) {
     console.error("Groq transcription request threw", error);
     throw userMessage(502, "transcription_unreachable", "We couldn't reach the transcription service. Please try again in a moment.");
   }
-  if (response.ok) return parseTranscriptionText(response);
+  let failureDetails = response.ok ? "" : await response.text();
 
-  const urlFailureDetails = await response.text().catch(() => "");
-  console.warn("Groq URL-based transcription failed, falling back to a direct fetch", response.status, urlFailureDetails);
-
-  const fileName = audioFileName(audioUrl);
-  const totalSize = await probeAudioSize(audioUrl);
-
-  // Small enough (or size unknown, matching the original behavior) —
-  // one direct upload, same approach this app has always used.
-  if (totalSize === null || totalSize <= MAX_SINGLE_UPLOAD_BYTES) {
-    const fallback = await transcribeSingleShot(audioUrl, fileName);
-    if (fallback?.ok) return parseTranscriptionText(fallback);
-
-    const details = fallback ? await fallback.text().catch(() => "") : urlFailureDetails;
-    console.error("Groq transcription failed", fallback?.status ?? response.status, details);
-    if (details.includes("media_too_large")) {
-      throw userMessage(413, "audio_too_large", "This recording is too large to summarize automatically — it's over Groq's per-request limit for AI transcription.");
+  // A few storage providers serve audio to browsers but reject Groq's remote
+  // fetch. For files within Groq's multipart limit, retry with a secure server
+  // side download. The URL was already restricted to this app's own storage
+  // domains by validateAudioUrl.
+  if (!response.ok) {
+    try {
+      const audioResponse = await fetch(audioUrl, { redirect: "error" });
+      const size = Number(audioResponse.headers.get("content-length") ?? 0);
+      if (audioResponse.ok && (!size || size <= MAX_UPLOAD_BYTES)) {
+        const audioBlob = await audioResponse.blob();
+        if (audioBlob.size <= MAX_UPLOAD_BYTES) {
+          const uploadForm = new FormData();
+          uploadForm.append("file", new File([audioBlob], audioFileName(audioUrl), { type: audioBlob.type || "audio/mpeg" }));
+          uploadForm.append("model", "whisper-large-v3-turbo");
+          uploadForm.append("language", "en");
+          uploadForm.append("temperature", "0");
+          uploadForm.append("response_format", "json");
+          response = await sendTranscriptionRequest(uploadForm);
+          failureDetails = response.ok ? "" : await response.text();
+        }
+      }
+    } catch (error) {
+      console.warn("Audio download fallback failed", error);
+    }
+  }
+  if (!response.ok) {
+    console.error("Groq transcription failed", response.status, failureDetails);
+    // Groq's transcription API rejects files over 25MB outright (its own
+    // hard limit on this app's free-tier key) — worth its own message,
+    // since "try again" would never help and the file itself isn't broken.
+    if (failureDetails.includes("media_too_large")) {
+      throw userMessage(413, "audio_too_large", "This recording is too long to summarize automatically — it's over the 25MB limit for AI transcription.");
     }
     throw userMessage(502, "transcription_failed", "We couldn't transcribe this audio right now. Please try again.");
   }
-
-  // Too big for one request — split it and transcribe the pieces.
-  if (totalSize <= MAX_CHUNK_BYTES * MAX_CHUNKS) {
-    try {
-      return await transcribeByChunks(audioUrl, totalSize, fileName);
-    } catch (error) {
-      console.error("Chunked transcription failed", error);
-      throw userMessage(502, "transcription_failed", "We couldn't transcribe this audio right now. Please try again.");
-    }
-  }
-
-  const maxMb = Math.round((MAX_CHUNK_BYTES * MAX_CHUNKS) / (1024 * 1024));
-  throw userMessage(413, "audio_too_large", `This recording is too long to summarize automatically, even split into pieces — it's over the current ${maxMb}MB limit for AI transcription.`);
+  return parseTranscriptionText(response);
 }
 
 async function summarize(transcript: string, audioType: string, title: string) {
