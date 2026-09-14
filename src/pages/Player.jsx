@@ -16,6 +16,9 @@ export default function Player() {
     togglePlay,
     audioRef,
     playSermon,
+    duration,
+    currentTime,
+    seekTo,
     queue,
     removeFromQueue,
     clearQueue,
@@ -28,8 +31,7 @@ export default function Player() {
   const navigate = useNavigate();
   const pip = useDocumentPiP();
 
-  const [progress, setProgress] = useState(0);
-  const [duration, setDuration] = useState(0);
+  const [progress, setProgress] = useState(currentTime);
   const [speed, setSpeed] = useState(1);
   const [isDragging, setIsDragging] = useState(false);
   const [showRemaining, setShowRemaining] = useState(false);
@@ -41,23 +43,16 @@ export default function Player() {
   //////////////////////////////////////////////////
   // AUDIO EVENTS
   //////////////////////////////////////////////////
+  // Read straight from the context's already-centralized currentTime
+  // rather than re-attaching our own timeupdate/loadedmetadata
+  // listeners here. The shared <audio> element never unmounts, so a
+  // page-local listener that mounts after playback already started
+  // (e.g. started from a list page, then opened here) would miss the
+  // loadedmetadata event that already fired and be stuck at duration 0
+  // — which is exactly what made the seek bar undraggable.
   useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    const updateTime = () => {
-      if (!isDragging) setProgress(audio.currentTime);
-    };
-    const setMeta = () => setDuration(audio.duration || 0);
-
-    audio.addEventListener("timeupdate", updateTime);
-    audio.addEventListener("loadedmetadata", setMeta);
-
-    return () => {
-      audio.removeEventListener("timeupdate", updateTime);
-      audio.removeEventListener("loadedmetadata", setMeta);
-    };
-  }, [audioRef, isDragging]);
+    if (!isDragging) setProgress(currentTime);
+  }, [currentTime, isDragging]);
 
   //////////////////////////////////////////////////
   // SEEK
@@ -68,9 +63,8 @@ export default function Player() {
   };
 
   const commitSeek = (e) => {
-    const audio = audioRef.current;
     const value = Number(e.target.value);
-    audio.currentTime = value;
+    seekTo(value);
     setProgress(value);
     setIsDragging(false);
   };
