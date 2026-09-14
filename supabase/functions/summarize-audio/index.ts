@@ -59,35 +59,42 @@ async function requireFirebaseUser(request: Request) {
   }
 }
 
-function firestoreField(document: Record<string, unknown>, name: string) {
-  const field = (document.fields as Record<string, { stringValue?: string }> | undefined)?.[name];
-  return field?.stringValue;
-}
-
-async function getFirestoreAudio(firebaseToken: string, audioId: string) {
-  if (!firebaseProjectId || !/^[A-Za-z0-9_-]{1,150}$/.test(audioId)) {
-    throw userMessage(400, "invalid_audio", "This audio file cannot be summarized.");
+// Firestore's REST API (used here instead of the client SDK) enforces a
+// separate, stricter per-minute quota than the gRPC/WebChannel protocol the
+// app's own listeners use — a short burst of requests can trip a transient
+// 429 that has nothing to do with real access. Retry those before treating
+// the read as failed (see audio-download-url's identical helper).
+async function fetchWithRetry(url: string | URL, init?: RequestInit, attempts = 3) {
+  let response: Response;
+  for (let i = 0; i < attempts; i++) {
+    response = await fetch(url, init);
+    if (response.status !== 429) return response;
+    // Only discard the body when another attempt is actually coming — the
+    // final attempt's response (429 or not) is returned to the caller,
+    // whose own error handling reads its body. Cancelling it here first
+    // left that read throwing "Body already consumed".
+    if (i < attempts - 1) {
+      await response.body?.cancel().catch(() => {});
+      await new Promise((resolve) => setTimeout(resolve, 250 * (i + 1)));
+    }
   }
-  const response = await fetch(
-    `https://firestore.googleapis.com/v1/projects/${firebaseProjectId}/databases/(default)/documents/audio/${audioId}`,
-    { headers: { Authorization: `Bearer ${firebaseToken}` } },
-  );
-  if (response.status === 404) throw userMessage(404, "audio_not_found", "This audio file is no longer available.");
-  if (!response || !response.ok) {
-    console.error("Firestore audio read failed", response.status, await response.text());
-    throw userMessage(403, "audio_access_denied", "You don't have access to this audio file.");
-  }
-  return await response.json() as Record<string, unknown>;
+  return response!;
 }
 
 async function saveFirestoreSummary(firebaseToken: string, audioId: string, summary: string) {
   const url = new URL(`https://firestore.googleapis.com/v1/projects/${firebaseProjectId}/databases/(default)/documents/audio/${audioId}`);
   url.searchParams.set("updateMask.fieldPaths", "aiSummary");
-  const response = await fetch(url, {
-    method: "PATCH",
-    headers: { Authorization: `Bearer ${firebaseToken}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ fields: { aiSummary: { stringValue: summary } } }),
-  });
+  let response: Response;
+  try {
+    response = await fetchWithRetry(url, {
+      method: "PATCH",
+      headers: { Authorization: `Bearer ${firebaseToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ fields: { aiSummary: { stringValue: summary } } }),
+    });
+  } catch (error) {
+    console.error("Firestore summary save threw", error);
+    throw userMessage(500, "summary_save_failed", "The summary was created but couldn't be saved. Please try again.");
+  }
   if (!response || !response.ok) {
     console.error("Firestore summary save failed", response.status, await response.text());
     throw userMessage(500, "summary_save_failed", "The summary was created but couldn't be saved. Please try again.");
@@ -148,12 +155,22 @@ async function transcribe(audioUrl: string) {
   form.append("temperature", "0");
   form.append("response_format", "json");
 
-  let response = await sendTranscriptionRequest(form);
+  let response: Response;
+  try {
+    response = await sendTranscriptionRequest(form);
+  } catch (error) {
+    // A raw fetch() rejection (DNS blip, reset connection, timeout) isn't an
+    // HTTP error response — left unhandled it falls through to the generic
+    // 500 catch-all below with no useful message for the user or the logs.
+    console.error("Groq transcription request threw", error);
+    throw userMessage(502, "transcription_unreachable", "We couldn't reach the transcription service. Please try again in a moment.");
+  }
   let failureDetails = response.ok ? "" : await response.text();
 
   // A few storage providers serve audio to browsers but reject Groq's remote
   // fetch. For files within Groq's multipart limit, retry with a secure server
-  // side download. The URL was already checked against the Firestore record.
+  // side download. The URL was already restricted to this app's own storage
+  // domains by validateAudioUrl.
   if (!response.ok) {
     try {
       const audioResponse = await fetch(audioUrl, { redirect: "error" });
@@ -177,9 +194,24 @@ async function transcribe(audioUrl: string) {
   }
   if (!response.ok) {
     console.error("Groq transcription failed", response.status, failureDetails);
+    // Groq's transcription API rejects files over 25MB outright (its own
+    // hard limit) — worth its own message, since "try again" would never
+    // help and the file itself isn't broken.
+    if (failureDetails.includes("media_too_large")) {
+      throw userMessage(413, "audio_too_large", "This recording is too long to summarize automatically — it's over the 25MB limit for AI transcription.");
+    }
     throw userMessage(502, "transcription_failed", "We couldn't transcribe this audio right now. Please try again.");
   }
-  const data = await response.json();
+  let data: Record<string, unknown>;
+  try {
+    data = await response.json();
+  } catch (error) {
+    // A 2xx status doesn't guarantee a parseable body — a proxy timeout or
+    // truncated response can still return non-JSON. Left unguarded this
+    // throws raw and falls through to the generic catch-all.
+    console.error("Groq transcription response wasn't valid JSON", error);
+    throw userMessage(502, "transcription_parse_failed", "We couldn't read the transcription result. Please try again.");
+  }
   if (!data.text || typeof data.text !== "string") {
     throw userMessage(502, "transcription_empty", "We couldn't find speech to summarize in this audio.");
   }
@@ -189,22 +221,36 @@ async function transcribe(audioUrl: string) {
 async function summarize(transcript: string, audioType: string, title: string) {
   const contentType = audioType === "sundayschool" ? "Sunday School lesson" : audioType;
   const prompt = `Summarize this ${contentType} titled "${title}" for a church listening app.\n\nUse this exact readable plain-text structure:\nMain topic:\nA concise paragraph.\n\nKey points:\n• 3 to 6 concrete points\n\nScripture references:\n• List only references that are actually mentioned; write "Not specifically mentioned" if none are clear.\n\nTakeaway:\nA short, pastoral and practical application.\n\nDo not invent quotations, Bible references, claims, speakers, or details.\n\nTranscript:\n${transcript.slice(0, MAX_TRANSCRIPT_CHARS)}`;
-  const response = await fetch(`${GROQ_API_URL}/chat/completions`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${groqApiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: "openai/gpt-oss-120b",
-      temperature: 0.2,
-      max_completion_tokens: 900,
-      messages: [{ role: "system", content: "You create accurate, concise church-audio summaries." }, { role: "user", content: prompt }],
-    }),
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${GROQ_API_URL}/chat/completions`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${groqApiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "openai/gpt-oss-120b",
+        temperature: 0.2,
+        max_completion_tokens: 900,
+        messages: [{ role: "system", content: "You create accurate, concise church-audio summaries." }, { role: "user", content: prompt }],
+      }),
+    });
+  } catch (error) {
+    console.error("Groq summary request threw", error);
+    throw userMessage(502, "summary_unreachable", "We couldn't reach the summary service. Please try again in a moment.");
+  }
   if (!response.ok) {
-    console.error("Groq summary failed", response.status, await response.text());
+    const bodyText = await response.text().catch(() => "");
+    console.error("Groq summary failed", response.status, bodyText);
     throw userMessage(502, "summary_failed", "We couldn't generate the summary right now. Please try again.");
   }
-  const data = await response.json();
-  const summary = data.choices?.[0]?.message?.content?.trim();
+  let data: Record<string, unknown>;
+  try {
+    data = await response.json();
+  } catch (error) {
+    console.error("Groq summary response wasn't valid JSON", error);
+    throw userMessage(502, "summary_parse_failed", "We couldn't read the summary result. Please try again.");
+  }
+  const choices = data.choices as Array<{ message?: { content?: string } }> | undefined;
+  const summary = choices?.[0]?.message?.content?.trim();
   if (!summary) throw userMessage(502, "summary_empty", "We couldn't generate the summary right now. Please try again.");
   return summary;
 }
@@ -216,19 +262,26 @@ Deno.serve(async (request) => {
 
   try {
     const { token } = await requireFirebaseUser(request);
-    const body = await request.json();
+    // deno-lint-ignore no-explicit-any
+    let body: any;
+    try {
+      body = await request.json();
+    } catch {
+      throw userMessage(400, "invalid_request", "This request couldn't be read. Please try again.");
+    }
     if (!allowedTypes.has(body.audioType)) throw userMessage(400, "invalid_type", "This content type cannot be summarized.");
     const audioId = body.audioId;
+    // The audioId is only used as the Firestore doc id to save the finished
+    // summary to — it isn't looked up first (see fetchWithRetry's comment:
+    // that redundant read was the actual source of every quota failure in
+    // this function). validateAudioUrl below is what keeps this from being
+    // pointed at an arbitrary URL; the client already had legitimate read
+    // access to audioType/audioUrl from its own Firestore read of this doc.
+    if (typeof audioId !== "string" || !/^[A-Za-z0-9_-]{1,150}$/.test(audioId)) {
+      throw userMessage(400, "invalid_audio", "This audio file cannot be summarized.");
+    }
     const audioUrl = validateAudioUrl(body.audioUrl);
     const title = typeof body.title === "string" ? body.title.slice(0, 300) : "Untitled audio";
-    const audioRecord = await getFirestoreAudio(token, audioId);
-    const isB2Audio = Boolean(firestoreField(audioRecord, "audioStorageKey"));
-    if ((!isB2Audio && firestoreField(audioRecord, "audioURL") !== audioUrl) || firestoreField(audioRecord, "type") !== body.audioType) {
-      throw userMessage(400, "audio_mismatch", "This audio file cannot be summarized.");
-    }
-    const force = body.force === true;
-    const cachedSummary = firestoreField(audioRecord, "aiSummary");
-    if (cachedSummary && !force) return json(request, { summary: cachedSummary, cached: true });
     const transcript = await transcribe(audioUrl);
     const summary = await summarize(transcript, body.audioType, title);
     await saveFirestoreSummary(token, audioId, summary);

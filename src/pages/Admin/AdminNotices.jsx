@@ -13,6 +13,11 @@ export default function AdminNotices() {
   const [submissions, setSubmissions] = useState([]);
   const [loadingSubmissions, setLoadingSubmissions] = useState(false);
 
+  const [userMap, setUserMap] = useState({});
+  const [viewingStats, setViewingStats] = useState(null);
+  const [statsLogs, setStatsLogs] = useState([]);
+  const [loadingStats, setLoadingStats] = useState(false);
+
   const loadNotices = async () => {
     const snap = await getDocs(collection(db, "notices"));
     const data = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
@@ -21,6 +26,23 @@ export default function AdminNotices() {
   };
 
   useEffect(() => { loadNotices(); }, []);
+
+  useEffect(() => {
+    async function loadUsers() {
+      try {
+        const snap = await getDocs(collection(db, "users"));
+        const map = {};
+        snap.docs.forEach((d) => {
+          const data = d.data();
+          map[d.id] = data.name || data.fullName || data.email || d.id;
+        });
+        setUserMap(map);
+      } catch (error) {
+        console.error("Could not load users:", error);
+      }
+    }
+    loadUsers();
+  }, []);
 
   const openCreate = () => { setEditing(null); setForm(blankForm); setShowForm(true); };
   const openEdit = (n) => { setEditing(n); setForm({ ...blankForm, ...n }); setShowForm(true); };
@@ -60,7 +82,30 @@ export default function AdminNotices() {
   };
   const closeSubmissions = () => { setViewingSubmissions(null); setSubmissions([]); };
 
+  const openStats = async (n) => {
+    setViewingStats(n);
+    setLoadingStats(true);
+    try {
+      const snap = await getDocs(query(collection(db, "logs"), where("noticeId", "==", n.id)));
+      const data = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      data.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+      setStatsLogs(data);
+    } catch (error) {
+      console.error("Error loading notice stats:", error);
+      setStatsLogs([]);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
+  const closeStats = () => { setViewingStats(null); setStatsLogs([]); };
+
   const f = (k) => (e) => setForm({ ...form, [k]: e.target.type === "checkbox" ? e.target.checked : e.target.value });
+
+  const whoLabel = (entry) => {
+    if (entry.userId && userMap[entry.userId]) return userMap[entry.userId];
+    if (entry.email) return entry.email;
+    return "Guest";
+  };
 
   return (
     <div style={page}>
@@ -147,6 +192,7 @@ export default function AdminNotices() {
             <button style={actionBtn} onClick={() => openEdit(n)}>Edit</button>
             <button style={actionBtn} onClick={() => toggleActive(n)}>{n.active ? "Disable" : "Enable"}</button>
             <button style={actionBtn} onClick={() => togglePin(n)}>{n.pinned ? "Unpin" : "Pin"}</button>
+            <button style={actionBtn} onClick={() => openStats(n)}>Stats</button>
             {n.inputEnabled && <button style={actionBtn} onClick={() => openSubmissions(n)}>Submissions</button>}
             <button style={{ ...actionBtn, color: "#dc2626", borderColor: "#fca5a5" }} onClick={() => handleDelete(n.id)}>Delete</button>
           </div>
@@ -184,6 +230,39 @@ export default function AdminNotices() {
           </div>
         </div>
       )}
+
+      {/* STATS MODAL */}
+      {viewingStats && (() => {
+        const views = statsLogs.filter((l) => l.event === "notice_view");
+        const clicks = statsLogs.filter((l) => l.event === "notice_click");
+        const uniqueCount = (entries) => new Set(entries.map((e) => e.userId || e.visitorId || e.id)).size;
+
+        return (
+          <div style={modalBg}>
+            <div style={modal}>
+              <h2 style={modalTitle}>Stats — {viewingStats.title}</h2>
+
+              {loadingStats && <p style={empty}>Loading…</p>}
+
+              {!loadingStats && (
+                <>
+                  <div style={statsSummaryRow}>
+                    <StatBlock label="Reads" total={views.length} unique={uniqueCount(views)} />
+                    <StatBlock label="Clicks" total={clicks.length} unique={uniqueCount(clicks)} />
+                  </div>
+
+                  <StatsSection title="Who read it" entries={views} whoLabel={whoLabel} />
+                  <StatsSection title="Who clicked it" entries={clicks} whoLabel={whoLabel} />
+                </>
+              )}
+
+              <div style={modalActions}>
+                <button style={cancelBtn} onClick={closeStats}>Close</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -194,6 +273,33 @@ function Field({ label, children }) {
 
 function Badge({ color, text, label }) {
   return <span style={{ fontSize: "11px", padding: "3px 8px", borderRadius: "999px", background: color, color: text, fontFamily: "sans-serif" }}>{label}</span>;
+}
+
+function StatBlock({ label, total, unique }) {
+  return (
+    <div style={statBlock}>
+      <div style={statNumber}>{total}</div>
+      <div style={statLabel}>{label}</div>
+      <div style={statSub}>{unique} unique {unique === 1 ? "person" : "people"}</div>
+    </div>
+  );
+}
+
+function StatsSection({ title, entries, whoLabel }) {
+  return (
+    <div style={statsSection}>
+      <p style={statsSectionTitle}>{title} ({entries.length})</p>
+      {entries.length === 0 && <p style={empty}>Nobody yet.</p>}
+      {entries.map((e) => (
+        <div key={e.id} style={submissionRow}>
+          <span style={submissionValue}>{whoLabel(e)}</span>
+          <span style={submissionMeta}>
+            {e.createdAt?.seconds ? new Date(e.createdAt.seconds * 1000).toLocaleString() : "—"}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 const page = { maxWidth: "860px" };
@@ -225,3 +331,11 @@ const empty = { textAlign: "center", color: "#b08050", fontFamily: "sans-serif",
 const submissionRow = { display: "flex", flexDirection: "column", gap: "3px", padding: "10px 0", borderBottom: "1px solid #f0e4d0" };
 const submissionValue = { fontSize: "14px", color: "#3d2200", fontFamily: "sans-serif", wordBreak: "break-word" };
 const submissionMeta = { fontSize: "11px", color: "#9b7040", fontFamily: "sans-serif" };
+
+const statsSummaryRow = { display: "flex", gap: "12px" };
+const statBlock = { flex: 1, background: "#fdf8f3", border: "1px solid #eddfc8", borderRadius: "12px", padding: "14px", textAlign: "center" };
+const statNumber = { fontSize: "26px", color: "#3d2200", fontFamily: "'Georgia', serif" };
+const statLabel = { fontSize: "12px", color: "#7a5530", fontFamily: "sans-serif", textTransform: "uppercase", letterSpacing: "0.04em", margin: "2px 0" };
+const statSub = { fontSize: "11px", color: "#9b7040", fontFamily: "sans-serif" };
+const statsSection = { marginTop: "8px" };
+const statsSectionTitle = { fontSize: "12px", color: "#9b7040", fontFamily: "sans-serif", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 4px" };

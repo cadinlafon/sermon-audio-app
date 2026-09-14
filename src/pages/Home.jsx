@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import NoticeInputForm from "../components/NoticeInputForm";
 import { db, auth } from "../firebase";
 import {
@@ -12,6 +12,7 @@ import {
   getDoc,
 } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
+import { logEvent } from "../utils/logEvent";
 
 export default function Home() {
   const navigate = useNavigate();
@@ -23,6 +24,19 @@ export default function Home() {
   const [user, setUser] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [authLoaded, setAuthLoaded] = useState(false);
+
+  const loggedViewsRef = useRef(new Set());
+
+  //////////////////////////////////////////////////
+  // NOTICE VIEW TRACKING
+  //////////////////////////////////////////////////
+  useEffect(() => {
+    for (const n of notices) {
+      if (loggedViewsRef.current.has(n.id)) continue;
+      loggedViewsRef.current.add(n.id);
+      logEvent("notice_view", { noticeId: n.id, noticeTitle: n.title });
+    }
+  }, [notices]);
 
   //////////////////////////////////////////////////
   // AUTH
@@ -149,6 +163,7 @@ export default function Home() {
                   <button
                     style={noticeButton}
                     onClick={() => {
+                      logEvent("notice_click", { noticeId: n.id, noticeTitle: n.title });
                       if (n.buttonType === "url") {
                         window.open(n.buttonValue, "_blank");
                       } else if (n.buttonType === "page") {

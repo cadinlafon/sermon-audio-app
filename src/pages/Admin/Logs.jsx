@@ -38,6 +38,16 @@ const EVENT_COLORS = {
     bg: "#f6e4b0",
     color: "#7a5a10",
   },
+
+  notice_view: {
+    bg: "#e8f0e4",
+    color: "#49653c",
+  },
+
+  notice_click: {
+    bg: "#fde8d8",
+    color: "#a3551f",
+  },
 };
 
 const eventStyle = (event) =>
@@ -68,6 +78,11 @@ const defaultFilters = {
   excludeSource: "none",
 };
 
+// A session with no logged "session_end" (common — mobile/PWA rarely fire
+// beforeunload) is still shown as "Active" as long as its last event is
+// within this window; past that it's just treated as abandoned.
+const SESSION_ACTIVE_WINDOW_MS = 10 * 60 * 1000;
+
 export default function Logs() {
   const [logs, setLogs] = useState([]);
   const [userMap, setUserMap] = useState({});
@@ -80,6 +95,16 @@ export default function Logs() {
 
   const [showAdvanced, setShowAdvanced] =
     useState(false);
+
+  const [expandedSessions, setExpandedSessions] =
+    useState({});
+
+  const toggleSession = (sessionId) => {
+    setExpandedSessions((prev) => ({
+      ...prev,
+      [sessionId]: !prev[sessionId],
+    }));
+  };
 
   //////////////////////////////////////////////////
   // LOAD USERS
@@ -146,6 +171,12 @@ export default function Logs() {
     return new Date(
       ts.seconds * 1000
     ).toLocaleString();
+  };
+
+  const formatDate = (date) => {
+    if (!date) return "—";
+
+    return date.toLocaleString();
   };
 
   const getUserName = (log) => {
@@ -535,6 +566,181 @@ export default function Logs() {
   ]);
 
   //////////////////////////////////////////////////
+  // SESSIONS
+  //////////////////////////////////////////////////
+  // Every logged event already carries a sessionId (see utils/logEvent.js),
+  // so grouping into session blocks is exact rather than a time-gap guess.
+
+  const sessions = useMemo(() => {
+    const bySession = new Map();
+
+    for (const log of filteredLogs) {
+      const key = log.sessionId || `no-session-${log.id}`;
+      const list = bySession.get(key);
+
+      if (list) list.push(log);
+      else bySession.set(key, [log]);
+    }
+
+    const now = Date.now();
+    const result = [];
+
+    for (const [sessionId, entries] of bySession) {
+      const sorted = [...entries].sort((a, b) => {
+        const aTime = a.createdAt?.seconds || 0;
+        const bTime = b.createdAt?.seconds || 0;
+
+        return aTime - bTime;
+      });
+
+      const first = sorted[0];
+      const last = sorted[sorted.length - 1];
+      const endEvent = sorted.find(
+        (log) => log.event === "session_end"
+      );
+
+      const startDate = getDate(first);
+      const lastDate = getDate(last);
+      const endDate = endEvent
+        ? getDate(endEvent)
+        : lastDate;
+
+      const active =
+        !endEvent &&
+        lastDate &&
+        now - lastDate.getTime() <
+          SESSION_ACTIVE_WINDOW_MS;
+
+      // A visitor can start a session as a guest and log in partway
+      // through — prefer whichever entry actually identifies them.
+      const identityLog =
+        sorted.find((log) => log.userId) ||
+        sorted.find((log) => log.email) ||
+        sorted.find((log) => log.fullName) ||
+        first;
+
+      result.push({
+        sessionId,
+        entries: [...sorted].reverse(),
+        firstEvent: first,
+        startDate,
+        endDate,
+        active,
+        pageCount: sorted.filter(
+          (log) => log.event === "page_visit"
+        ).length,
+        eventCount: sorted.length,
+        displayName: getUserName(identityLog),
+        isGuestSession: !sorted.some(
+          (log) => log.userId || log.email
+        ),
+        source:
+          identityLog.latestTrafficSource ||
+          identityLog.firstTrafficSource ||
+          null,
+      });
+    }
+
+    result.sort((a, b) => {
+      const aStart = a.startDate?.getTime() || 0;
+      const bStart = b.startDate?.getTime() || 0;
+
+      switch (sortBy) {
+        case "oldest":
+          return aStart - bStart;
+
+        case "userAsc":
+          return a.displayName
+            .toLowerCase()
+            .localeCompare(b.displayName.toLowerCase());
+
+        case "userDesc":
+          return b.displayName
+            .toLowerCase()
+            .localeCompare(a.displayName.toLowerCase());
+
+        case "eventAsc":
+          return (a.firstEvent.event || "").localeCompare(
+            b.firstEvent.event || ""
+          );
+
+        case "eventDesc":
+          return (b.firstEvent.event || "").localeCompare(
+            a.firstEvent.event || ""
+          );
+
+        case "newest":
+        default:
+          return bStart - aStart;
+      }
+    });
+
+    return result;
+  }, [filteredLogs, sortBy]);
+
+  //////////////////////////////////////////////////
+  // LOG ROW (shared between the flat and per-session views)
+  //////////////////////////////////////////////////
+
+  const renderLogRow = (log) => {
+    const { bg, color } = eventStyle(log.event);
+
+    const detail =
+      log.page || log.mode || log.message || null;
+
+    const source =
+      log.latestTrafficSource || log.firstTrafficSource;
+
+    return (
+      <div key={log.id} style={row}>
+        <div style={rowLeft}>
+          <div style={eventLine}>
+            <span
+              style={{
+                ...eventBadge,
+                background: bg,
+                color,
+              }}
+            >
+              {log.event}
+            </span>
+
+            {source && (
+              <span style={sourceBadge}>{source}</span>
+            )}
+
+            {isGuest(log) && (
+              <span style={guestBadge}>Guest</span>
+            )}
+          </div>
+
+          <div style={metaRow}>
+            <span style={metaUser}>
+              👤 {getUserName(log)}
+            </span>
+
+            <span style={metaDot}>·</span>
+
+            <span style={metaTime}>
+              {formatTime(log.createdAt)}
+            </span>
+          </div>
+        </div>
+
+        <div style={rowRight}>
+          {detail && <div>{detail}</div>}
+
+          {log.sessionId && (
+            <div style={sessionText}>
+              Session: {log.sessionId.slice(0, 12)}...
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  //////////////////////////////////////////////////
   // UPDATE FILTER
   //////////////////////////////////////////////////
 
@@ -572,7 +778,8 @@ export default function Logs() {
           </h1>
 
           <p style={pageSubtitle}>
-            Showing{" "}
+            <strong>{sessions.length}</strong> session
+            {sessions.length === 1 ? "" : "s"} · showing{" "}
             <strong>
               {filteredLogs.length}
             </strong>{" "}
@@ -1192,138 +1399,91 @@ export default function Logs() {
         )}
       </div>
 
-      {/* LOG LIST */}
+      {/* SESSION LIST */}
 
       <div style={list}>
-        {filteredLogs.map(
-          (log) => {
-            const {
-              bg,
-              color,
-            } = eventStyle(
-              log.event
-            );
+        {sessions.map((session) => {
+          const isOpen =
+            !!expandedSessions[session.sessionId];
 
-            const detail =
-              log.page ||
-              log.mode ||
-              log.message ||
-              null;
-
-            const source =
-              log.latestTrafficSource ||
-              log.firstTrafficSource;
-
-            return (
-              <div
-                key={log.id}
-                style={row}
+          return (
+            <div
+              key={session.sessionId}
+              style={sessionCard}
+            >
+              <button
+                onClick={() =>
+                  toggleSession(session.sessionId)
+                }
+                style={sessionHeaderButton}
               >
-                <div
-                  style={rowLeft}
-                >
-                  <div
-                    style={eventLine}
-                  >
-                    <span
-                      style={{
-                        ...eventBadge,
-                        background:
-                          bg,
-                        color,
-                      }}
-                    >
-                      {log.event}
-                    </span>
+                <div style={sessionHeaderLeft}>
+                  <span style={sessionChevron(isOpen)}>
+                    ▾
+                  </span>
 
-                    {source && (
-                      <span
-                        style={
-                          sourceBadge
-                        }
-                      >
-                        {source}
+                  <div>
+                    <div style={sessionUserLine}>
+                      <span style={sessionUserName}>
+                        {session.displayName}
                       </span>
-                    )}
 
-                    {isGuest(log) && (
-                      <span
-                        style={
-                          guestBadge
-                        }
-                      >
-                        Guest
-                      </span>
-                    )}
-                  </div>
-
-                  <div
-                    style={metaRow}
-                  >
-                    <span
-                      style={
-                        metaUser
-                      }
-                    >
-                      👤{" "}
-                      {getUserName(
-                        log
+                      {session.isGuestSession && (
+                        <span style={guestBadge}>
+                          Guest
+                        </span>
                       )}
-                    </span>
 
-                    <span
-                      style={
-                        metaDot
-                      }
-                    >
-                      ·
-                    </span>
-
-                    <span
-                      style={
-                        metaTime
-                      }
-                    >
-                      {formatTime(
-                        log.createdAt
+                      {session.source && (
+                        <span style={sourceBadge}>
+                          {session.source}
+                        </span>
                       )}
-                    </span>
+                    </div>
+
+                    <div style={sessionMetaLine}>
+                      {formatDate(session.startDate)}
+                      {" → "}
+                      {session.active ? (
+                        <span style={activeText}>
+                          Active
+                        </span>
+                      ) : (
+                        formatDate(session.endDate)
+                      )}
+                    </div>
                   </div>
                 </div>
 
-                <div
-                  style={
-                    rowRight
-                  }
-                >
-                  {detail && (
-                    <div>
-                      {detail}
-                    </div>
+                <div style={sessionHeaderRight}>
+                  {session.active && (
+                    <span style={activeBadge}>
+                      Active
+                    </span>
                   )}
 
-                  {log.sessionId && (
-                    <div
-                      style={
-                        sessionText
-                      }
-                    >
-                      Session:{" "}
-                      {log.sessionId.slice(
-                        0,
-                        12
-                      )}
-                      ...
-                    </div>
-                  )}
+                  <span style={countBadge}>
+                    {session.pageCount} page
+                    {session.pageCount === 1 ? "" : "s"}
+                  </span>
+
+                  <span style={countBadgeMuted}>
+                    {session.eventCount} event
+                    {session.eventCount === 1 ? "" : "s"}
+                  </span>
                 </div>
-              </div>
-            );
-          }
-        )}
+              </button>
 
-        {filteredLogs.length ===
-          0 && (
+              {isOpen && (
+                <div style={sessionBody}>
+                  {session.entries.map(renderLogRow)}
+                </div>
+              )}
+            </div>
+          );
+        })}
+
+        {sessions.length === 0 && (
           <div
             style={
               emptyState
@@ -1781,4 +1941,113 @@ const emptyText = {
   fontStyle:
     "italic",
   margin: 0,
+};
+
+const sessionCard = {
+  background: "#fffdf9",
+  border: "1px solid #eddfc8",
+  borderRadius: "14px",
+  overflow: "hidden",
+};
+
+const sessionHeaderButton = {
+  width: "100%",
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  gap: "12px",
+  padding: "14px 16px",
+  background: "transparent",
+  border: "none",
+  cursor: "pointer",
+  textAlign: "left",
+  flexWrap: "wrap",
+  fontFamily: "sans-serif",
+};
+
+const sessionHeaderLeft = {
+  display: "flex",
+  alignItems: "center",
+  gap: "10px",
+  minWidth: 0,
+};
+
+const sessionChevron = (open) => ({
+  display: "inline-block",
+  fontSize: "12px",
+  color: "#a85e18",
+  transition: "transform 0.15s",
+  transform: open ? "rotate(0deg)" : "rotate(-90deg)",
+});
+
+const sessionUserLine = {
+  display: "flex",
+  alignItems: "center",
+  gap: "6px",
+  flexWrap: "wrap",
+};
+
+const sessionUserName = {
+  fontSize: "14px",
+  fontWeight: "600",
+  color: "#3d2200",
+  fontFamily: "sans-serif",
+};
+
+const sessionMetaLine = {
+  fontSize: "12px",
+  color: "#9b7040",
+  fontFamily: "sans-serif",
+  marginTop: "3px",
+};
+
+const activeText = {
+  color: "#2f7d4f",
+  fontWeight: "600",
+};
+
+const sessionHeaderRight = {
+  display: "flex",
+  alignItems: "center",
+  gap: "6px",
+  flexWrap: "wrap",
+};
+
+const activeBadge = {
+  display: "inline-block",
+  fontSize: "10px",
+  padding: "3px 9px",
+  borderRadius: "999px",
+  background: "#dcfce7",
+  color: "#166534",
+  fontFamily: "sans-serif",
+  fontWeight: "600",
+};
+
+const countBadge = {
+  display: "inline-block",
+  fontSize: "10px",
+  padding: "3px 9px",
+  borderRadius: "999px",
+  background: "#f4e7d4",
+  color: "#7a4f10",
+  fontFamily: "sans-serif",
+};
+
+const countBadgeMuted = {
+  display: "inline-block",
+  fontSize: "10px",
+  padding: "3px 9px",
+  borderRadius: "999px",
+  background: "#f0e9df",
+  color: "#8a7860",
+  fontFamily: "sans-serif",
+};
+
+const sessionBody = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "8px",
+  padding: "10px 12px 12px",
+  borderTop: "1px solid #f0e4d0",
 };

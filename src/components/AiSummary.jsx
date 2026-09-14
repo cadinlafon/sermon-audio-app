@@ -143,7 +143,7 @@ export default function AiSummary({ audio, onSummarySaved }) {
       let audioUrl = audio.audioURL;
       if (audio.audioStorageKey) {
         const { data: accessData, error: accessError } = await supabase.functions.invoke("audio-download-url", {
-          headers: { Authorization: `Bearer ${token}` }, body: { audioId: audio.id },
+          headers: { Authorization: `Bearer ${token}` }, body: { storageKey: audio.audioStorageKey },
         });
         if (accessError || !accessData?.url) {
           const responseBody = await accessError?.context?.json().catch(() => null);

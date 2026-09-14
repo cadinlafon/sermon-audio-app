@@ -43,15 +43,20 @@ function textField(document: Record<string, unknown>, name: string) {
 }
 
 async function fetchWithRetry(url: string, init?: RequestInit, attempts = 3) {
-  let lastResponse: Response | null = null;
+  let response: Response;
   for (let i = 0; i < attempts; i++) {
-    const response = await fetch(url, init);
+    response = await fetch(url, init);
     if (response.status !== 429) return response;
-    lastResponse = response;
-    await response.body?.cancel().catch(() => {});
-    await new Promise((resolve) => setTimeout(resolve, 250 * (i + 1)));
+    // Only discard the body when another attempt is actually coming — the
+    // final attempt's response (429 or not) is returned to the caller,
+    // whose own error handling reads its body. Cancelling it here first
+    // left that read throwing "Body already consumed".
+    if (i < attempts - 1) {
+      await response.body?.cancel().catch(() => {});
+      await new Promise((resolve) => setTimeout(resolve, 250 * (i + 1)));
+    }
   }
-  return lastResponse!;
+  return response!;
 }
 async function createDownloadUrl(key: string) {
   if (!b2KeyId || !b2ApplicationKey || !b2BucketId || !b2BucketName) throw new Error("storage_unconfigured");
