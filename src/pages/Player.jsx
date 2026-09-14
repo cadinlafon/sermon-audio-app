@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAudioPlayer } from "../context/AudioPlayerContext";
 import { useDocumentPiP } from "../hooks/useDocumentPiP";
 import DesktopMiniPlayerContent from "../components/DesktopMiniPlayerContent";
+import RelatedAudio from "../components/RelatedAudio";
 
 import back30 from "../assets/Player/back30.png";
 import forward30 from "../assets/Player/forward30.png";
@@ -352,6 +353,8 @@ export default function Player() {
 
         {deviceStatus && <p style={deviceStatusText}>{deviceStatus}</p>}
       </div>
+
+      <RelatedAudio current={current} />
 
       {/* PLAYING NEXT SHEET */}
       {showQueue && (
