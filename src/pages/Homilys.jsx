@@ -82,8 +82,8 @@ export default function Homilies() {
   ////////////////////////////////////////////////
   // PLAY
   ////////////////////////////////////////////////
-  const handlePlay = async (item) => {
-    playSermon(item);
+  const handlePlay = async (item, options) => {
+    playSermon(item, options);
 
     if (!user) return;
 

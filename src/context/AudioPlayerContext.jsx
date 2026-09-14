@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../firebase";
 import { trackListenTime, trackPlay } from "../utils/listenTracker";
+import { saveListenProgress } from "../utils/listenProgress";
 import { supabase } from "../supabase";
 
 const AudioPlayerContext = createContext();
@@ -13,6 +14,7 @@ export function AudioPlayerProvider({ children }) {
   const lastTimeRef = useRef(null);
   const pendingSecondsRef = useRef(0);
   const playedCurrentRef = useRef(null);
+  const pendingResumeRef = useRef(null);
 
   const [current, setCurrent] = useState(null);
   const [audioUrl, setAudioUrl] = useState("");
@@ -62,6 +64,21 @@ export function AudioPlayerProvider({ children }) {
     });
   }, []);
 
+  // Powers the "Completed" / "Resume" / "Not Started" state shown on
+  // audio cards. `completed` forces status to "completed" regardless
+  // of the reported duration — used on the "ended" event, since a
+  // slightly-off duration shouldn't stop a fully-played track from
+  // reading as complete.
+  const saveProgressNow = useCallback((completed = false) => {
+    const audio = audioRef.current;
+    const sermon = currentRef.current;
+    const user = userRef.current;
+    if (!audio || !sermon || !user) return;
+    const duration = audio.duration || 0;
+    const position = completed ? duration : audio.currentTime;
+    void saveListenProgress(user.uid, sermon.id, { position, duration });
+  }, []);
+
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return undefined;
@@ -91,12 +108,16 @@ export function AudioPlayerProvider({ children }) {
       // Ignore seeks and discontinuities; only actual adjacent playback counts.
       if (Number.isFinite(elapsed) && elapsed > 0 && elapsed <= 5) {
         pendingSecondsRef.current += elapsed;
-        if (pendingSecondsRef.current >= 30) flushListenTime();
+        if (pendingSecondsRef.current >= 30) {
+          flushListenTime();
+          saveProgressNow();
+        }
       }
     };
 
-    const onStop = () => {
+    const onStop = (event) => {
       flushListenTime();
+      saveProgressNow(event?.type === "ended");
       lastTimeRef.current = null;
       setIsPlaying(false);
     };
@@ -113,7 +134,7 @@ export function AudioPlayerProvider({ children }) {
       audio.removeEventListener("pause", onStop);
       audio.removeEventListener("ended", onStop);
     };
-  }, [flushListenTime]);
+  }, [flushListenTime, saveProgressNow]);
 
   // Shared progress/duration — separate from the tracking listeners
   // above so this stays simple regardless of how that logic evolves.
@@ -134,15 +155,22 @@ export function AudioPlayerProvider({ children }) {
 
   useEffect(() => {
     const flushOnHidden = () => {
-      if (document.visibilityState === "hidden") flushListenTime();
+      if (document.visibilityState === "hidden") {
+        flushListenTime();
+        saveProgressNow();
+      }
+    };
+    const flushOnPageHide = () => {
+      flushListenTime();
+      saveProgressNow();
     };
     document.addEventListener("visibilitychange", flushOnHidden);
-    window.addEventListener("pagehide", flushListenTime);
+    window.addEventListener("pagehide", flushOnPageHide);
     return () => {
       document.removeEventListener("visibilitychange", flushOnHidden);
-      window.removeEventListener("pagehide", flushListenTime);
+      window.removeEventListener("pagehide", flushOnPageHide);
     };
-  }, [flushListenTime]);
+  }, [flushListenTime, saveProgressNow]);
 
   useEffect(() => {
     if (!current || !audioUrl || !audioRef.current) return;
@@ -150,6 +178,17 @@ export function AudioPlayerProvider({ children }) {
     playedCurrentRef.current = null;
     lastTimeRef.current = null;
     audio.load();
+
+    const resumeAt = pendingResumeRef.current;
+    pendingResumeRef.current = null;
+    if (resumeAt) {
+      const onLoaded = () => {
+        audio.currentTime = resumeAt;
+        audio.removeEventListener("loadedmetadata", onLoaded);
+      };
+      audio.addEventListener("loadedmetadata", onLoaded);
+    }
+
     audio.play().catch(() => setIsPlaying(false));
   }, [current, audioUrl]);
 
@@ -177,7 +216,10 @@ export function AudioPlayerProvider({ children }) {
   // Listening doesn't require an account — logged-in users still send
   // their token (so listen tracking + any future access rules work),
   // but a missing/anonymous user is not blocked from playing.
-  const playSermon = async (sermon) => {
+  // `options.resumeAt` (seconds) seeks there once metadata loads —
+  // used by the "Resume" button on a card that was left partway
+  // through.
+  const playSermon = async (sermon, options = {}) => {
     flushListenTime();
     const user = auth.currentUser;
     setPlayError("");
@@ -195,6 +237,7 @@ export function AudioPlayerProvider({ children }) {
           throw err;
         }
       }
+      pendingResumeRef.current = options.resumeAt || null;
       setAudioUrl(url);
       setCurrent(sermon);
     } catch (error) {

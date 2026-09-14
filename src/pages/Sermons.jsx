@@ -51,8 +51,8 @@ export default function Sermons() {
 
   const speakers = [...new Set(sermons.map((s) => s.speaker).filter(Boolean))];
 
-  const handlePlay = async (sermon) => {
-    playSermon(sermon);
+  const handlePlay = async (sermon, options) => {
+    playSermon(sermon, options);
     if (!user) return;
     await addDoc(collection(db, "appUsage"), { sermonId: sermon.id, userId: user.uid, createdAt: serverTimestamp() });
   };

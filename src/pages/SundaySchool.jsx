@@ -48,8 +48,8 @@ export default function SundaySchool() {
     fetchNotices();
   }, []);
 
-  const handlePlay = async (lesson) => {
-    playSermon(lesson);
+  const handlePlay = async (lesson, options) => {
+    playSermon(lesson, options);
     if (!user) return;
     await addDoc(collection(db, "appUsage"), { sermonId: lesson.id, userId: user.uid, createdAt: serverTimestamp() });
   };
