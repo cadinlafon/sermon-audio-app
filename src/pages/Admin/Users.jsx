@@ -11,6 +11,7 @@ import {
 import { ADMIN_MODULES, blankPermissions, NO_ACCESS_MESSAGE } from "../../config/adminModules";
 import { useModulePermissions, usePermissions } from "../../hooks/usePermissions";
 import { useAuth } from "../../context/AuthContext";
+import { useAdminPin } from "../../context/AdminPinContext";
 import UserStatsModal from "./UserStatsModal";
 
 export default function Users() {
@@ -20,6 +21,8 @@ export default function Users() {
   // from changing their own role/permissions through this page.
   const actingPerms = usePermissions();
   const { user: currentUser } = useAuth();
+  const pinCtx = useAdminPin();
+  const requirePin = pinCtx?.requirePin || (async () => true);
 
   const [users, setUsers] = useState([]);
   const [search, setSearch] = useState("");
@@ -152,6 +155,7 @@ export default function Users() {
       alert(NO_ACCESS_MESSAGE);
       return;
     }
+    if (!(await requirePin("roleChange"))) return;
 
     await updateDoc(doc(db, "users", id), {
       role: "admin",
@@ -164,6 +168,7 @@ export default function Users() {
   const removeAdmin = async (id) => {
     if (!perms.requireEdit()) return;
     if (!guardNotSelf(id)) return;
+    if (!(await requirePin("roleChange"))) return;
 
     await updateDoc(doc(db, "users", id), {
       role: "user",
@@ -232,6 +237,7 @@ export default function Users() {
     if (!perms.requireEdit()) return;
     if (!permTarget) return;
     if (!guardNotSelf(permTarget.id)) return;
+    if (!(await requirePin("roleChange"))) return;
 
     setSavingPerms(true);
     try {
@@ -253,6 +259,7 @@ export default function Users() {
   const deleteUser = async (id) => {
     if (!perms.requireDelete()) return;
     if (!window.confirm("Delete this user?")) return;
+    if (!(await requirePin("deleteUser"))) return;
 
     await deleteDoc(doc(db, "users", id));
 

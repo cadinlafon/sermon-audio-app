@@ -5,11 +5,14 @@ import { uploadPrivateAudio } from "../../utils/privateAudioUpload";
 import { getNextAudioOrder } from "../../utils/audioOrder";
 import BulkUploadAudio from "./BulkUploadAudio";
 import { useModulePermissions } from "../../hooks/usePermissions";
+import { useAdminPin } from "../../context/AdminPinContext";
 
 const speakers = ["Jonathan Mcintosh", "Rusty Olps", "Jason Farley", "Mark Thiele"];
 
 export default function UploadAudio() {
   const perms = useModulePermissions("upload");
+  const pinCtx = useAdminPin();
+  const requirePin = pinCtx?.requirePin || (async () => true);
   const [mode, setMode] = useState("single");
   const [title, setTitle] = useState("");
   const [speaker, setSpeaker] = useState("");
@@ -48,6 +51,7 @@ export default function UploadAudio() {
   const handleUpload = async () => {
     if (!perms.requireEdit()) return;
     if (!file || !title || !speaker) { alert("Title, speaker, and file are required."); return; }
+    if (!(await requirePin("uploadAudio"))) return;
     setUploading(true);
     setProgress(null);
     try {

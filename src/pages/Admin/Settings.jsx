@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "../../firebase";
 import { useModulePermissions } from "../../hooks/usePermissions";
+import { useAdminPin } from "../../context/AdminPinContext";
 
 const AUDIENCE_OPTIONS = [
   { value: "guest", label: "Guests" },
@@ -11,6 +12,8 @@ const AUDIENCE_OPTIONS = [
 
 export default function Settings() {
   const perms = useModulePermissions("settings");
+  const pinCtx = useAdminPin();
+  const requirePin = pinCtx?.requirePin || (async () => true);
   const [shutdown, setShutdown] = useState(false);
   const [message, setMessage] = useState("");
   const [returnDate, setReturnDate] = useState("");
@@ -39,6 +42,11 @@ export default function Settings() {
     };
     fetchConfig();
   }, []);
+
+  const toggleShutdown = async () => {
+    if (!(await requirePin("appShutdown"))) return;
+    setShutdown((v) => !v);
+  };
 
   const toggleAudience = (value) => {
     setAudioAiAudiences((current) =>
@@ -81,7 +89,7 @@ export default function Settings() {
             <div style={toggleHint}>When on, users see a maintenance screen instead of the app.</div>
           </div>
           <button
-            onClick={() => setShutdown(!shutdown)}
+            onClick={toggleShutdown}
             style={shutdown ? { ...toggle, ...toggleOn } : toggle}
             aria-label="Toggle maintenance mode"
           >

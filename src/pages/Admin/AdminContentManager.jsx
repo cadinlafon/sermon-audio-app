@@ -3,6 +3,7 @@ import { db } from "../../firebase";
 import { collection, getDocs, updateDoc, deleteDoc, doc } from "firebase/firestore";
 import { deletePrivateAudio, uploadPrivateAudio } from "../../utils/privateAudioUpload";
 import { useModulePermissions } from "../../hooks/usePermissions";
+import { useAdminPin } from "../../context/AdminPinContext";
 
 const speakers = ["Jonathan Mcintosh", "Rusty Olps", "Jason Farley", "Mark Thiele"];
 
@@ -23,6 +24,8 @@ function formatDisplayDate(audio) {
 
 export default function AdminContentManager() {
   const perms = useModulePermissions("content");
+  const pinCtx = useAdminPin();
+  const requirePin = pinCtx?.requirePin || (async () => true);
   const [audioList, setAudioList] = useState([]);
   const [search, setSearch] = useState("");
   const [audioGroup, setAudioGroup] = useState("sermons");
@@ -104,6 +107,7 @@ export default function AdminContentManager() {
   const handleDelete = async (audio) => {
     if (!perms.requireDelete()) return;
     if (!window.confirm(`Delete "${audio.title}"? This cannot be undone.`)) return;
+    if (!(await requirePin("deleteAudio"))) return;
     try {
       await deletePrivateAudio(audio.audioStorageKey);
       await deleteDoc(doc(db, "audio", audio.id));

@@ -1,10 +1,20 @@
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { usePermissions } from "../../hooks/usePermissions";
 import { ADMIN_MODULES, NO_ACCESS_MESSAGE } from "../../config/adminModules";
+import { AdminPinProvider, useAdminPin } from "../../context/AdminPinContext";
 
 export default function AdminLayout() {
+  return (
+    <AdminPinProvider>
+      <AdminShell />
+    </AdminPinProvider>
+  );
+}
+
+function AdminShell() {
   const location = useLocation();
   const { canView } = usePermissions();
+  const pin = useAdminPin();
   const navLinks = ADMIN_MODULES.map((m) => ({
     to: `/admin/${m.path}`,
     label: m.label,
@@ -44,6 +54,12 @@ export default function AdminLayout() {
             );
           })}
         </nav>
+
+        {pin?.pinEnabled && (
+          <button onClick={pin.lockNow} style={lockNowBtn}>
+            🔒 Lock Admin
+          </button>
+        )}
 
         <Link to="/" style={backToApp}>
           ← Back to App
@@ -174,6 +190,21 @@ const backToApp = {
   textDecoration: "none",
   borderTop: "1px solid rgba(255,220,160,0.1)",
   marginTop: "auto",
+};
+
+const lockNowBtn = {
+  display: "block",
+  width: "calc(100% - 24px)",
+  margin: "12px 12px 0",
+  padding: "10px 12px",
+  borderRadius: "10px",
+  border: "1px solid rgba(255,220,160,0.15)",
+  background: "rgba(255,255,255,0.04)",
+  color: "rgba(255,220,160,0.75)",
+  fontSize: "12px",
+  fontFamily: "sans-serif",
+  cursor: "pointer",
+  textAlign: "left",
 };
 
 const main = {

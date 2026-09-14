@@ -61,6 +61,7 @@ import Referrals from "./pages/Admin/Referrals";
 import DoctrineAdmin from "./pages/Admin/DoctrineAdmin";
 import PageManager from "./pages/Admin/PageManager";
 import ResourceManager from "./pages/Admin/ResourceManager";
+import Security from "./pages/Admin/Security";
 
 
 //////////////////////////////////////////////////
@@ -573,6 +574,11 @@ function App() {
               <Route
                 path="settings"
                 element={<ModuleGate moduleKey="settings"><AdminSettings /></ModuleGate>}
+              />
+
+              <Route
+                path="security"
+                element={<ModuleGate moduleKey="security"><Security /></ModuleGate>}
               />
 
               <Route

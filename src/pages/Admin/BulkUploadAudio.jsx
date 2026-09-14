@@ -10,11 +10,14 @@ import {
   detectAudioDuration,
 } from "../../utils/bulkAudioIntake";
 import { useModulePermissions } from "../../hooks/usePermissions";
+import { useAdminPin } from "../../context/AdminPinContext";
 
 const fmt = (s) => (s == null ? "—" : `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`);
 
 export default function BulkUploadAudio({ speakers }) {
   const perms = useModulePermissions("upload");
+  const pinCtx = useAdminPin();
+  const requirePin = pinCtx?.requirePin || (async () => true);
   const [items, setItems] = useState([]);
   const [defaultSpeaker, setDefaultSpeaker] = useState("");
   const [defaultType, setDefaultType] = useState("sermon");
@@ -123,6 +126,7 @@ export default function BulkUploadAudio({ speakers }) {
       alert(`${missing.length} file(s) are missing a title or speaker. Please fill those in before uploading.`);
       return;
     }
+    if (!(await requirePin("uploadAudio"))) return;
 
     setRunning(true);
     setSummary(null);
