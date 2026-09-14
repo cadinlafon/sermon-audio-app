@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { EmailAuthProvider, reauthenticateWithCredential } from "firebase/auth";
 import { useAdminSecurity } from "../hooks/useAdminSecurity";
 import { usePermissions } from "../hooks/usePermissions";
@@ -61,6 +61,8 @@ export function AdminPinProvider({ children }) {
 
   const activePinAvailable = isRestricted ? security.hasRestrictedPin : security.hasOwnerPin;
   const passwordAvailable = !!user?.providerData?.some((p) => p.providerId === "password");
+  const entryGated = security.pinEnabled && security.requirePinFor.has("adminEntry") && !unlocked;
+  const ownerPasskeyAvailable = !isRestricted && isPasskeySupported() && security.passkeys.length > 0;
 
   const requirePin = useMemo(
     () => (actionKey) =>
@@ -137,13 +139,40 @@ export function AdminPinProvider({ children }) {
     }
   };
 
+  // Passkeys are the fastest option, so when one's registered, fire it
+  // the moment a lock screen (or action gate) appears — no click needed
+  // first. The buttons stay visible as a manual fallback if the browser
+  // blocks the unprompted call or the user cancels it.
+  const entryAutoTriedRef = useRef(false);
+  const requestAutoTriedRef = useRef(false);
+
+  useEffect(() => {
+    if (unlocked) entryAutoTriedRef.current = false;
+  }, [unlocked]);
+
+  useEffect(() => {
+    if (entryGated && ownerPasskeyAvailable && !entryAutoTriedRef.current && !submitting) {
+      entryAutoTriedRef.current = true;
+      usePasskey();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entryGated, ownerPasskeyAvailable]);
+
+  useEffect(() => {
+    requestAutoTriedRef.current = false;
+  }, [request]);
+
+  useEffect(() => {
+    if (request && ownerPasskeyAvailable && !requestAutoTriedRef.current && !submitting) {
+      requestAutoTriedRef.current = true;
+      usePasskey();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [request, ownerPasskeyAvailable]);
+
   if (security.loading || permsLoading) return null;
 
-  const entryGated = security.pinEnabled && security.requirePinFor.has("adminEntry") && !unlocked;
-
   if (entryGated) {
-    const ownerPasskeyAvailable = !isRestricted && isPasskeySupported() && security.passkeys.length > 0;
-
     if (!activePinAvailable && !passwordAvailable && !ownerPasskeyAvailable) {
       return (
         <div style={lockScreenWrap}>
@@ -190,7 +219,7 @@ export function AdminPinProvider({ children }) {
         <>
           <div style={backdrop} onClick={() => !submitting && closeRequest(false)} />
           <div style={modalWrap}>
-            {!activePinAvailable && !passwordAvailable && !(!isRestricted && isPasskeySupported() && security.passkeys.length > 0) ? (
+            {!activePinAvailable && !passwordAvailable && !ownerPasskeyAvailable ? (
               <p style={{ fontFamily: "sans-serif", color: "#9b7040", fontSize: "13px", textAlign: "center", margin: 0 }}>
                 {isRestricted
                   ? "A restricted-admin PIN hasn't been set yet. Ask the owner to set one in Security settings."
@@ -205,7 +234,7 @@ export function AdminPinProvider({ children }) {
                 onUsePasskey={usePasskey}
                 showPinOption={activePinAvailable}
                 showPasswordOption={passwordAvailable}
-                showPasskeyOption={!isRestricted && isPasskeySupported() && security.passkeys.length > 0}
+                showPasskeyOption={ownerPasskeyAvailable}
                 submitting={submitting}
                 error={error}
               />
