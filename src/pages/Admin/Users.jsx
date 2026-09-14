@@ -11,6 +11,7 @@ import {
 import { ADMIN_MODULES, blankPermissions, NO_ACCESS_MESSAGE } from "../../config/adminModules";
 import { useModulePermissions, usePermissions } from "../../hooks/usePermissions";
 import { useAuth } from "../../context/AuthContext";
+import UserStatsModal from "./UserStatsModal";
 
 export default function Users() {
   const perms = useModulePermissions("users");
@@ -32,6 +33,9 @@ export default function Users() {
   const [permTarget, setPermTarget] = useState(null);
   const [permForm, setPermForm] = useState(blankPermissions());
   const [savingPerms, setSavingPerms] = useState(false);
+
+  // Stats popup — per-user activity charts and history.
+  const [statsTarget, setStatsTarget] = useState(null);
 
   const fetchUsers = async () => {
     const snapshot = await getDocs(collection(db, "users"));
@@ -397,8 +401,9 @@ export default function Users() {
 
                   {/* ACTIONS */}
                   <td style={td}>
+                    <div style={actionRow}>
                     {isEditing ? (
-                      <div style={actionRow}>
+                      <>
                         <button
                           onClick={() => saveEdit(user.id)}
                           style={saveBtn}
@@ -412,8 +417,14 @@ export default function Users() {
                         >
                           Cancel
                         </button>
-                      </div>
-                    ) : perms.canEdit || perms.canDelete ? (
+                      </>
+                    ) : (
+                      <>
+                        <button style={statsBtn} onClick={() => setStatsTarget(user)}>
+                          Stats
+                        </button>
+
+                        {(perms.canEdit || perms.canDelete) && (
                       <select
                         defaultValue=""
                         onChange={(e) => {
@@ -487,10 +498,11 @@ export default function Users() {
                             Delete
                           </option>
                         )}
-                      </select>
-                    ) : (
-                      <span style={emailText}>—</span>
+                          </select>
+                        )}
+                      </>
                     )}
+                    </div>
                   </td>
                 </tr>
               );
@@ -561,6 +573,11 @@ export default function Users() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* STATS MODAL */}
+      {statsTarget && (
+        <UserStatsModal user={statsTarget} onClose={() => setStatsTarget(null)} />
       )}
     </div>
   );
@@ -787,6 +804,18 @@ const actionSelect = {
   fontFamily: "sans-serif",
   color: "#3d2200",
   cursor: "pointer",
+};
+
+const statsBtn = {
+  padding: "6px 10px",
+  borderRadius: "8px",
+  border: "1px solid #eddfc8",
+  background: "#fffdf9",
+  color: "#5c3a1e",
+  fontSize: "12px",
+  fontFamily: "sans-serif",
+  cursor: "pointer",
+  whiteSpace: "nowrap",
 };
 
 const inlineInput = {
