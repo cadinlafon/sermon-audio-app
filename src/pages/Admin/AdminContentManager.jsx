@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { db } from "../../firebase";
+import { auth, db } from "../../firebase";
 import { collection, getDocs, updateDoc, deleteDoc, doc } from "firebase/firestore";
+import { supabase } from "../../supabase";
 import { deletePrivateAudio, uploadPrivateAudio } from "../../utils/privateAudioUpload";
+import { createTranscriptionCopy } from "../../utils/transcodeForTranscription";
 import { useModulePermissions } from "../../hooks/usePermissions";
 import { useAdminPin } from "../../context/AdminPinContext";
 
@@ -40,6 +42,13 @@ export default function AdminContentManager() {
   const [editFile, setEditFile] = useState(null);
   const [saving, setSaving] = useState(false);
   const editFileInputRef = useRef();
+
+  // Backfill: generates transcription-optimized copies for audio
+  // uploaded before that existed (see transcodeForTranscription.js).
+  const [backfillRunning, setBackfillRunning] = useState(false);
+  const [backfillProgress, setBackfillProgress] = useState(null);
+  const [backfillSummary, setBackfillSummary] = useState(null);
+  const backfillCancelRef = useRef(false);
 
   const loadAudio = async () => {
     const snapshot = await getDocs(collection(db, "audio"));
@@ -118,12 +127,94 @@ export default function AdminContentManager() {
     }
   };
 
+  // ── Backfill AI transcription copies ────────────────
+  const missingTranscribeCopy = audioList.filter((a) => a.audioStorageKey && !a.transcribeStorageKey);
+
+  const runBackfill = async () => {
+    if (!perms.requireEdit()) return;
+    if (missingTranscribeCopy.length === 0) return;
+    if (!(await requirePin("uploadAudio"))) return;
+
+    backfillCancelRef.current = false;
+    setBackfillSummary(null);
+    setBackfillRunning(true);
+
+    const items = missingTranscribeCopy;
+    let succeeded = 0;
+    let failed = 0;
+
+    for (let i = 0; i < items.length; i++) {
+      if (backfillCancelRef.current) break;
+      const item = items[i];
+      const setStage = (stage) => setBackfillProgress({ index: i + 1, total: items.length, title: item.title, stage });
+
+      try {
+        setStage("Fetching original…");
+        const token = await auth.currentUser.getIdToken();
+        const { data: accessData, error: accessError } = await supabase.functions.invoke("audio-download-url", {
+          headers: { Authorization: `Bearer ${token}` },
+          body: { storageKey: item.audioStorageKey },
+        });
+        if (accessError || !accessData?.url) throw new Error(accessError?.message || "Couldn't get a download URL.");
+
+        const audioResponse = await fetch(accessData.url);
+        if (!audioResponse.ok) throw new Error("Couldn't download the original audio.");
+        const blob = await audioResponse.blob();
+        const file = new File([blob], item.title || "audio", { type: blob.type || "audio/mpeg" });
+
+        const transcodeFile = await createTranscriptionCopy(file, (p) => setStage(`Compressing for AI… ${Math.round(p * 100)}%`));
+
+        setStage("Uploading…");
+        const transcribeStorageKey = await uploadPrivateAudio(transcodeFile, () => {});
+
+        await updateDoc(doc(db, "audio", item.id), { transcribeStorageKey });
+        setAudioList((list) => list.map((a) => (a.id === item.id ? { ...a, transcribeStorageKey } : a)));
+        succeeded++;
+      } catch (err) {
+        console.error(`Backfill failed for "${item.title}"`, err);
+        failed++;
+      }
+    }
+
+    setBackfillRunning(false);
+    setBackfillProgress(null);
+    setBackfillSummary({ succeeded, failed, cancelled: backfillCancelRef.current });
+  };
+
+  const cancelBackfill = () => {
+    backfillCancelRef.current = true;
+  };
+
   return (
     <div style={page}>
       <div style={pageHeader}>
         <h1 style={pageTitle}>Content Manager</h1>
         <p style={pageSubtitle}>Reorder, edit, or remove audio listeners see.</p>
       </div>
+
+      {perms.canEdit && (missingTranscribeCopy.length > 0 || backfillRunning || backfillSummary) && (
+        <div style={backfillCard}>
+          <div style={backfillHeader}>
+            <span style={{ fontSize: "18px" }}>🎙️</span>
+            <div>
+              <div style={backfillTitle}>AI Transcription Copies</div>
+              <div style={backfillHint}>
+                {backfillRunning
+                  ? `Processing ${backfillProgress?.index ?? 0} of ${backfillProgress?.total ?? 0}: "${backfillProgress?.title ?? ""}" — ${backfillProgress?.stage ?? ""}`
+                  : backfillSummary
+                  ? `Done — ${backfillSummary.succeeded} generated${backfillSummary.failed ? `, ${backfillSummary.failed} failed` : ""}${backfillSummary.cancelled ? " (stopped early)" : ""}.`
+                  : `${missingTranscribeCopy.length} recording${missingTranscribeCopy.length === 1 ? "" : "s"} uploaded before this feature don't have a small AI-transcription copy yet — long ones may hit Groq's 25MB cap.`}
+              </div>
+            </div>
+          </div>
+
+          {backfillRunning ? (
+            <button onClick={cancelBackfill} style={backfillStopBtn}>Stop</button>
+          ) : missingTranscribeCopy.length > 0 ? (
+            <button onClick={runBackfill} style={backfillRunBtn}>Generate All</button>
+          ) : null}
+        </div>
+      )}
 
       <div style={toolbar}>
         <select value={audioGroup} onChange={(e) => setAudioGroup(e.target.value)} style={select}>
@@ -244,6 +335,25 @@ const page = { maxWidth: "800px" };
 const pageHeader = { marginBottom: "24px" };
 const pageTitle = { fontSize: "26px", fontWeight: "normal", color: "#3d2200", margin: "0 0 4px", fontFamily: "'Georgia', serif" };
 const pageSubtitle = { fontSize: "14px", color: "#9b7040", fontFamily: "sans-serif", margin: 0 };
+
+const backfillCard = {
+  display: "flex", justifyContent: "space-between", alignItems: "center", gap: "14px", flexWrap: "wrap",
+  background: "#fffbee", border: "1px solid #f0d898", borderRadius: "14px",
+  padding: "14px 18px", marginBottom: "18px",
+};
+const backfillHeader = { display: "flex", gap: "12px", alignItems: "flex-start" };
+const backfillTitle = { fontSize: "14px", color: "#3d2200", fontFamily: "'Georgia', serif", marginBottom: "3px" };
+const backfillHint = { fontSize: "12px", color: "#7a5530", fontFamily: "sans-serif", lineHeight: 1.5 };
+const backfillRunBtn = {
+  padding: "10px 18px", borderRadius: "10px", border: "none", flexShrink: 0,
+  background: "linear-gradient(135deg, #c97c2e 0%, #a85e18 100%)",
+  color: "#fff8ee", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer",
+  boxShadow: "0 3px 10px rgba(160,80,20,0.25)",
+};
+const backfillStopBtn = {
+  padding: "10px 18px", borderRadius: "10px", border: "1px solid #f0b4b4", flexShrink: 0,
+  background: "transparent", color: "#c23c3c", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer",
+};
 
 const toolbar = { display: "flex", gap: "10px", marginBottom: "20px", flexWrap: "wrap" };
 
