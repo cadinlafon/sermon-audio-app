@@ -2,9 +2,10 @@
 // entirely client-side — this is what lets AI summaries work on long
 // sermons despite Groq's 25MB-per-request cap on the free tier. Whisper
 // resamples everything to 16kHz internally regardless of input, so
-// encoding straight to 16kHz mono loses nothing for transcription while
-// cutting file size dramatically: even a 2-hour sermon at 16kHz/24kbps
-// lands around ~22MB, comfortably under the cap.
+// encoding straight to 16kHz mono loses nothing for transcription.
+// Bitrate backs off automatically for unusually long recordings (see
+// chooseBitrateKbps) so even a multi-hour recording stays under the
+// cap in one file — no chunking/multiple-requests needed.
 //
 // Decoding uses the browser's native (fast) decoder; resampling uses
 // OfflineAudioContext (also native, not a JS loop); only the actual MP3
@@ -12,7 +13,22 @@
 // avoid freezing the upload tab.
 
 const TARGET_SAMPLE_RATE = 16000;
-const TARGET_BITRATE_KBPS = 24;
+// Bitrate scales down for unusually long recordings so a single file
+// stays under Groq's 25MB cap without needing multiple files/requests
+// — 24kbps covers anything up to ~2h25m; the lower tiers exist for the
+// rare longer service and stay well within a floor that's still
+// intelligible for speech (Whisper is quite robust on low-bitrate
+// audio; a text summary doesn't need music-grade fidelity).
+const BITRATE_TIERS_KBPS = [24, 20, 16, 12, 8];
+const SAFE_UPLOAD_BYTES = 23 * 1024 * 1024; // headroom under Groq's 25MB cap
+
+function chooseBitrateKbps(durationSeconds) {
+  for (const kbps of BITRATE_TIERS_KBPS) {
+    const estimatedBytes = (durationSeconds * kbps * 1000) / 8;
+    if (estimatedBytes <= SAFE_UPLOAD_BYTES) return kbps;
+  }
+  return BITRATE_TIERS_KBPS[BITRATE_TIERS_KBPS.length - 1];
+}
 
 function floatTo16BitPCM(float32Array) {
   const output = new Int16Array(float32Array.length);
@@ -44,7 +60,7 @@ async function decodeToMonoPCM(file, sampleRate) {
   source.connect(offlineCtx.destination);
   source.start();
   const rendered = await offlineCtx.startRendering();
-  return rendered.getChannelData(0);
+  return { float32: rendered.getChannelData(0), duration: decoded.duration };
 }
 
 function encodeInWorker(pcm16, sampleRate, bitrateKbps, onProgress) {
@@ -76,8 +92,9 @@ function encodeInWorker(pcm16, sampleRate, bitrateKbps, onProgress) {
 // failure here as non-fatal (log it and fall back to the original
 // audio for transcription) rather than blocking the upload itself.
 export async function createTranscriptionCopy(file, onProgress) {
-  const float32 = await decodeToMonoPCM(file, TARGET_SAMPLE_RATE);
+  const { float32, duration } = await decodeToMonoPCM(file, TARGET_SAMPLE_RATE);
+  const bitrateKbps = chooseBitrateKbps(duration);
   const pcm16 = floatTo16BitPCM(float32);
-  const blob = await encodeInWorker(pcm16, TARGET_SAMPLE_RATE, TARGET_BITRATE_KBPS, onProgress);
+  const blob = await encodeInWorker(pcm16, TARGET_SAMPLE_RATE, bitrateKbps, onProgress);
   return new File([blob], "transcription-copy.mp3", { type: "audio/mp3" });
 }
