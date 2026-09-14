@@ -7,6 +7,8 @@ import { supabase } from "../supabase";
 
 const AudioPlayerContext = createContext();
 
+const SUMMARIZABLE_TYPES = new Set(["sermon", "homily", "sundayschool"]);
+
 export function AudioPlayerProvider({ children }) {
   const audioRef = useRef(null);
   const currentRef = useRef(null);
@@ -15,6 +17,7 @@ export function AudioPlayerProvider({ children }) {
   const pendingSecondsRef = useRef(0);
   const playedCurrentRef = useRef(null);
   const pendingResumeRef = useRef(null);
+  const autoSummarizedRef = useRef(new Set());
 
   const [current, setCurrent] = useState(null);
   const [audioUrl, setAudioUrl] = useState("");
@@ -192,6 +195,35 @@ export function AudioPlayerProvider({ children }) {
     audio.play().catch(() => setIsPlaying(false));
   }, [current, audioUrl]);
 
+  // Fires a silent, non-blocking AI summary generation the first time a
+  // never-summarized track is played, instead of waiting for someone to
+  // press "Summarize with AI" — the edge function itself dedupes
+  // (returns the cached summary, or a no-op if one's already being
+  // generated), so this doesn't multiply Groq usage even if several
+  // listeners start the same untranscribed track around the same time.
+  // Failures are swallowed on purpose: this is a background nice-to-have,
+  // never something that should interrupt or error out playback.
+  const triggerAutoSummary = (sermon, resolvedUrl) => {
+    if (!sermon?.id || !SUMMARIZABLE_TYPES.has(sermon.type)) return;
+    if (sermon.aiSummary) return;
+    if (autoSummarizedRef.current.has(sermon.id)) return;
+    const user = auth.currentUser;
+    if (!user) return; // summarize-audio requires a signed-in caller
+
+    autoSummarizedRef.current.add(sermon.id);
+    (async () => {
+      try {
+        const token = await user.getIdToken();
+        await supabase.functions.invoke("summarize-audio", {
+          headers: { Authorization: `Bearer ${token}` },
+          body: { audioId: sermon.id, audioUrl: resolvedUrl, audioType: sermon.type, title: sermon.title || "Untitled audio" },
+        });
+      } catch (error) {
+        console.warn("Background AI summary generation failed", error);
+      }
+    })();
+  };
+
   const requestDownloadUrl = async (sermon, token) => {
     // Passing the storage key directly (when we already have it) skips
     // a redundant server-side Firestore lookup — the id/collection path
@@ -240,6 +272,7 @@ export function AudioPlayerProvider({ children }) {
       pendingResumeRef.current = options.resumeAt || null;
       setAudioUrl(url);
       setCurrent(sermon);
+      triggerAutoSummary(sermon, url);
     } catch (error) {
       console.error("Unable to prepare private audio", error);
       setPlayError(error.message || "Audio is unavailable.");

@@ -84,12 +84,13 @@ async function fetchWithRetry(url: string | URL, init?: RequestInit, attempts = 
 async function saveFirestoreSummary(firebaseToken: string, audioId: string, summary: string) {
   const url = new URL(`https://firestore.googleapis.com/v1/projects/${firebaseProjectId}/databases/(default)/documents/audio/${audioId}`);
   url.searchParams.set("updateMask.fieldPaths", "aiSummary");
+  url.searchParams.append("updateMask.fieldPaths", "aiSummaryPending");
   let response: Response;
   try {
     response = await fetchWithRetry(url, {
       method: "PATCH",
       headers: { Authorization: `Bearer ${firebaseToken}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ fields: { aiSummary: { stringValue: summary } } }),
+      body: JSON.stringify({ fields: { aiSummary: { stringValue: summary }, aiSummaryPending: { booleanValue: false } } }),
     });
   } catch (error) {
     console.error("Firestore summary save threw", error);
@@ -99,6 +100,66 @@ async function saveFirestoreSummary(firebaseToken: string, audioId: string, summ
     console.error("Firestore summary save failed", response.status, await response.text());
     throw userMessage(500, "summary_save_failed", "The summary was created but couldn't be saved. Please try again.");
   }
+}
+
+// How long a claimed "in progress" lock is honored before a request is
+// allowed to try again — long enough for even a slow transcription,
+// short enough that a crashed attempt doesn't block things forever.
+const PENDING_LOCK_MS = 10 * 60 * 1000;
+
+// One read to check for an existing (or in-flight) summary before doing
+// any paid work — this is the actual cost control: it's what stops two
+// listeners hitting "play" on the same never-summarized sermon at once
+// from each kicking off a full transcription, and what makes repeat
+// "Summarize"/auto-summarize calls on already-summarized audio free.
+// Deliberately not batched with any other lookup (see the audioId
+// comment below) — this one earns its own request.
+async function readFirestoreSummaryState(firebaseToken: string, audioId: string) {
+  const url = new URL(`https://firestore.googleapis.com/v1/projects/${firebaseProjectId}/databases/(default)/documents/audio/${audioId}`);
+  url.searchParams.set("mask.fieldPaths", "aiSummary");
+  url.searchParams.append("mask.fieldPaths", "aiSummaryPending");
+  url.searchParams.append("mask.fieldPaths", "aiSummaryPendingAt");
+  try {
+    const response = await fetchWithRetry(url, { headers: { Authorization: `Bearer ${firebaseToken}` } });
+    if (!response.ok) {
+      if (response.status !== 404) console.warn("Couldn't read existing summary state", response.status);
+      return { summary: null, pending: false };
+    }
+    const data = await response.json();
+    const fields = data.fields || {};
+    const summary = fields.aiSummary?.stringValue || null;
+    const pendingSince = fields.aiSummaryPendingAt?.timestampValue ? new Date(fields.aiSummaryPendingAt.timestampValue).getTime() : 0;
+    const pending = Boolean(fields.aiSummaryPending?.booleanValue) && Date.now() - pendingSince < PENDING_LOCK_MS;
+    return { summary, pending };
+  } catch (error) {
+    // If the check itself fails, proceed as if nothing exists rather than
+    // blocking summarization entirely over a transient read error.
+    console.warn("Summary state check threw; proceeding without it", error);
+    return { summary: null, pending: false };
+  }
+}
+
+async function claimSummaryPending(firebaseToken: string, audioId: string) {
+  const url = new URL(`https://firestore.googleapis.com/v1/projects/${firebaseProjectId}/databases/(default)/documents/audio/${audioId}`);
+  url.searchParams.set("updateMask.fieldPaths", "aiSummaryPending");
+  url.searchParams.append("updateMask.fieldPaths", "aiSummaryPendingAt");
+  await fetchWithRetry(url, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${firebaseToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      fields: { aiSummaryPending: { booleanValue: true }, aiSummaryPendingAt: { timestampValue: new Date().toISOString() } },
+    }),
+  }).catch((error) => console.warn("Couldn't claim summary lock", error));
+}
+
+async function releaseSummaryPending(firebaseToken: string, audioId: string) {
+  const url = new URL(`https://firestore.googleapis.com/v1/projects/${firebaseProjectId}/databases/(default)/documents/audio/${audioId}`);
+  url.searchParams.set("updateMask.fieldPaths", "aiSummaryPending");
+  await fetchWithRetry(url, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${firebaseToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ fields: { aiSummaryPending: { booleanValue: false } } }),
+  }).catch((error) => console.warn("Couldn't release summary lock", error));
 }
 
 function validateAudioUrl(value: unknown) {
@@ -271,20 +332,43 @@ Deno.serve(async (request) => {
     }
     if (!allowedTypes.has(body.audioType)) throw userMessage(400, "invalid_type", "This content type cannot be summarized.");
     const audioId = body.audioId;
-    // The audioId is only used as the Firestore doc id to save the finished
-    // summary to — it isn't looked up first (see fetchWithRetry's comment:
-    // that redundant read was the actual source of every quota failure in
-    // this function). validateAudioUrl below is what keeps this from being
-    // pointed at an arbitrary URL; the client already had legitimate read
-    // access to audioType/audioUrl from its own Firestore read of this doc.
+    // validateAudioUrl below is what keeps this from being pointed at an
+    // arbitrary URL; the client already had legitimate read access to
+    // audioType/audioUrl from its own Firestore read of this doc.
     if (typeof audioId !== "string" || !/^[A-Za-z0-9_-]{1,150}$/.test(audioId)) {
       throw userMessage(400, "invalid_audio", "This audio file cannot be summarized.");
     }
+    const force = body.force === true;
+
+    // One read up front — this is what actually saves the money/limits:
+    // it stops any two callers (a manual click, a background
+    // auto-summarize triggered by playback, a re-summarize, whatever)
+    // from paying for the same transcription twice.
+    const state = await readFirestoreSummaryState(token, audioId);
+    if (!force && state.summary) {
+      return json(request, { summary: state.summary, cached: true });
+    }
+    if (state.pending) {
+      return json(request, {
+        pending: true,
+        code: "summary_in_progress",
+        error: "This summary is already being generated — check back in a moment.",
+      }, 202);
+    }
+
     const audioUrl = validateAudioUrl(body.audioUrl);
     const title = typeof body.title === "string" ? body.title.slice(0, 300) : "Untitled audio";
-    const transcript = await transcribe(audioUrl);
-    const summary = await summarize(transcript, body.audioType, title);
-    await saveFirestoreSummary(token, audioId, summary);
+
+    await claimSummaryPending(token, audioId);
+    let summary: string;
+    try {
+      const transcript = await transcribe(audioUrl);
+      summary = await summarize(transcript, body.audioType, title);
+      await saveFirestoreSummary(token, audioId, summary);
+    } catch (error) {
+      await releaseSummaryPending(token, audioId);
+      throw error;
+    }
     return json(request, { summary, cached: false });
   } catch (error) {
     if (error && typeof error === "object" && "status" in error) {
