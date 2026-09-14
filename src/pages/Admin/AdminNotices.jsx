@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { db } from "../../firebase";
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, where } from "firebase/firestore";
+import { useModulePermissions } from "../../hooks/usePermissions";
 
 const blankForm = { title: "", details: "", buttonEnabled: false, buttonText: "", buttonType: "url", buttonValue: "", active: true, pinned: false, audience: "all", inputEnabled: false, inputMessage: "", inputPlaceholder: "", inputButtonText: "" };
 
 export default function AdminNotices() {
+  const perms = useModulePermissions("notices");
   const [notices, setNotices] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -49,6 +51,7 @@ export default function AdminNotices() {
   const closeForm = () => { setShowForm(false); setEditing(null); };
 
   const handleSave = async () => {
+    if (!perms.requireEdit()) return;
     if (!form.title || !form.details) return alert("Title and details are required.");
     if (editing) await updateDoc(doc(db, "notices", editing.id), { ...form });
     else await addDoc(collection(db, "notices"), { ...form, createdAt: serverTimestamp() });
@@ -56,14 +59,15 @@ export default function AdminNotices() {
   };
 
   const handleDelete = async (id) => {
+    if (!perms.requireDelete()) return;
     if (!window.confirm("Delete this notice?")) return;
     await deleteDoc(doc(db, "notices", id));
     const subsSnap = await getDocs(query(collection(db, "noticeSubmissions"), where("noticeId", "==", id)));
     await Promise.all(subsSnap.docs.map((d) => deleteDoc(doc(db, "noticeSubmissions", d.id))));
     loadNotices();
   };
-  const toggleActive = async (n) => { await updateDoc(doc(db, "notices", n.id), { active: !n.active }); loadNotices(); };
-  const togglePin = async (n) => { await updateDoc(doc(db, "notices", n.id), { pinned: !n.pinned }); loadNotices(); };
+  const toggleActive = async (n) => { if (!perms.requireEdit()) return; await updateDoc(doc(db, "notices", n.id), { active: !n.active }); loadNotices(); };
+  const togglePin = async (n) => { if (!perms.requireEdit()) return; await updateDoc(doc(db, "notices", n.id), { pinned: !n.pinned }); loadNotices(); };
 
   const openSubmissions = async (n) => {
     setViewingSubmissions(n);
@@ -114,7 +118,7 @@ export default function AdminNotices() {
           <h1 style={pageTitle}>Notices</h1>
           <p style={pageSubtitle}>Manage announcements shown to app users.</p>
         </div>
-        <button style={addBtn} onClick={openCreate}>+ New Notice</button>
+        {perms.canEdit && <button style={addBtn} onClick={openCreate}>+ New Notice</button>}
       </div>
 
       {/* MODAL FORM */}
@@ -189,12 +193,18 @@ export default function AdminNotices() {
             <p style={cardDetails}>{n.details}</p>
           </div>
           <div style={cardActions}>
-            <button style={actionBtn} onClick={() => openEdit(n)}>Edit</button>
-            <button style={actionBtn} onClick={() => toggleActive(n)}>{n.active ? "Disable" : "Enable"}</button>
-            <button style={actionBtn} onClick={() => togglePin(n)}>{n.pinned ? "Unpin" : "Pin"}</button>
+            {perms.canEdit && (
+              <>
+                <button style={actionBtn} onClick={() => openEdit(n)}>Edit</button>
+                <button style={actionBtn} onClick={() => toggleActive(n)}>{n.active ? "Disable" : "Enable"}</button>
+                <button style={actionBtn} onClick={() => togglePin(n)}>{n.pinned ? "Unpin" : "Pin"}</button>
+              </>
+            )}
             <button style={actionBtn} onClick={() => openStats(n)}>Stats</button>
             {n.inputEnabled && <button style={actionBtn} onClick={() => openSubmissions(n)}>Submissions</button>}
-            <button style={{ ...actionBtn, color: "#dc2626", borderColor: "#fca5a5" }} onClick={() => handleDelete(n.id)}>Delete</button>
+            {perms.canDelete && (
+              <button style={{ ...actionBtn, color: "#dc2626", borderColor: "#fca5a5" }} onClick={() => handleDelete(n.id)}>Delete</button>
+            )}
           </div>
         </div>
       ))}

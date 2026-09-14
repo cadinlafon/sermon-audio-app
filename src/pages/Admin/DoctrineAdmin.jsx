@@ -3,6 +3,7 @@ import { db } from "../../firebase";
 import { doc, getDoc, setDoc, serverTimestamp, deleteField } from "firebase/firestore";
 import { uploadPrivateAudio, deletePrivateAudio } from "../../utils/privateAudioUpload";
 import { uploadPublicImage, deletePublicImage } from "../../utils/imageUpload";
+import { useModulePermissions } from "../../hooks/usePermissions";
 
 const DOC_ID = "current";
 
@@ -20,6 +21,7 @@ const blankForm = {
 };
 
 export default function DoctrineAdmin() {
+  const perms = useModulePermissions("doctrine");
   const [form, setForm] = useState(blankForm);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -175,6 +177,7 @@ export default function DoctrineAdmin() {
   // SAVE
   //////////////////////////////////////////////////
   const handleSave = async () => {
+    if (!perms.requireEdit()) return;
     if (!form.title.trim()) {
       showToast("Title is required.", true);
       return;
@@ -420,9 +423,11 @@ export default function DoctrineAdmin() {
           />
         </Field>
 
-        <button style={saveBtn} onClick={handleSave} disabled={saving}>
-          {saving ? "Saving…" : "Save Changes"}
-        </button>
+        {perms.canEdit && (
+          <button style={saveBtn} onClick={handleSave} disabled={saving}>
+            {saving ? "Saving…" : "Save Changes"}
+          </button>
+        )}
       </div>
 
       {toast && (

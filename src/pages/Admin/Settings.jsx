@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "../../firebase";
+import { useModulePermissions } from "../../hooks/usePermissions";
 
 const AUDIENCE_OPTIONS = [
   { value: "guest", label: "Guests" },
@@ -9,6 +10,7 @@ const AUDIENCE_OPTIONS = [
 ];
 
 export default function Settings() {
+  const perms = useModulePermissions("settings");
   const [shutdown, setShutdown] = useState(false);
   const [message, setMessage] = useState("");
   const [returnDate, setReturnDate] = useState("");
@@ -45,6 +47,7 @@ export default function Settings() {
   };
 
   const handleSave = async () => {
+    if (!perms.requireEdit()) return;
     setSaving(true);
     try {
       await updateDoc(configRef, {
@@ -149,9 +152,11 @@ export default function Settings() {
         </Field>
 
         <div style={saveRow}>
-          <button onClick={handleSave} disabled={saving} style={saving ? { ...saveBtn, opacity: 0.6 } : saveBtn}>
-            {saving ? "Saving…" : "Save Settings"}
-          </button>
+          {perms.canEdit && (
+            <button onClick={handleSave} disabled={saving} style={saving ? { ...saveBtn, opacity: 0.6 } : saveBtn}>
+              {saving ? "Saving…" : "Save Settings"}
+            </button>
+          )}
           {saved && <span style={savedMsg}>✓ Saved!</span>}
         </div>
       </div>

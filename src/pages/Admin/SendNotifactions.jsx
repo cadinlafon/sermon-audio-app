@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { httpsCallable } from "firebase/functions";
 import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import { auth, db, functions } from "../../firebase";
+import { useModulePermissions } from "../../hooks/usePermissions";
 
 const pushTypes = [
   { value: "general", label: "General Push" },
@@ -49,6 +50,7 @@ const eventOptions = [
 ];
 
 export default function SendNotifactions() {
+  const perms = useModulePermissions("sendNotifications");
   const [pushType, setPushType] = useState("general");
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -174,6 +176,7 @@ export default function SendNotifactions() {
   };
 
   const sendNotification = async () => {
+    if (!perms.requireEdit()) return;
     const notification = buildNotification();
 
     if (!notification.title || !notification.body) {
@@ -371,8 +374,8 @@ export default function SendNotifactions() {
         <button
           type="button"
           onClick={sendNotification}
-          disabled={sending}
-          style={sending ? { ...sendBtn, opacity: 0.65 } : sendBtn}
+          disabled={sending || !perms.canEdit}
+          style={sending || !perms.canEdit ? { ...sendBtn, opacity: 0.65 } : sendBtn}
         >
           {sending ? "Sending..." : "Send Notification"}
         </button>

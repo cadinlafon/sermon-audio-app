@@ -1,0 +1,79 @@
+// Restricted Admin permission rules
+//
+// This project has no firestore.rules file checked into the repo —
+// its Firestore security rules are managed directly in the Firebase
+// console (Build > Firestore Database > Rules), outside of this
+// codebase. This file is NOT deployed automatically.
+//
+// The "Restricted Admin" feature (see src/config/adminModules.js,
+// src/hooks/usePermissions.js, and the Permissions popup in
+// src/pages/Admin/Users.jsx) is CLIENT-SIDE ENFORCEMENT ONLY. Every
+// check it does — hiding a button, refusing to call a handler — can
+// be bypassed by anyone who opens devtools and calls
+// updateDoc()/deleteDoc() directly, unless the rules below (or your
+// own equivalent) are also applied in the console.
+//
+// A user's admin doc shape (users/{uid}):
+//   role: "user" | "admin"
+//   permissions: absent/null for a full admin, or
+//     { <moduleKey>: { view: bool, edit: bool, delete: bool }, ... }
+//     for a restricted one. See ADMIN_MODULES in
+//     src/config/adminModules.js for the full key list.
+
+// ── Block 1: stop self-escalation ──────────────────────────────────
+// Closes the most important hole: without this, a restricted admin
+// who has `users:edit` could just write role/permissions onto their
+// own account (or anyone else's) from the browser console, since the
+// app's own Users.jsx page only checks its own permission client-side
+// before rendering the option — it never verifies who's asking.
+//
+// Anyone may update their OWN doc, but never their own role or
+// permissions fields. Only a full or restricted admin (checked via
+// the same role/permissions map on THEIR OWN doc) may touch someone
+// else's doc at all.
+
+match /users/{userId} {
+  allow read: if request.auth != null;
+
+  allow update: if request.auth != null &&
+    request.auth.uid == userId &&
+    !request.resource.data.diff(resource.data)
+       .affectedKeys().hasAny(['role', 'permissions']);
+
+  allow update, delete: if request.auth != null &&
+    request.auth.uid != userId &&
+    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+}
+
+// ── Block 2: optional per-module backstop ──────────────────────────
+// Example only — repeat this `match` shape for whichever collections
+// you want a restricted admin's specific view/edit/delete grants to
+// actually matter server-side (audio, notices, pageNotices, resources,
+// suggestions, entrancePoints, pages, config docs, etc). Without this,
+// permissions are enforced by the UI only, same as `role` already is
+// for everything else in this app today.
+//
+// `permissions == null` (the field absent, or explicitly null) means
+// an unrestricted full admin — same rule the client uses.
+
+function actor() {
+  return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+}
+
+function moduleAllows(moduleKey, action) {
+  return request.auth != null && actor().role == 'admin' && (
+    !('permissions' in actor()) ||
+    actor().permissions == null ||
+    actor().permissions[moduleKey][action] == true
+  );
+}
+
+match /notices/{noticeId} {
+  allow read: if true;
+  allow create, update: if moduleAllows('notices', 'edit');
+  allow delete:         if moduleAllows('notices', 'delete');
+}
+
+// Each `get()` inside actor() is a billed read — call actor() once per
+// request (as above) rather than once per moduleAllows() call if you
+// add more than one match block that needs it.

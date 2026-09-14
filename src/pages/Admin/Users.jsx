@@ -6,9 +6,14 @@ import {
   doc,
   updateDoc,
   deleteDoc,
+  deleteField,
 } from "firebase/firestore";
+import { ADMIN_MODULES, blankPermissions } from "../../config/adminModules";
+import { useModulePermissions } from "../../hooks/usePermissions";
 
 export default function Users() {
+  const perms = useModulePermissions("users");
+
   const [users, setUsers] = useState([]);
   const [search, setSearch] = useState("");
   const [editingId, setEditingId] = useState(null);
@@ -16,6 +21,11 @@ export default function Users() {
     fullName: "",
     email: "",
   });
+
+  // Permissions popup — for promoting/adjusting a Restricted Admin.
+  const [permTarget, setPermTarget] = useState(null);
+  const [permForm, setPermForm] = useState(blankPermissions());
+  const [savingPerms, setSavingPerms] = useState(false);
 
   const fetchUsers = async () => {
     const snapshot = await getDocs(collection(db, "users"));
@@ -94,6 +104,8 @@ export default function Users() {
   };
 
   const saveEdit = async (id) => {
+    if (!perms.requireEdit()) return;
+
     await updateDoc(doc(db, "users", id), {
       fullName: editData.fullName,
       name: editData.fullName,
@@ -108,20 +120,89 @@ export default function Users() {
   // ADMIN
   //////////////////////////////////////////////////
 
+  // Full, unrestricted admin — clears any prior restricted-admin
+  // permissions object so nothing stale lingers.
   const makeAdmin = async (id) => {
+    if (!perms.requireEdit()) return;
+
     await updateDoc(doc(db, "users", id), {
       role: "admin",
+      permissions: deleteField(),
     });
 
     fetchUsers();
   };
 
   const removeAdmin = async (id) => {
+    if (!perms.requireEdit()) return;
+
     await updateDoc(doc(db, "users", id), {
       role: "user",
+      permissions: deleteField(),
     });
 
     fetchUsers();
+  };
+
+  //////////////////////////////////////////////////
+  // RESTRICTED ADMIN PERMISSIONS
+  //////////////////////////////////////////////////
+
+  // A shallow merge so a module added to the config after this user's
+  // permissions were last saved shows up unchecked instead of undefined.
+  const mergePermissions = (stored) => {
+    const base = blankPermissions();
+    if (stored && typeof stored === "object") {
+      for (const key of Object.keys(base)) {
+        if (stored[key]) base[key] = { ...base[key], ...stored[key] };
+      }
+    }
+    return base;
+  };
+
+  const openPermissions = (user, blank) => {
+    setPermTarget(user);
+    setPermForm(mergePermissions(blank ? null : user.permissions));
+  };
+
+  const closePermissions = () => {
+    setPermTarget(null);
+  };
+
+  const togglePerm = (key, action) => {
+    setPermForm((f) => {
+      const next = { ...f[key], [action]: !f[key][action] };
+      // An edit or delete right without view doesn't make sense.
+      if ((action === "edit" || action === "delete") && next[action]) next.view = true;
+      return { ...f, [key]: next };
+    });
+  };
+
+  const setAllPerms = (value) => {
+    setPermForm(() => {
+      const next = blankPermissions();
+      for (const key of Object.keys(next)) {
+        for (const action of Object.keys(next[key])) next[key][action] = value;
+      }
+      return next;
+    });
+  };
+
+  const savePermissions = async () => {
+    if (!perms.requireEdit()) return;
+    if (!permTarget) return;
+
+    setSavingPerms(true);
+    try {
+      await updateDoc(doc(db, "users", permTarget.id), {
+        role: "admin",
+        permissions: permForm,
+      });
+      closePermissions();
+      fetchUsers();
+    } finally {
+      setSavingPerms(false);
+    }
   };
 
   //////////////////////////////////////////////////
@@ -129,6 +210,7 @@ export default function Users() {
   //////////////////////////////////////////////////
 
   const deleteUser = async (id) => {
+    if (!perms.requireDelete()) return;
     if (!window.confirm("Delete this user?")) return;
 
     await deleteDoc(doc(db, "users", id));
@@ -201,6 +283,7 @@ export default function Users() {
             {filtered.map((user) => {
               const isEditing = editingId === user.id;
               const isAdmin = user.role === "admin";
+              const isRestricted = isAdmin && user.permissions && typeof user.permissions === "object";
               const howFound = getHowFound(user);
 
               return (
@@ -263,12 +346,14 @@ export default function Users() {
                   <td style={td}>
                     <span
                       style={
-                        isAdmin
+                        isRestricted
+                          ? restrictedBadge
+                          : isAdmin
                           ? adminBadge
                           : userBadge
                       }
                     >
-                      {isAdmin ? "Admin" : "User"}
+                      {isRestricted ? "Restricted" : isAdmin ? "Admin" : "User"}
                     </span>
                   </td>
 
@@ -290,7 +375,7 @@ export default function Users() {
                           Cancel
                         </button>
                       </div>
-                    ) : (
+                    ) : perms.canEdit || perms.canDelete ? (
                       <select
                         defaultValue=""
                         onChange={(e) => {
@@ -313,6 +398,14 @@ export default function Users() {
                           if (a === "removeAdmin") {
                             removeAdmin(user.id);
                           }
+
+                          if (a === "makeRestricted") {
+                            openPermissions(user, true);
+                          }
+
+                          if (a === "editPermissions") {
+                            openPermissions(user, false);
+                          }
                         }}
                         style={actionSelect}
                       >
@@ -320,22 +413,38 @@ export default function Users() {
                           Actions
                         </option>
 
-                        {isAdmin ? (
-                          <option value="removeAdmin">
-                            Remove Admin
-                          </option>
-                        ) : (
-                          <option value="makeAdmin">
-                            Make Admin
-                          </option>
+                        {perms.canEdit && (
+                          <>
+                            {isRestricted ? (
+                              <>
+                                <option value="editPermissions">Edit Permissions</option>
+                                <option value="makeAdmin">Make Full Admin</option>
+                                <option value="removeAdmin">Remove Admin</option>
+                              </>
+                            ) : isAdmin ? (
+                              <>
+                                <option value="makeRestricted">Make Restricted Admin</option>
+                                <option value="removeAdmin">Remove Admin</option>
+                              </>
+                            ) : (
+                              <>
+                                <option value="makeAdmin">Make Admin</option>
+                                <option value="makeRestricted">Make Restricted Admin</option>
+                              </>
+                            )}
+
+                            <option value="edit">Edit</option>
+                          </>
                         )}
 
-                        <option value="edit">Edit</option>
-
-                        <option value="delete">
-                          Delete
-                        </option>
+                        {perms.canDelete && (
+                          <option value="delete">
+                            Delete
+                          </option>
+                        )}
                       </select>
+                    ) : (
+                      <span style={emailText}>—</span>
                     )}
                   </td>
                 </tr>
@@ -348,6 +457,56 @@ export default function Users() {
           <p style={empty}>No users found.</p>
         )}
       </div>
+
+      {/* PERMISSIONS MODAL */}
+      {permTarget && (
+        <div style={modalBg}>
+          <div style={modal}>
+            <h2 style={modalTitle}>Admin Permissions</h2>
+            <p style={pageSubtitle}>
+              {permTarget.fullName || permTarget.name || permTarget.email || "This user"}
+            </p>
+
+            <div style={checkRow}>
+              <button type="button" style={modalCancelBtn} onClick={() => setAllPerms(true)}>
+                Select all
+              </button>
+              <button type="button" style={modalCancelBtn} onClick={() => setAllPerms(false)}>
+                Clear all
+              </button>
+            </div>
+
+            <div style={moduleList}>
+              {ADMIN_MODULES.map((m) => (
+                <div key={m.key} style={moduleRow}>
+                  <span style={moduleLabel}>{m.icon} {m.label}</span>
+                  <div style={checkRow}>
+                    {m.actions.map((action) => (
+                      <label key={action} style={checkLabel}>
+                        <input
+                          type="checkbox"
+                          checked={permForm[m.key][action]}
+                          onChange={() => togglePerm(m.key, action)}
+                        />
+                        {action === "view" ? "View" : action === "edit" ? "Edit" : "Delete"}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div style={modalActions}>
+              <button style={modalSaveBtn} onClick={savePermissions} disabled={savingPerms}>
+                {savingPerms ? "Saving…" : "Save"}
+              </button>
+              <button style={modalCancelBtn} onClick={closePermissions} disabled={savingPerms}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -591,4 +750,115 @@ const empty = {
   fontFamily: "sans-serif",
   fontStyle: "italic",
   padding: "30px",
+};
+
+const restrictedBadge = {
+  fontSize: "11px",
+  padding: "3px 8px",
+  borderRadius: "999px",
+  background: "#fde8d8",
+  color: "#a3551f",
+  fontFamily: "sans-serif",
+};
+
+const modalBg = {
+  position: "fixed",
+  inset: 0,
+  background: "rgba(40,18,0,0.5)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  zIndex: 2000,
+  padding: "20px",
+};
+
+const modal = {
+  background: "#fffdf9",
+  border: "1px solid #eddfc8",
+  borderRadius: "20px",
+  padding: "28px",
+  width: "100%",
+  maxWidth: "480px",
+  display: "flex",
+  flexDirection: "column",
+  gap: "14px",
+  maxHeight: "90vh",
+  overflowY: "auto",
+};
+
+const modalTitle = {
+  fontSize: "20px",
+  fontWeight: "normal",
+  color: "#3d2200",
+  fontFamily: "'Georgia', serif",
+  margin: 0,
+};
+
+const checkRow = {
+  display: "flex",
+  gap: "16px",
+  flexWrap: "wrap",
+};
+
+const checkLabel = {
+  display: "flex",
+  alignItems: "center",
+  gap: "6px",
+  fontSize: "13px",
+  fontFamily: "sans-serif",
+  color: "#5c3a1e",
+  cursor: "pointer",
+};
+
+const moduleList = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "10px",
+};
+
+const moduleRow = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "6px",
+  padding: "10px 12px",
+  borderRadius: "10px",
+  border: "1px solid #eddfc8",
+  background: "#fdf8f3",
+};
+
+const moduleLabel = {
+  fontSize: "13px",
+  fontFamily: "sans-serif",
+  fontWeight: "600",
+  color: "#3d2200",
+};
+
+const modalActions = {
+  display: "flex",
+  gap: "10px",
+  marginTop: "4px",
+};
+
+const modalSaveBtn = {
+  flex: 1,
+  padding: "11px",
+  borderRadius: "10px",
+  border: "none",
+  background: "linear-gradient(135deg, #c97c2e, #a85e18)",
+  color: "#fff8ee",
+  fontSize: "14px",
+  fontFamily: "sans-serif",
+  cursor: "pointer",
+};
+
+const modalCancelBtn = {
+  flex: 1,
+  padding: "11px",
+  borderRadius: "10px",
+  border: "1px solid #eddfc8",
+  background: "transparent",
+  color: "#7a4f10",
+  fontSize: "14px",
+  fontFamily: "sans-serif",
+  cursor: "pointer",
 };

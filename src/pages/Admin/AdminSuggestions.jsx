@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { db } from "../../firebase";
 import { collection, getDocs, doc, updateDoc, deleteDoc, query, orderBy } from "firebase/firestore";
+import { useModulePermissions } from "../../hooks/usePermissions";
 
 const STATUS_CONFIG = {
   none:        { label: "No Status",   bg: "#f6e4b0", color: "#7a5a10" },
@@ -10,6 +11,7 @@ const STATUS_CONFIG = {
 };
 
 export default function AdminSuggestions() {
+  const perms = useModulePermissions("suggestions");
   const [suggestions, setSuggestions] = useState([]);
 
   useEffect(() => {
@@ -21,11 +23,13 @@ export default function AdminSuggestions() {
   }, []);
 
   const updateStatus = async (id, status) => {
+    if (!perms.requireEdit()) return;
     await updateDoc(doc(db, "suggestions", id), { status });
     setSuggestions((prev) => prev.map((s) => s.id === id ? { ...s, status } : s));
   };
 
   const handleDelete = async (id) => {
+    if (!perms.requireDelete()) return;
     if (!window.confirm("Delete this suggestion?")) return;
     await deleteDoc(doc(db, "suggestions", id));
     setSuggestions((prev) => prev.filter((s) => s.id !== id));
@@ -58,17 +62,23 @@ export default function AdminSuggestions() {
             </div>
 
             <div style={statusRow}>
-              <span style={statusRowLabel}>Set status:</span>
-              {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
-                <button
-                  key={key}
-                  onClick={() => updateStatus(s.id, key)}
-                  style={{ ...statusBtn, background: s.status === key ? cfg.bg : "transparent", color: s.status === key ? cfg.color : "#7a4f10", borderColor: s.status === key ? cfg.color + "44" : "#eddfc8", fontWeight: s.status === key ? "600" : "normal" }}
-                >
-                  {cfg.label}
-                </button>
-              ))}
-              <button style={deleteBtn} onClick={() => handleDelete(s.id)}>Delete</button>
+              {perms.canEdit && (
+                <>
+                  <span style={statusRowLabel}>Set status:</span>
+                  {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
+                    <button
+                      key={key}
+                      onClick={() => updateStatus(s.id, key)}
+                      style={{ ...statusBtn, background: s.status === key ? cfg.bg : "transparent", color: s.status === key ? cfg.color : "#7a4f10", borderColor: s.status === key ? cfg.color + "44" : "#eddfc8", fontWeight: s.status === key ? "600" : "normal" }}
+                    >
+                      {cfg.label}
+                    </button>
+                  ))}
+                </>
+              )}
+              {perms.canDelete && (
+                <button style={deleteBtn} onClick={() => handleDelete(s.id)}>Delete</button>
+              )}
             </div>
           </div>
         );

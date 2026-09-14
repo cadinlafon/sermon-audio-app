@@ -8,6 +8,7 @@ import {
   deleteDoc,
   doc,
 } from "firebase/firestore";
+import { useModulePermissions } from "../../hooks/usePermissions";
 
 const blankForm = { title: "", message: "", position: "top", page: "sermons" };
 
@@ -15,6 +16,7 @@ const PAGE_LABELS = { sermons: "Sermons", homilies: "Homilies", sundayschool: "S
 const POS_LABELS  = { top: "Above list", bottom: "Below list" };
 
 export default function PageNotices() {
+  const perms = useModulePermissions("pageNotices");
   const [notices, setNotices] = useState([]);
   const [form, setForm] = useState(blankForm);
   const [editingId, setEditingId] = useState(null);
@@ -32,6 +34,7 @@ export default function PageNotices() {
   const closeForm  = ()   => { setShowForm(false); setEditingId(null); };
 
   const handleSave = async () => {
+    if (!perms.requireEdit()) return;
     if (!form.title || !form.message) return alert("Title and message are required.");
     if (editingId) {
       await updateDoc(doc(db, "pageNotices", editingId), form);
@@ -43,12 +46,14 @@ export default function PageNotices() {
   };
 
   const handleDelete = async (id) => {
+    if (!perms.requireDelete()) return;
     if (!window.confirm("Delete this notice?")) return;
     await deleteDoc(doc(db, "pageNotices", id));
     fetchNotices();
   };
 
   const toggleEnabled = async (n) => {
+    if (!perms.requireEdit()) return;
     await updateDoc(doc(db, "pageNotices", n.id), { enabled: !n.enabled });
     fetchNotices();
   };
@@ -63,7 +68,7 @@ export default function PageNotices() {
           <h1 style={pageTitle}>Page Notices</h1>
           <p style={pageSubtitle}>Show contextual messages above or below audio lists.</p>
         </div>
-        <button style={addBtn} onClick={openCreate}>+ New Notice</button>
+        {perms.canEdit && <button style={addBtn} onClick={openCreate}>+ New Notice</button>}
       </div>
 
       {/* MODAL FORM */}
@@ -126,13 +131,19 @@ export default function PageNotices() {
           </div>
 
           <div style={cardActions}>
-            <button style={actionBtn} onClick={() => openEdit(n)}>Edit</button>
-            <button style={actionBtn} onClick={() => toggleEnabled(n)}>
-              {n.enabled ? "Disable" : "Enable"}
-            </button>
-            <button style={{ ...actionBtn, color: "#dc2626", borderColor: "#fca5a5" }} onClick={() => handleDelete(n.id)}>
-              Delete
-            </button>
+            {perms.canEdit && (
+              <>
+                <button style={actionBtn} onClick={() => openEdit(n)}>Edit</button>
+                <button style={actionBtn} onClick={() => toggleEnabled(n)}>
+                  {n.enabled ? "Disable" : "Enable"}
+                </button>
+              </>
+            )}
+            {perms.canDelete && (
+              <button style={{ ...actionBtn, color: "#dc2626", borderColor: "#fca5a5" }} onClick={() => handleDelete(n.id)}>
+                Delete
+              </button>
+            )}
           </div>
         </div>
       ))}

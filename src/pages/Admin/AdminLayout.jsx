@@ -1,27 +1,10 @@
 import { Link, Outlet, useLocation } from "react-router-dom";
-
-const navLinks = [
-  { to: "/admin/dashboard", label: "Dashboard", icon: "📊" },
-  { to: "/admin/upload", label: "Upload Audio", icon: "🎙️" },
-  { to: "/admin/content", label: "Content Manager", icon: "📂" },
-  { to: "/admin/users", label: "Users", icon: "👥" },
-  { to: "/admin/analytics", label: "Analytics", icon: "📈" },
-  { to: "/admin/notifications", label: "Notifications", icon: "🔔" },
-  { to: "/admin/send-notifications", label: "Send Push", icon: "📣" },
-  { to: "/admin/notices", label: "Notices", icon: "📌" },
-  { to: "/admin/doctrine", label: "Doctrine Campaign", icon: "📖" },
-  { to: "/admin/resources", label: "Resources", icon: "📚" },
-  { to: "/admin/pagemanager", label: "Page Manager", icon: "🧭" },
-  { to: "/admin/pagenotices", label: "Page Notices", icon: "📄" },
-  { to: "/admin/suggestions", label: "Suggestions", icon: "💡" },
-  { to: "/admin/logs", label: "Logs", icon: "📋" },
-  { to: "/admin/referrals", label: "Referrals", icon: "📣" },
-  { to: "/admin/entrance-points", label: "Entrance Points", icon: "🔗" },
-  { to: "/admin/settings", label: "Settings", icon: "⚙️" },
-];
+import { usePermissions } from "../../hooks/usePermissions";
 
 export default function AdminLayout() {
   const location = useLocation();
+  const { visibleModules } = usePermissions();
+  const navLinks = visibleModules.map((m) => ({ to: `/admin/${m.path}`, label: m.label, icon: m.icon }));
 
   return (
     <div style={shell}>

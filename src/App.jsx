@@ -44,6 +44,7 @@ import ResourceDetail from "./pages/ResourceDetail";
 import PageNotices from "./pages/Admin/PageNotices";
 import AdminGate from "./pages/Admin/AdminGate";
 import AdminLayout from "./pages/Admin/AdminLayout";
+import ModuleGate from "./pages/Admin/ModuleGate";
 import Dashboard from "./pages/Admin/Dashboard";
 import UploadAudio from "./pages/Admin/UploadAudio";
 import Users from "./pages/Admin/Users";
@@ -526,82 +527,82 @@ function App() {
 
               <Route
                 path="dashboard"
-                element={<Dashboard />}
+                element={<ModuleGate moduleKey="dashboard"><Dashboard /></ModuleGate>}
               />
 
               <Route
                 path="content"
-                element={<AdminContentManager />}
+                element={<ModuleGate moduleKey="content"><AdminContentManager /></ModuleGate>}
               />
 
               <Route
                 path="upload"
-                element={<UploadAudio />}
+                element={<ModuleGate moduleKey="upload"><UploadAudio /></ModuleGate>}
               />
 
               <Route
                 path="users"
-                element={<Users />}
+                element={<ModuleGate moduleKey="users"><Users /></ModuleGate>}
               />
 
               <Route
                 path="analytics"
-                element={<Analytics />}
+                element={<ModuleGate moduleKey="analytics"><Analytics /></ModuleGate>}
               />
 
               <Route
                 path="notifications"
-                element={<AdminNotifications />}
+                element={<ModuleGate moduleKey="notifications"><AdminNotifications /></ModuleGate>}
               />
 
               <Route
                 path="send-notifications"
-                element={<SendNotifactions />}
+                element={<ModuleGate moduleKey="sendNotifications"><SendNotifactions /></ModuleGate>}
               />
 
               <Route
                 path="settings"
-                element={<AdminSettings />}
+                element={<ModuleGate moduleKey="settings"><AdminSettings /></ModuleGate>}
               />
 
               <Route
                 path="logs"
-                element={<Logs />}
+                element={<ModuleGate moduleKey="logs"><Logs /></ModuleGate>}
               />
 
               <Route
                 path="suggestions"
-                element={<AdminSuggestions />}
+                element={<ModuleGate moduleKey="suggestions"><AdminSuggestions /></ModuleGate>}
               />
 
               <Route
                 path="notices"
-                element={<AdminNotices />}
+                element={<ModuleGate moduleKey="notices"><AdminNotices /></ModuleGate>}
               />
 
               <Route
                 path="pagenotices"
-                element={<PageNotices />}
+                element={<ModuleGate moduleKey="pageNotices"><PageNotices /></ModuleGate>}
               />
 
               <Route
                 path="referrals"
-                element={<Referrals />}
+                element={<ModuleGate moduleKey="referrals"><Referrals /></ModuleGate>}
               />
 
               <Route
                 path="doctrine"
-                element={<DoctrineAdmin />}
+                element={<ModuleGate moduleKey="doctrine"><DoctrineAdmin /></ModuleGate>}
               />
 
               <Route
                 path="resources"
-                element={<ResourceManager />}
+                element={<ModuleGate moduleKey="resources"><ResourceManager /></ModuleGate>}
               />
 
               <Route
                 path="pagemanager"
-                element={<PageManager />}
+                element={<ModuleGate moduleKey="pageManager"><PageManager /></ModuleGate>}
               />
 
             </Route>

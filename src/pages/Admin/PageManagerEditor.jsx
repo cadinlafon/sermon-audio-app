@@ -18,6 +18,7 @@ import { Timestamp } from "firebase/firestore";
 import LockedScreen from "../PageStates/LockedScreen";
 import MaintenanceScreen from "../PageStates/MaintenanceScreen";
 import ComingSoonScreen from "../PageStates/ComingSoonScreen";
+import { useModulePermissions } from "../../hooks/usePermissions";
 
 const TABS = [
   { id: "general", label: "General" },
@@ -45,6 +46,7 @@ function toDateInput(value) {
 }
 
 export default function PageManagerEditor({ page, allUsers, actor, onClose, onSaved }) {
+  const perms = useModulePermissions("pageManager");
   const [form, setForm] = useState(page);
   const [tab, setTab] = useState("general");
   const [saving, setSaving] = useState(false);
@@ -75,6 +77,7 @@ export default function PageManagerEditor({ page, allUsers, actor, onClose, onSa
   // SAVE
   //////////////////////////////////////////////////
   const handleSave = async () => {
+    if (!perms.requireEdit()) return;
     setSaving(true);
     setError("");
     setSuccess("");
@@ -104,6 +107,7 @@ export default function PageManagerEditor({ page, allUsers, actor, onClose, onSa
   // RESET
   //////////////////////////////////////////////////
   const handleReset = async () => {
+    if (!perms.requireEdit()) return;
     setSaving(true);
     setError("");
 
@@ -294,15 +298,19 @@ export default function PageManagerEditor({ page, allUsers, actor, onClose, onSa
         {success && <p style={successText}>{success}</p>}
 
         <div style={modalFooter}>
-          <button style={dangerGhostBtn} onClick={() => setShowResetConfirm(true)}>
-            Reset to Defaults
-          </button>
+          {perms.canEdit && (
+            <button style={dangerGhostBtn} onClick={() => setShowResetConfirm(true)}>
+              Reset to Defaults
+            </button>
+          )}
 
           <div style={footerRight}>
             <button style={cancelBtn} onClick={onClose}>Cancel</button>
-            <button style={saveBtn} onClick={handleSave} disabled={saving}>
-              {saving ? "Saving…" : "Save Changes"}
-            </button>
+            {perms.canEdit && (
+              <button style={saveBtn} onClick={handleSave} disabled={saving}>
+                {saving ? "Saving…" : "Save Changes"}
+              </button>
+            )}
           </div>
         </div>
       </div>

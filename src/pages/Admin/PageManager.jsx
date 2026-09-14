@@ -17,6 +17,7 @@ import {
   fetchAllUsers,
 } from "../../lib/pageManagerFirestore";
 import PageManagerEditor from "./PageManagerEditor";
+import { useModulePermissions } from "../../hooks/usePermissions";
 
 const FILTERS = [
   { id: "all", label: "All" },
@@ -29,6 +30,7 @@ const FILTERS = [
 ];
 
 export default function PageManager() {
+  const perms = useModulePermissions("pageManager");
   const { pages, baseConfigs, rawDocsById, loading } = usePages();
   const { user, isAdmin } = useAuth();
 
@@ -80,6 +82,7 @@ export default function PageManager() {
   const getBase = (id) => baseConfigs.find((p) => p.id === id);
 
   const toggleField = async (id, field, value) => {
+    if (!perms.requireEdit()) return;
     try {
       await quickUpdate(id, getBase(id), field, value, actor);
       showToast("Updated.");
@@ -121,6 +124,7 @@ export default function PageManager() {
   };
 
   const runBulkAction = async (action) => {
+    if (!perms.requireEdit()) return;
     setBusy(true);
     try {
       const baseById = {};
@@ -171,6 +175,7 @@ export default function PageManager() {
 
   // Drag-and-drop — works on desktop pointer devices.
   const handleDrop = async (targetId) => {
+    if (!perms.requireEdit()) return;
     if (!dragId || dragId === targetId) {
       setDragId(null);
       return;
@@ -197,6 +202,7 @@ export default function PageManager() {
   // Move up/down buttons — the reliable path on touch devices,
   // where native HTML5 drag-and-drop does not fire at all.
   const moveInGroup = async (page, direction) => {
+    if (!perms.requireEdit()) return;
     const list = sortForNavigation(pages || []);
     const group = reorderGroupOf(list, page);
     const index = group.findIndex((p) => p.id === page.id);
@@ -392,7 +398,7 @@ export default function PageManager() {
 
                   <td style={td}>
                     <div style={actionRow}>
-                      <button style={actionBtn} onClick={() => openEditor(p.id)}>Edit</button>
+                      {perms.canEdit && <button style={actionBtn} onClick={() => openEditor(p.id)}>Edit</button>}
                       <button style={actionBtn} onClick={() => toggleLock(p)}>
                         {p.status === "locked" ? "Unlock" : "Lock"}
                       </button>

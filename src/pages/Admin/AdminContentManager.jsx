@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { db } from "../../firebase";
 import { collection, getDocs, updateDoc, deleteDoc, doc } from "firebase/firestore";
 import { deletePrivateAudio, uploadPrivateAudio } from "../../utils/privateAudioUpload";
+import { useModulePermissions } from "../../hooks/usePermissions";
 
 const speakers = ["Jonathan Mcintosh", "Rusty Olps", "Jason Farley", "Mark Thiele"];
 
@@ -21,6 +22,7 @@ function formatDisplayDate(audio) {
 }
 
 export default function AdminContentManager() {
+  const perms = useModulePermissions("content");
   const [audioList, setAudioList] = useState([]);
   const [search, setSearch] = useState("");
   const [audioGroup, setAudioGroup] = useState("sermons");
@@ -49,6 +51,7 @@ export default function AdminContentManager() {
     .sort((a, b) => sortOrder === "desc" ? (b.order ?? 0) - (a.order ?? 0) : (a.order ?? 0) - (b.order ?? 0));
 
   const moveItem = async (index, direction) => {
+    if (!perms.requireEdit()) return;
     const newList = [...filtered];
     const targetIndex = direction === "up" ? index - 1 : index + 1;
     if (targetIndex < 0 || targetIndex >= newList.length) return;
@@ -72,6 +75,7 @@ export default function AdminContentManager() {
   const closeEdit = () => { setEditing(null); setEditFile(null); };
 
   const saveEdit = async () => {
+    if (!perms.requireEdit()) return;
     if (!editTitle || !editSpeaker) { alert("Title and speaker are required."); return; }
     setSaving(true);
     try {
@@ -98,6 +102,7 @@ export default function AdminContentManager() {
 
   // ── Delete ────────────────────────────────────────
   const handleDelete = async (audio) => {
+    if (!perms.requireDelete()) return;
     if (!window.confirm(`Delete "${audio.title}"? This cannot be undone.`)) return;
     try {
       await deletePrivateAudio(audio.audioStorageKey);
@@ -145,10 +150,16 @@ export default function AdminContentManager() {
               </div>
             </div>
             <div style={actionGroup}>
-              <button onClick={() => moveItem(index, "up")} style={arrowBtn} title="Move up">▲</button>
-              <button onClick={() => moveItem(index, "down")} style={arrowBtn} title="Move down">▼</button>
-              <button onClick={() => openEdit(audio)} style={editBtn} title="Edit">Edit</button>
-              <button onClick={() => handleDelete(audio)} style={deleteBtn} title="Delete">Delete</button>
+              {perms.canEdit && (
+                <>
+                  <button onClick={() => moveItem(index, "up")} style={arrowBtn} title="Move up">▲</button>
+                  <button onClick={() => moveItem(index, "down")} style={arrowBtn} title="Move down">▼</button>
+                  <button onClick={() => openEdit(audio)} style={editBtn} title="Edit">Edit</button>
+                </>
+              )}
+              {perms.canDelete && (
+                <button onClick={() => handleDelete(audio)} style={deleteBtn} title="Delete">Delete</button>
+              )}
             </div>
           </div>
         ))}

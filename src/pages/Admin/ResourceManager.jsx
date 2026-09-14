@@ -10,6 +10,7 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { useAuth } from "../../context/AuthContext";
+import { useModulePermissions } from "../../hooks/usePermissions";
 import { deletePrivateAudio } from "../../utils/privateAudioUpload";
 import { deletePublicImage } from "../../utils/imageUpload";
 import ResourceTypeIcon from "../../components/ResourceTypeIcon";
@@ -30,6 +31,7 @@ const FEATURED_FILTERS = [
 ];
 
 export default function ResourceManager() {
+  const perms = useModulePermissions("resources");
   const { user } = useAuth();
   const actor = user ? { uid: user.uid, email: user.email } : null;
 
@@ -126,6 +128,7 @@ export default function ResourceManager() {
   };
 
   const handleSave = async (form) => {
+    if (!perms.requireEdit()) return;
     const { id, ...payload } = form;
     payload.order = Number(payload.order) || 0;
 
@@ -151,6 +154,7 @@ export default function ResourceManager() {
   // QUICK ACTIONS
   ////////////////////////////////////////////////
   const togglePublished = async (r) => {
+    if (!perms.requireEdit()) return;
     try {
       await updateDoc(doc(db, "resources", r.id), { published: r.published === false, updatedAt: serverTimestamp() });
       load();
@@ -161,6 +165,7 @@ export default function ResourceManager() {
   };
 
   const toggleFeatured = async (r) => {
+    if (!perms.requireEdit()) return;
     try {
       await updateDoc(doc(db, "resources", r.id), { featured: !r.featured, updatedAt: serverTimestamp() });
       load();
@@ -171,6 +176,7 @@ export default function ResourceManager() {
   };
 
   const handleDuplicate = async (r) => {
+    if (!perms.requireEdit()) return;
     try {
       // eslint-disable-next-line no-unused-vars
       const { id, createdAt, updatedAt, ...rest } = r;
@@ -193,6 +199,7 @@ export default function ResourceManager() {
   };
 
   const handleDelete = async (r) => {
+    if (!perms.requireDelete()) return;
     if (!window.confirm(`Permanently delete "${r.title}"? This cannot be undone.`)) return;
     try {
       await deleteDoc(doc(db, "resources", r.id));
@@ -210,6 +217,7 @@ export default function ResourceManager() {
   };
 
   const move = async (r, direction) => {
+    if (!perms.requireEdit()) return;
     const sorted = [...resources].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
     const index = sorted.findIndex((x) => x.id === r.id);
     const swapWith = index + direction;
@@ -240,9 +248,13 @@ export default function ResourceManager() {
           <p style={pageSubtitle}>Manage the resource library visitors browse on the Resources page.</p>
         </div>
         <div style={headerActions}>
-          <button style={ghostBtn} onClick={() => setShowCategoryManager(true)}>Manage Categories</button>
-          <button style={ghostBtn} onClick={() => setShowSectionManager(true)}>Manage Rows</button>
-          <button style={addBtn} onClick={openCreate}>+ New Resource</button>
+          {perms.canEdit && (
+            <>
+              <button style={ghostBtn} onClick={() => setShowCategoryManager(true)}>Manage Categories</button>
+              <button style={ghostBtn} onClick={() => setShowSectionManager(true)}>Manage Rows</button>
+              <button style={addBtn} onClick={openCreate}>+ New Resource</button>
+            </>
+          )}
         </div>
       </div>
 
@@ -303,14 +315,24 @@ export default function ResourceManager() {
                 <td style={td}><span style={mutedText}>{r.createdAt?.toDate ? r.createdAt.toDate().toLocaleDateString() : "—"}</span></td>
                 <td style={td}>
                   <div style={actionRow}>
-                    <button style={moveBtn} onClick={() => move(r, -1)}>▲</button>
-                    <button style={moveBtn} onClick={() => move(r, 1)}>▼</button>
-                    <button style={actionBtn} onClick={() => openEdit(r)}>Edit</button>
+                    {perms.canEdit && (
+                      <>
+                        <button style={moveBtn} onClick={() => move(r, -1)}>▲</button>
+                        <button style={moveBtn} onClick={() => move(r, 1)}>▼</button>
+                        <button style={actionBtn} onClick={() => openEdit(r)}>Edit</button>
+                      </>
+                    )}
                     <button style={actionBtn} onClick={() => window.open(`/resources/${r.id}`, "_blank")}>Preview</button>
-                    <button style={actionBtn} onClick={() => handleDuplicate(r)}>Duplicate</button>
-                    <button style={actionBtn} onClick={() => togglePublished(r)}>{r.published === false ? "Publish" : "Unpublish"}</button>
-                    <button style={actionBtn} onClick={() => toggleFeatured(r)}>{r.featured ? "Unfeature" : "Feature"}</button>
-                    <button style={{ ...actionBtn, color: "#dc2626", borderColor: "#fca5a5" }} onClick={() => handleDelete(r)}>Delete</button>
+                    {perms.canEdit && (
+                      <>
+                        <button style={actionBtn} onClick={() => handleDuplicate(r)}>Duplicate</button>
+                        <button style={actionBtn} onClick={() => togglePublished(r)}>{r.published === false ? "Publish" : "Unpublish"}</button>
+                        <button style={actionBtn} onClick={() => toggleFeatured(r)}>{r.featured ? "Unfeature" : "Feature"}</button>
+                      </>
+                    )}
+                    {perms.canDelete && (
+                      <button style={{ ...actionBtn, color: "#dc2626", borderColor: "#fca5a5" }} onClick={() => handleDelete(r)}>Delete</button>
+                    )}
                   </div>
                 </td>
               </tr>

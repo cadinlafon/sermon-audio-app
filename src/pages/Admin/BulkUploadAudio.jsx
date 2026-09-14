@@ -9,10 +9,12 @@ import {
   guessTitleFromFileName,
   detectAudioDuration,
 } from "../../utils/bulkAudioIntake";
+import { useModulePermissions } from "../../hooks/usePermissions";
 
 const fmt = (s) => (s == null ? "—" : `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`);
 
 export default function BulkUploadAudio({ speakers }) {
+  const perms = useModulePermissions("upload");
   const [items, setItems] = useState([]);
   const [defaultSpeaker, setDefaultSpeaker] = useState("");
   const [defaultType, setDefaultType] = useState("sermon");
@@ -112,6 +114,7 @@ export default function BulkUploadAudio({ speakers }) {
   // UPLOAD ALL
   //////////////////////////////////////////////////
   const uploadAll = async () => {
+    if (!perms.requireEdit()) return;
     const toUpload = items.filter((it) => it.status === "pending" || it.status === "error");
     if (toUpload.length === 0) return;
 
@@ -288,8 +291,8 @@ export default function BulkUploadAudio({ speakers }) {
 
             <button
               onClick={uploadAll}
-              disabled={running || pendingCount === 0}
-              style={running || pendingCount === 0 ? { ...uploadAllBtn, opacity: 0.5 } : uploadAllBtn}
+              disabled={running || pendingCount === 0 || !perms.canEdit}
+              style={running || pendingCount === 0 || !perms.canEdit ? { ...uploadAllBtn, opacity: 0.5 } : uploadAllBtn}
             >
               {running ? "Uploading…" : `🚀 Upload ${pendingCount || ""} File${pendingCount === 1 ? "" : "s"}`}
             </button>

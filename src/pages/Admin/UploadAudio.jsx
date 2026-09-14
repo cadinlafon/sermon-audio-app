@@ -4,10 +4,12 @@ import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { uploadPrivateAudio } from "../../utils/privateAudioUpload";
 import { getNextAudioOrder } from "../../utils/audioOrder";
 import BulkUploadAudio from "./BulkUploadAudio";
+import { useModulePermissions } from "../../hooks/usePermissions";
 
 const speakers = ["Jonathan Mcintosh", "Rusty Olps", "Jason Farley", "Mark Thiele"];
 
 export default function UploadAudio() {
+  const perms = useModulePermissions("upload");
   const [mode, setMode] = useState("single");
   const [title, setTitle] = useState("");
   const [speaker, setSpeaker] = useState("");
@@ -44,6 +46,7 @@ export default function UploadAudio() {
   };
 
   const handleUpload = async () => {
+    if (!perms.requireEdit()) return;
     if (!file || !title || !speaker) { alert("Title, speaker, and file are required."); return; }
     setUploading(true);
     setProgress(null);
@@ -177,7 +180,7 @@ export default function UploadAudio() {
           </div>
         )}
 
-        <button onClick={handleUpload} disabled={uploading} style={uploading ? { ...uploadBtn, opacity: 0.6 } : uploadBtn}>
+        <button onClick={handleUpload} disabled={uploading || !perms.canEdit} style={uploading || !perms.canEdit ? { ...uploadBtn, opacity: 0.6 } : uploadBtn}>
           {uploading ? "Uploading…" : "🚀 Upload"}
         </button>
       </div>

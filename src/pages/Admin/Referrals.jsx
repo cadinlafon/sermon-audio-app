@@ -23,6 +23,7 @@ import {
 
 import { db } from "../../firebase";
 import { PLATFORMS, normalizePlatform } from "../../utils/trafficSource";
+import { useModulePermissions } from "../../hooks/usePermissions";
 
 const FEATURED_PLATFORMS = [
   "facebook",
@@ -493,6 +494,7 @@ function getTrackingUrl(point) {
 }
 
 function CampaignLinks({ logs, rangeDays }) {
+  const perms = useModulePermissions("referrals");
   const [points, setPoints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -547,6 +549,7 @@ function CampaignLinks({ logs, rangeDays }) {
 
   async function createPoint(e) {
     e.preventDefault();
+    if (!perms.requireEdit()) return;
 
     if (!form.name.trim()) {
       alert("Please enter a name.");
@@ -586,6 +589,7 @@ function CampaignLinks({ logs, rangeDays }) {
   }
 
   async function disablePoint(point) {
+    if (!perms.requireDelete()) return;
     if (!window.confirm(`Disable "${point.name}"?`)) return;
 
     try {
@@ -618,9 +622,11 @@ function CampaignLinks({ logs, rangeDays }) {
           For tracking a specific post or push separately from your general
           platform links (stats below reflect the last {rangeDays} days).
         </p>
-        <button style={addButton} onClick={() => setShowCreate(true)}>
-          +
-        </button>
+        {perms.canEdit && (
+          <button style={addButton} onClick={() => setShowCreate(true)}>
+            +
+          </button>
+        )}
       </div>
 
       {loading && <div style={empty}>Loading campaign links…</div>}
@@ -630,9 +636,11 @@ function CampaignLinks({ logs, rangeDays }) {
           <div style={emptyIcon}>🔗</div>
           <h2>No campaign links yet</h2>
           <p>Create one to track a specific post, flyer, or push.</p>
-          <button style={primaryButton} onClick={() => setShowCreate(true)}>
-            Create Campaign Link
-          </button>
+          {perms.canEdit && (
+            <button style={primaryButton} onClick={() => setShowCreate(true)}>
+              Create Campaign Link
+            </button>
+          )}
         </div>
       )}
 
@@ -685,7 +693,7 @@ function CampaignLinks({ logs, rangeDays }) {
                 <button style={secondaryButton} onClick={() => showQrCode(point)}>
                   QR Code
                 </button>
-                {point.active && (
+                {point.active && perms.canDelete && (
                   <button style={dangerButton} onClick={() => disablePoint(point)}>
                     Disable
                   </button>
