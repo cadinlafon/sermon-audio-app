@@ -10,11 +10,33 @@ const jwks = createRemoteJWKSet(new URL("https://www.googleapis.com/service_acco
 const cors = (r: Request) => ({ "Access-Control-Allow-Origin": r.headers.get("origin") ?? "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type", "Access-Control-Allow-Methods": "POST, OPTIONS", Vary: "Origin" });
 const json = (r: Request, b: Record<string, unknown>, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { ...cors(r), "Content-Type": "application/json" } });
 
+// Firestore's REST API enforces a separate, stricter per-minute quota
+// than the gRPC/WebChannel protocol the app's own listeners use — a
+// short burst of requests elsewhere (e.g. the AI-transcription backfill
+// tool hitting several other functions in quick succession) can trip a
+// transient 429 here that has nothing to do with this admin's actual
+// access. Retry those before treating the check as failed (same
+// pattern as audio-download-url's and summarize-audio's identical
+// helper) — this call had none, so it turned into a false "forbidden"
+// under exactly that kind of burst.
+async function fetchWithRetry(url: string, init?: RequestInit, attempts = 3) {
+  let response: Response;
+  for (let i = 0; i < attempts; i++) {
+    response = await fetch(url, init);
+    if (response.status !== 429) return response;
+    if (i < attempts - 1) {
+      await response.body?.cancel().catch(() => {});
+      await new Promise((resolve) => setTimeout(resolve, 250 * (i + 1)));
+    }
+  }
+  return response!;
+}
+
 async function requireAdmin(r: Request) {
   const token = r.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
   if (!token || !projectId) throw new Error("unauthorized");
   const { payload } = await jwtVerify(token, jwks, { audience: projectId, issuer: `https://securetoken.google.com/${projectId}` });
-  const user = await fetch(`https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/users/${payload.sub}`, { headers: { Authorization: `Bearer ${token}` } });
+  const user = await fetchWithRetry(`https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/users/${payload.sub}`, { headers: { Authorization: `Bearer ${token}` } });
   const record = user.ok ? await user.json() : null;
   if (record?.fields?.role?.stringValue !== "admin") throw new Error("forbidden");
 }

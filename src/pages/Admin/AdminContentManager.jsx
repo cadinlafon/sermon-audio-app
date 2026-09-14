@@ -148,6 +148,12 @@ export default function AdminContentManager() {
       const item = items[i];
       const setStage = (stage) => setBackfillProgress({ index: i + 1, total: items.length, title: item.title, stage });
 
+      // A brief pause between items — processing many in a row back-to-back
+      // can trip Firestore's separate (stricter) REST-API rate limit for
+      // other edge functions running around the same time, well before any
+      // real usage limit is actually at risk.
+      if (i > 0) await new Promise((resolve) => setTimeout(resolve, 800));
+
       try {
         setStage("Fetching original…");
         const token = await auth.currentUser.getIdToken();

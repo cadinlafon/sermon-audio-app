@@ -1,4 +1,4 @@
-import { Mp3Encoder } from "lamejs";
+import { Mp3Encoder } from "@breezystack/lamejs";
 
 // Runs off the main thread since encoding a long sermon (even at a low
 // bitrate) is real CPU work — without a worker, this would freeze the
