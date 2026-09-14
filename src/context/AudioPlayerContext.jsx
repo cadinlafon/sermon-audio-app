@@ -19,6 +19,24 @@ export function AudioPlayerProvider({ children }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [playError, setPlayError] = useState("");
 
+  // Shared progress so any consumer (mini player, desktop mini player,
+  // the full player page) can show a scrubber without each attaching
+  // its own timeupdate/loadedmetadata listeners.
+  const [duration, setDuration] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+
+  // "Play Next" queue — a plain array of sermon objects. Newest
+  // "Play Next" goes to the front, ahead of whatever was queued
+  // before it (same convention as Spotify/Apple Music).
+  const [queue, setQueue] = useState([]);
+
+  // Sleep timer: null (off), "duration" (counting down to a pause),
+  // or "endOfTrack" (pause when the current track ends instead of
+  // advancing the queue).
+  const [sleepTimerMode, setSleepTimerMode] = useState(null);
+  const [sleepTimerEndsAt, setSleepTimerEndsAt] = useState(null);
+  const [sleepTimerRemaining, setSleepTimerRemaining] = useState(0);
+
   useEffect(() => {
     currentRef.current = current;
   }, [current]);
@@ -96,6 +114,23 @@ export function AudioPlayerProvider({ children }) {
       audio.removeEventListener("ended", onStop);
     };
   }, [flushListenTime]);
+
+  // Shared progress/duration — separate from the tracking listeners
+  // above so this stays simple regardless of how that logic evolves.
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return undefined;
+
+    const onTime = () => setCurrentTime(audio.currentTime);
+    const onMeta = () => setDuration(audio.duration || 0);
+
+    audio.addEventListener("timeupdate", onTime);
+    audio.addEventListener("loadedmetadata", onMeta);
+    return () => {
+      audio.removeEventListener("timeupdate", onTime);
+      audio.removeEventListener("loadedmetadata", onMeta);
+    };
+  }, []);
 
   useEffect(() => {
     const flushOnHidden = () => {
@@ -178,8 +213,190 @@ export function AudioPlayerProvider({ children }) {
     }
   };
 
+  const seekTo = (seconds) => {
+    if (!audioRef.current) return;
+    audioRef.current.currentTime = Math.max(0, Math.min(seconds, audioRef.current.duration || seconds));
+  };
+
+  //////////////////////////////////////////////////
+  // PLAY NEXT QUEUE
+  //////////////////////////////////////////////////
+
+  const playNext = (sermon) => {
+    setQueue((q) => [sermon, ...q.filter((s) => s.id !== sermon.id)]);
+  };
+
+  const removeFromQueue = (index) => {
+    setQueue((q) => q.filter((_, i) => i !== index));
+  };
+
+  const clearQueue = () => setQueue([]);
+
+  // Auto-advance to the head of the queue when a track ends — unless
+  // the sleep timer is set to stop at the end of the current track,
+  // in which case playback just stops there.
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return undefined;
+
+    const onEnded = () => {
+      if (sleepTimerMode === "endOfTrack") {
+        setSleepTimerMode(null);
+        return;
+      }
+      setQueue((q) => {
+        if (q.length === 0) return q;
+        const [next, ...rest] = q;
+        playSermon(next);
+        return rest;
+      });
+    };
+
+    audio.addEventListener("ended", onEnded);
+    return () => audio.removeEventListener("ended", onEnded);
+  }, [sleepTimerMode]);
+
+  //////////////////////////////////////////////////
+  // SLEEP TIMER
+  //////////////////////////////////////////////////
+
+  // `value` is a number of minutes, the string "endOfTrack", or null to cancel.
+  const setSleepTimer = (value) => {
+    if (value == null) {
+      setSleepTimerMode(null);
+      setSleepTimerEndsAt(null);
+      setSleepTimerRemaining(0);
+      return;
+    }
+    if (value === "endOfTrack") {
+      setSleepTimerMode("endOfTrack");
+      setSleepTimerEndsAt(null);
+      setSleepTimerRemaining(0);
+      return;
+    }
+    setSleepTimerMode("duration");
+    setSleepTimerEndsAt(Date.now() + value * 60000);
+    setSleepTimerRemaining(value * 60);
+  };
+
+  useEffect(() => {
+    if (sleepTimerMode !== "duration" || !sleepTimerEndsAt) return undefined;
+
+    const tick = () => {
+      const remainingMs = sleepTimerEndsAt - Date.now();
+      if (remainingMs <= 0) {
+        audioRef.current?.pause();
+        setSleepTimerMode(null);
+        setSleepTimerEndsAt(null);
+        setSleepTimerRemaining(0);
+        return;
+      }
+      setSleepTimerRemaining(Math.ceil(remainingMs / 1000));
+    };
+
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [sleepTimerMode, sleepTimerEndsAt]);
+
+  //////////////////////////////////////////////////
+  // OUTPUT DEVICE (Bluetooth / internal speaker, etc.)
+  //////////////////////////////////////////////////
+  // Not supported on iOS Safari at all — iOS routes audio output at
+  // the OS level (Control Center / AirPlay), not through the page.
+  const outputDeviceSupported =
+    typeof navigator !== "undefined" &&
+    !!navigator.mediaDevices?.selectAudioOutput &&
+    typeof HTMLMediaElement !== "undefined" &&
+    "setSinkId" in HTMLMediaElement.prototype;
+
+  const chooseOutputDevice = async () => {
+    if (!outputDeviceSupported) throw new Error("Not supported in this browser.");
+    const device = await navigator.mediaDevices.selectAudioOutput();
+    if (audioRef.current?.setSinkId) {
+      await audioRef.current.setSinkId(device.deviceId);
+    }
+    return device;
+  };
+
+  //////////////////////////////////////////////////
+  // MEDIA SESSION — lock-screen / OS media controls
+  //////////////////////////////////////////////////
+  useEffect(() => {
+    if (!("mediaSession" in navigator)) return;
+    navigator.mediaSession.metadata = current
+      ? new MediaMetadata({
+          title: current.title || "Sermon",
+          artist: current.speaker || "Palouse Fellowship",
+          album: "Palouse Fellowship",
+          artwork: [{ src: "/icons/icon-512.png", sizes: "512x512", type: "image/png" }],
+        })
+      : null;
+  }, [current]);
+
+  useEffect(() => {
+    if (!("mediaSession" in navigator)) return;
+    navigator.mediaSession.playbackState = isPlaying ? "playing" : "paused";
+  }, [isPlaying]);
+
+  useEffect(() => {
+    if (!("mediaSession" in navigator)) return undefined;
+    const audio = audioRef.current;
+
+    navigator.mediaSession.setActionHandler("play", () => audio?.play().catch(() => {}));
+    navigator.mediaSession.setActionHandler("pause", () => audio?.pause());
+    navigator.mediaSession.setActionHandler("seekbackward", () => {
+      if (audio) audio.currentTime = Math.max(0, audio.currentTime - 30);
+    });
+    navigator.mediaSession.setActionHandler("seekforward", () => {
+      if (audio) audio.currentTime = Math.min(audio.duration || Infinity, audio.currentTime + 30);
+    });
+    navigator.mediaSession.setActionHandler(
+      "nexttrack",
+      queue.length > 0
+        ? () => {
+            setQueue((q) => {
+              if (q.length === 0) return q;
+              const [next, ...rest] = q;
+              playSermon(next);
+              return rest;
+            });
+          }
+        : null
+    );
+
+    return () => {
+      navigator.mediaSession.setActionHandler("play", null);
+      navigator.mediaSession.setActionHandler("pause", null);
+      navigator.mediaSession.setActionHandler("seekbackward", null);
+      navigator.mediaSession.setActionHandler("seekforward", null);
+      navigator.mediaSession.setActionHandler("nexttrack", null);
+    };
+  }, [queue]);
+
   return (
-    <AudioPlayerContext.Provider value={{ current, playSermon, togglePlay, isPlaying, audioRef, playError }}>
+    <AudioPlayerContext.Provider
+      value={{
+        current,
+        playSermon,
+        togglePlay,
+        isPlaying,
+        audioRef,
+        playError,
+        duration,
+        currentTime,
+        seekTo,
+        queue,
+        playNext,
+        removeFromQueue,
+        clearQueue,
+        sleepTimerMode,
+        sleepTimerRemaining,
+        setSleepTimer,
+        outputDeviceSupported,
+        chooseOutputDevice,
+      }}
+    >
       <audio ref={audioRef} src={audioUrl || undefined} preload="metadata" />
       {children}
     </AudioPlayerContext.Provider>

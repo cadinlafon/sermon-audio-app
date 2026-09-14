@@ -6,7 +6,7 @@ import { useAudioPlayer } from "../context/AudioPlayerContext";
 
 export default function Doctrine() {
   const navigate = useNavigate();
-  const { current, isPlaying, playSermon, togglePlay, playError } = useAudioPlayer();
+  const { current, isPlaying, playSermon, togglePlay, playError, playNext } = useAudioPlayer();
   const [content, setContent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [openSections, setOpenSections] = useState({
@@ -122,6 +122,7 @@ export default function Doctrine() {
                   playSermon={playSermon}
                   togglePlay={togglePlay}
                   playError={playError}
+                  playNext={playNext}
                 />
               ))}
             </div>
@@ -187,24 +188,38 @@ export default function Doctrine() {
 // AUDIO PLAYBACK
 ////////////////////////////////////////////////
 
-function AudioPlayerRow({ audio, index, content, current, isPlaying, playSermon, togglePlay, playError }) {
+function AudioPlayerRow({ audio, index, content, current, isPlaying, playSermon, togglePlay, playError, playNext }) {
   const trackId = audio.id || audio.audioStorageKey;
   const isCurrent = current?.id === trackId;
   const label = audio.label || `Track ${index + 1}`;
+  const [queued, setQueued] = useState(false);
+
+  const track = { id: trackId, title: audio.label || content.title, speaker: content.speaker, collection: "doctrineWeeks", audioStorageKey: audio.audioStorageKey };
 
   const handleClick = () => {
     if (isCurrent) {
       togglePlay();
     } else {
-      playSermon({ id: trackId, title: audio.label || content.title, speaker: content.speaker, collection: "doctrineWeeks", audioStorageKey: audio.audioStorageKey });
+      playSermon(track);
     }
+  };
+
+  const handlePlayNext = () => {
+    playNext(track);
+    setQueued(true);
+    setTimeout(() => setQueued(false), 1800);
   };
 
   return (
     <div style={audioRow}>
-      <button style={playButton} onClick={handleClick}>
-        {isCurrent && isPlaying ? "⏸ Pause" : `▶ ${label}`}
-      </button>
+      <div style={audioRowButtons}>
+        <button style={playButton} onClick={handleClick}>
+          {isCurrent && isPlaying ? "⏸ Pause" : `▶ ${label}`}
+        </button>
+        <button style={playNextButton} onClick={handlePlayNext}>
+          {queued ? "✓ Added" : "+ Play Next"}
+        </button>
+      </div>
       {isCurrent && <p style={nowPlayingText}>Now playing.</p>}
       {isCurrent && playError && <p style={playErrorText}>{playError}</p>}
     </div>
@@ -394,6 +409,8 @@ const audioList = {
 
 const audioRow = {};
 
+const audioRowButtons = { display: "flex", gap: "8px", flexWrap: "wrap" };
+
 const playButton = {
   padding: "10px 20px",
   borderRadius: "999px",
@@ -405,6 +422,17 @@ const playButton = {
   fontFamily: "sans-serif",
   cursor: "pointer",
   boxShadow: "0 3px 10px rgba(160,80,20,0.25)",
+};
+
+const playNextButton = {
+  padding: "10px 16px",
+  borderRadius: "999px",
+  border: "1px solid #eddfc8",
+  background: "#fdf8f3",
+  color: "#7a4f10",
+  fontSize: "13px",
+  fontFamily: "sans-serif",
+  cursor: "pointer",
 };
 
 const nowPlayingText = {

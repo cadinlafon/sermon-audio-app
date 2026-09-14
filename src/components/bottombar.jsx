@@ -229,16 +229,12 @@ function SheetButton({ icon, label, onClick, muted, badge, locked }) {
 //////////////////////////////////////////////////
 
 const bar = {
-  position: "fixed",
-  bottom: 0,
-  left: 0,
   width: "100%",
   background: "#fffdf9",
   borderTop: "1px solid #eddfc8",
   display: "flex",
   justifyContent: "space-around",
-  padding: "8px 0 10px",
-  zIndex: 1000,
+  padding: "8px 0 calc(14px + env(safe-area-inset-bottom))",
   boxSizing: "border-box",
 };
 
@@ -314,7 +310,7 @@ const sheet = {
   background: "#fffdf9",
   borderTopLeftRadius: "22px",
   borderTopRightRadius: "22px",
-  padding: "16px 20px 32px",
+  padding: "16px 20px calc(32px + env(safe-area-inset-bottom))",
   zIndex: 1000,
   boxShadow: "0 -8px 30px rgba(80,35,0,0.18)",
   boxSizing: "border-box",

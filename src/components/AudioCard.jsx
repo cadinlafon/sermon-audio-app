@@ -2,12 +2,15 @@ import { useEffect, useState } from "react";
 import { auth, db } from "../firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { toggleSaveSermon } from "../utils/saveSermon";
+import { useAudioPlayer } from "../context/AudioPlayerContext";
 import AiSummary from "./AiSummary";
 
 export default function AudioCard({ audio, onPlay, onSummarySaved, onSaveChange }) {
+  const { playNext } = useAudioPlayer();
   const [isSaved, setIsSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
+  const [queued, setQueued] = useState(false);
 
   useEffect(() => {
     let isCurrent = true;
@@ -52,6 +55,12 @@ export default function AudioCard({ audio, onPlay, onSummarySaved, onSaveChange 
 
   const label = audio.type === "sundayschool" ? "Sunday School" : audio.type === "homily" ? "Homily" : "Sermon";
 
+  const handlePlayNext = () => {
+    playNext(audio);
+    setQueued(true);
+    setTimeout(() => setQueued(false), 1800);
+  };
+
   return (
     <div style={card}>
       <button type="button" onClick={handleSave} style={saveButton} disabled={isSaving} aria-pressed={isSaved}>
@@ -60,9 +69,14 @@ export default function AudioCard({ audio, onPlay, onSummarySaved, onSaveChange 
       <span style={tagStyle(audio.type)}>{label}</span>
       <h3 style={titleStyle}>{audio.title}</h3>
       <p style={speakerStyle}>{audio.speaker}</p>
-      <button onClick={() => onPlay(audio)} style={playButton}>
-        <span style={{ fontSize: "11px" }}>▶</span> Play
-      </button>
+      <div style={playRow}>
+        <button onClick={() => onPlay(audio)} style={playButton}>
+          <span style={{ fontSize: "11px" }}>▶</span> Play
+        </button>
+        <button onClick={handlePlayNext} style={playNextButton}>
+          {queued ? "✓ Added" : "+ Play Next"}
+        </button>
+      </div>
       {saveError && <p style={saveErrorStyle} role="alert">{saveError}</p>}
       <AiSummary audio={audio} onSummarySaved={onSummarySaved} />
     </div>
@@ -75,4 +89,6 @@ const tagStyle = (type) => ({ display: "inline-block", fontSize: "11px", padding
 const titleStyle = { marginBottom: "5px", fontSize: "17px", fontWeight: "normal", color: "#3d2200" };
 const speakerStyle = { color: "#9b7040", fontSize: "13px", marginBottom: "14px", fontFamily: "sans-serif" };
 const playButton = { display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 18px", borderRadius: "999px", border: "none", background: "linear-gradient(135deg, #c97c2e 0%, #a85e18 100%)", color: "#fff8ee", cursor: "pointer", fontSize: "13px", fontFamily: "sans-serif", boxShadow: "0 3px 10px rgba(160,80,20,0.25)" };
+const playRow = { display: "flex", gap: "8px", flexWrap: "wrap" };
+const playNextButton = { display: "inline-flex", alignItems: "center", padding: "8px 14px", borderRadius: "999px", border: "1px solid #eddfc8", background: "#fdf8f3", color: "#7a4f10", cursor: "pointer", fontSize: "13px", fontFamily: "sans-serif" };
 const saveErrorStyle = { color: "#a33622", fontSize: "13px", fontFamily: "sans-serif", margin: "10px 0 0" };

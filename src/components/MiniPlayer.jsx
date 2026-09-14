@@ -6,10 +6,11 @@ import pauseIcon from "../assets/Player/pause.png";
 import playIcon from "../assets/Player/play.png";
 
 export default function MiniPlayer() {
-  const { current, isPlaying, togglePlay, audioRef } = useAudioPlayer();
+  const { current, isPlaying, togglePlay, audioRef, duration, currentTime } = useAudioPlayer();
   const navigate = useNavigate();
 
-  if (!current) return null;
+  const hasAudio = !!current;
+  const progressPercent = hasAudio && duration ? (currentTime / duration) * 100 : 0;
 
   const jumpBack = (e) => {
     e.stopPropagation();
@@ -24,28 +25,43 @@ export default function MiniPlayer() {
   };
 
   return (
-    <div style={container} onClick={() => navigate("/player")}>
-      {/* warm left accent bar */}
-      <div style={accentBar} />
+    <div
+      style={hasAudio ? container : { ...container, ...containerEmpty }}
+      onClick={() => hasAudio && navigate("/player")}
+    >
+      {hasAudio && (
+        <div style={progressTrack}>
+          <div style={{ ...progressFill, width: `${progressPercent}%` }} />
+        </div>
+      )}
 
-      <div style={textContainer}>
-        <div style={nowPlayingLabel}>Now Playing</div>
-        <div style={title}>{current.title}</div>
-        <div style={speaker}>{current.speaker}</div>
-      </div>
+      <div style={row}>
+        <div style={textContainer}>
+          {hasAudio ? (
+            <>
+              <div style={title}>{current.title}</div>
+              <div style={speaker}>{current.speaker}</div>
+            </>
+          ) : (
+            <div style={emptyTitle}>No audio playing</div>
+          )}
+        </div>
 
-      <div style={controls}>
-        <button onClick={jumpBack} style={iconBtn} title="Back 30s">
-          <img src={back30} style={iconImg} alt="Back 30 seconds" />
-        </button>
+        {hasAudio && (
+          <div style={controls}>
+            <button onClick={jumpBack} style={iconBtn} title="Back 30s">
+              <img src={back30} style={iconImg} alt="Back 30 seconds" />
+            </button>
 
-        <button onClick={handlePlay} style={playBtn}>
-          <img
-            src={isPlaying ? pauseIcon : playIcon}
-            style={playIconStyle}
-            alt={isPlaying ? "Pause" : "Play"}
-          />
-        </button>
+            <button onClick={handlePlay} style={playBtn}>
+              <img
+                src={isPlaying ? pauseIcon : playIcon}
+                style={playIconStyle}
+                alt={isPlaying ? "Pause" : "Play"}
+              />
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -56,30 +72,37 @@ export default function MiniPlayer() {
 //////////////////////////////////////////////////
 
 const container = {
-  position: "fixed",
-  bottom: "70px",
-  left: "10px",
-  right: "10px",
-  background: "linear-gradient(135deg, #4a2200 0%, #3d2000 100%)",
-  color: "#fff8ee",
-  borderRadius: "18px",
-  padding: "12px 16px 12px 0",
+  width: "100%",
+  background: "#fffdf9",
+  boxSizing: "border-box",
+  cursor: "pointer",
+  overflow: "hidden",
+  position: "relative",
+};
+
+const containerEmpty = {
+  cursor: "default",
+  opacity: 0.6,
+};
+
+const progressTrack = {
+  height: "3px",
+  width: "100%",
+  background: "#eddfc8",
+};
+
+const progressFill = {
+  height: "100%",
+  background: "linear-gradient(to right, #e08930, #c97c2e)",
+  transition: "width 0.2s linear",
+};
+
+const row = {
   display: "flex",
   alignItems: "center",
   justifyContent: "space-between",
-  zIndex: 999,
-  boxShadow: "0 6px 24px rgba(80,35,0,0.35)",
-  cursor: "pointer",
-  overflow: "hidden",
-};
-
-const accentBar = {
-  width: "4px",
-  alignSelf: "stretch",
-  background: "linear-gradient(to bottom, #e08930, #c97c2e)",
-  borderRadius: "0 3px 3px 0",
-  marginRight: "14px",
-  flexShrink: 0,
+  padding: "10px 16px",
+  gap: "12px",
 };
 
 const textContainer = {
@@ -88,29 +111,20 @@ const textContainer = {
   minWidth: 0,
 };
 
-const nowPlayingLabel = {
-  fontSize: "9px",
-  letterSpacing: "0.12em",
-  textTransform: "uppercase",
-  color: "rgba(255,220,150,0.65)",
-  marginBottom: "2px",
-  fontFamily: "sans-serif",
-};
-
 const title = {
   fontSize: "14px",
   fontWeight: "600",
   whiteSpace: "nowrap",
   overflow: "hidden",
   textOverflow: "ellipsis",
-  color: "#fff8ee",
+  color: "#3d2200",
   fontFamily: "'Georgia', serif",
   lineHeight: 1.3,
 };
 
 const speaker = {
   fontSize: "11px",
-  color: "rgba(255,210,140,0.75)",
+  color: "#9b7040",
   fontFamily: "sans-serif",
   marginTop: "2px",
   whiteSpace: "nowrap",
@@ -118,12 +132,18 @@ const speaker = {
   textOverflow: "ellipsis",
 };
 
+const emptyTitle = {
+  fontSize: "13px",
+  color: "#b08050",
+  fontFamily: "sans-serif",
+  fontStyle: "italic",
+};
+
 const controls = {
   display: "flex",
   alignItems: "center",
   gap: "10px",
   flexShrink: 0,
-  marginLeft: "12px",
 };
 
 const iconBtn = {
@@ -136,26 +156,26 @@ const iconBtn = {
 };
 
 const iconImg = {
-  width: "22px",
-  opacity: 0.85,
-  filter: "brightness(0) invert(1)",
+  width: "20px",
+  opacity: 0.7,
+  filter: "sepia(1) saturate(2) hue-rotate(10deg) brightness(0.6)",
 };
 
 const playBtn = {
   background: "linear-gradient(135deg, #e08930 0%, #c97c2e 100%)",
   border: "none",
   borderRadius: "50%",
-  width: "40px",
-  height: "40px",
+  width: "36px",
+  height: "36px",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
   cursor: "pointer",
-  boxShadow: "0 2px 10px rgba(200,100,20,0.45)",
+  boxShadow: "0 2px 10px rgba(200,100,20,0.35)",
   flexShrink: 0,
 };
 
 const playIconStyle = {
-  width: "17px",
+  width: "15px",
   filter: "brightness(0) invert(1)",
 };

@@ -1,19 +1,42 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAudioPlayer } from "../context/AudioPlayerContext";
+import { useDocumentPiP } from "../hooks/useDocumentPiP";
+import DesktopMiniPlayerContent from "../components/DesktopMiniPlayerContent";
 
 import back30 from "../assets/Player/back30.png";
 import forward30 from "../assets/Player/forward30.png";
 
+const SLEEP_PRESETS = [5, 15, 30, 45, 60];
+
 export default function Player() {
-  const { current, isPlaying, togglePlay, audioRef } = useAudioPlayer();
+  const {
+    current,
+    isPlaying,
+    togglePlay,
+    audioRef,
+    playSermon,
+    queue,
+    removeFromQueue,
+    clearQueue,
+    sleepTimerMode,
+    sleepTimerRemaining,
+    setSleepTimer,
+    outputDeviceSupported,
+    chooseOutputDevice,
+  } = useAudioPlayer();
   const navigate = useNavigate();
+  const pip = useDocumentPiP();
 
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [speed, setSpeed] = useState(1);
   const [isDragging, setIsDragging] = useState(false);
   const [showRemaining, setShowRemaining] = useState(false);
+  const [showQueue, setShowQueue] = useState(false);
+  const [showSleepMenu, setShowSleepMenu] = useState(false);
+  const [deviceStatus, setDeviceStatus] = useState("");
+  const [selectedSleepPreset, setSelectedSleepPreset] = useState(null);
 
   //////////////////////////////////////////////////
   // AUDIO EVENTS
@@ -88,7 +111,67 @@ export default function Player() {
   const progressPercent = duration ? (progress / duration) * 100 : 0;
   const remaining = duration ? duration - progress : 0;
 
-  if (!current) return null;
+  //////////////////////////////////////////////////
+  // PLAY NEXT QUEUE
+  //////////////////////////////////////////////////
+  const handlePlayFromQueue = (sermon, index) => {
+    removeFromQueue(index);
+    playSermon(sermon);
+  };
+
+  //////////////////////////////////////////////////
+  // SLEEP TIMER
+  //////////////////////////////////////////////////
+  const formatSleepRemaining = (seconds) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, "0")}`;
+  };
+
+  //////////////////////////////////////////////////
+  // OUTPUT DEVICE
+  //////////////////////////////////////////////////
+  const handleConnectDevice = async () => {
+    setDeviceStatus("");
+    try {
+      const device = await chooseOutputDevice();
+      setDeviceStatus(`Playing on ${device.label || "selected device"}`);
+    } catch (err) {
+      if (err?.name !== "NotFoundError" && err?.name !== "NotAllowedError") {
+        setDeviceStatus(err.message || "Couldn't switch output device.");
+      }
+    }
+  };
+
+  //////////////////////////////////////////////////
+  // DESKTOP MINI PLAYER
+  //////////////////////////////////////////////////
+  const toggleMiniPlayer = async () => {
+    if (pip.active) {
+      pip.close();
+      return;
+    }
+    try {
+      await pip.open({ width: 320, height: 140 });
+    } catch {
+      // User cancelled or the browser refused — nothing to recover from.
+    }
+  };
+
+  if (!current) {
+    return (
+      <div style={page}>
+        <button className="pf-back-btn" style={backBtn} onClick={() => navigate(-1)}>
+          ← Back
+        </button>
+        <div style={{ ...card, alignItems: "center", padding: "60px 28px" }}>
+          <span style={{ fontSize: "40px", marginBottom: "16px" }}>🎧</span>
+          <h2 style={{ ...title, textAlign: "center" }}>No audio playing</h2>
+          <p style={{ ...speaker, textAlign: "center" }}>Pick a sermon to start listening.</p>
+        </div>
+      </div>
+    );
+  }
 
   //////////////////////////////////////////////////
   // UI
@@ -245,7 +328,102 @@ export default function Player() {
             ↑ Share
           </button>
         </div>
+
+        {/* EXTRAS: QUEUE / SLEEP TIMER / OUTPUT / MINI PLAYER */}
+        <div style={extrasRow}>
+          <button style={extraBtn} onClick={() => setShowQueue(true)}>
+            📋 Playing Next{queue.length > 0 ? ` (${queue.length})` : ""}
+          </button>
+
+          <button style={extraBtn} onClick={() => setShowSleepMenu(true)}>
+            🌙 {sleepTimerMode === "duration"
+              ? formatSleepRemaining(sleepTimerRemaining)
+              : sleepTimerMode === "endOfTrack"
+              ? "End of track"
+              : "Sleep Timer"}
+          </button>
+
+          {outputDeviceSupported && (
+            <button style={extraBtn} onClick={handleConnectDevice}>
+              🔊 Connect to Device
+            </button>
+          )}
+
+          {pip.supported && (
+            <button style={pip.active ? { ...extraBtn, ...extraBtnActive } : extraBtn} onClick={toggleMiniPlayer}>
+              🗔 {pip.active ? "Close Mini Player" : "Mini Player"}
+            </button>
+          )}
+        </div>
+
+        {deviceStatus && <p style={deviceStatusText}>{deviceStatus}</p>}
       </div>
+
+      {/* PLAYING NEXT SHEET */}
+      {showQueue && (
+        <>
+          <div style={backdrop} onClick={() => setShowQueue(false)} />
+          <div style={sheet}>
+            <div style={sheetHeader}>
+              <h3 style={sheetTitle}>Playing Next</h3>
+              {queue.length > 0 && (
+                <button style={sheetLinkBtn} onClick={clearQueue}>Clear All</button>
+              )}
+            </div>
+
+            {queue.length === 0 ? (
+              <p style={sheetEmptyText}>Nothing queued yet — use "Play Next" on any sermon.</p>
+            ) : (
+              <div style={queueList}>
+                {queue.map((sermon, i) => (
+                  <div key={`${sermon.id}-${i}`} style={queueRow}>
+                    <button style={queueItemBtn} onClick={() => handlePlayFromQueue(sermon, i)}>
+                      <div style={queueItemTitle}>{sermon.title}</div>
+                      <div style={queueItemSpeaker}>{sermon.speaker}</div>
+                    </button>
+                    <button style={queueRemoveBtn} onClick={() => removeFromQueue(i)} title="Remove">✕</button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <button style={sheetCloseBtn} onClick={() => setShowQueue(false)}>Close</button>
+          </div>
+        </>
+      )}
+
+      {/* SLEEP TIMER SHEET */}
+      {showSleepMenu && (
+        <>
+          <div style={backdrop} onClick={() => setShowSleepMenu(false)} />
+          <div style={sheet}>
+            <h3 style={sheetTitle}>Sleep Timer</h3>
+            <div style={sleepGrid}>
+              {SLEEP_PRESETS.map((m) => (
+                <button
+                  key={m}
+                  style={sleepTimerMode === "duration" && selectedSleepPreset === m ? { ...sleepBtn, ...sleepBtnActive } : sleepBtn}
+                  onClick={() => { setSleepTimer(m); setSelectedSleepPreset(m); setShowSleepMenu(false); }}
+                >
+                  {m} min
+                </button>
+              ))}
+              <button
+                style={sleepTimerMode === "endOfTrack" ? { ...sleepBtn, ...sleepBtnActive } : sleepBtn}
+                onClick={() => { setSleepTimer("endOfTrack"); setSelectedSleepPreset(null); setShowSleepMenu(false); }}
+              >
+                End of track
+              </button>
+            </div>
+            <button style={sheetLinkBtn} onClick={() => { setSleepTimer(null); setSelectedSleepPreset(null); setShowSleepMenu(false); }}>
+              Turn Off
+            </button>
+            <button style={sheetCloseBtn} onClick={() => setShowSleepMenu(false)}>Close</button>
+          </div>
+        </>
+      )}
+
+      <DesktopMiniPlayerContent pipWindow={pip.pipWindow} />
     </div>
   );
 }
@@ -516,4 +694,189 @@ const shareBtn = {
   fontSize: "13px",
   fontFamily: "sans-serif",
   transition: "background 0.15s ease",
+};
+
+// Extras row (queue / sleep timer / device / mini player)
+const extrasRow = {
+  display: "flex",
+  flexWrap: "wrap",
+  gap: "8px",
+  justifyContent: "center",
+  marginTop: "22px",
+  paddingTop: "20px",
+  borderTop: "1px solid #f0e4d0",
+  width: "100%",
+};
+
+const extraBtn = {
+  padding: "8px 14px",
+  borderRadius: "999px",
+  border: "1px solid #eddfc8",
+  background: "#fdf8f3",
+  color: "#7a4f10",
+  cursor: "pointer",
+  fontSize: "12px",
+  fontFamily: "sans-serif",
+};
+
+const extraBtnActive = {
+  background: "linear-gradient(135deg, #c97c2e 0%, #a85e18 100%)",
+  color: "#fff8ee",
+  borderColor: "transparent",
+};
+
+const deviceStatusText = {
+  fontSize: "12px",
+  color: "#9b7040",
+  fontFamily: "sans-serif",
+  textAlign: "center",
+  marginTop: "10px",
+};
+
+// Bottom sheets (Playing Next / Sleep Timer)
+const backdrop = {
+  position: "fixed",
+  inset: 0,
+  background: "rgba(40,18,0,0.45)",
+  zIndex: 1999,
+};
+
+const sheet = {
+  position: "fixed",
+  bottom: 0,
+  left: 0,
+  right: 0,
+  background: "#fffdf9",
+  borderTopLeftRadius: "22px",
+  borderTopRightRadius: "22px",
+  padding: "20px 22px calc(28px + env(safe-area-inset-bottom))",
+  zIndex: 2000,
+  boxShadow: "0 -8px 30px rgba(80,35,0,0.18)",
+  boxSizing: "border-box",
+  maxHeight: "70vh",
+  overflowY: "auto",
+};
+
+const sheetHeader = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  marginBottom: "14px",
+};
+
+const sheetTitle = {
+  fontSize: "17px",
+  fontWeight: "normal",
+  color: "#3d2200",
+  fontFamily: "'Georgia', serif",
+  margin: "0 0 14px",
+};
+
+const sheetLinkBtn = {
+  background: "none",
+  border: "none",
+  color: "#c97c2e",
+  fontFamily: "sans-serif",
+  fontSize: "13px",
+  cursor: "pointer",
+  padding: "4px",
+};
+
+const sheetEmptyText = {
+  fontSize: "13px",
+  color: "#b08050",
+  fontStyle: "italic",
+  fontFamily: "sans-serif",
+  textAlign: "center",
+  padding: "20px 0",
+};
+
+const sheetCloseBtn = {
+  width: "100%",
+  marginTop: "16px",
+  padding: "13px",
+  borderRadius: "12px",
+  border: "1px solid #eddfc8",
+  background: "transparent",
+  color: "#9b7040",
+  fontFamily: "sans-serif",
+  fontSize: "14px",
+  cursor: "pointer",
+};
+
+const queueList = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "8px",
+};
+
+const queueRow = {
+  display: "flex",
+  alignItems: "center",
+  gap: "10px",
+  background: "#fdf8f3",
+  border: "1px solid #f0e4d0",
+  borderRadius: "12px",
+  padding: "10px 12px",
+};
+
+const queueItemBtn = {
+  flex: 1,
+  textAlign: "left",
+  background: "none",
+  border: "none",
+  cursor: "pointer",
+  padding: 0,
+  minWidth: 0,
+};
+
+const queueItemTitle = {
+  fontSize: "13px",
+  color: "#3d2200",
+  fontFamily: "sans-serif",
+  fontWeight: "600",
+  whiteSpace: "nowrap",
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+};
+
+const queueItemSpeaker = {
+  fontSize: "11px",
+  color: "#9b7040",
+  fontFamily: "sans-serif",
+  marginTop: "2px",
+};
+
+const queueRemoveBtn = {
+  background: "none",
+  border: "none",
+  color: "#b08050",
+  cursor: "pointer",
+  fontSize: "14px",
+  padding: "4px 6px",
+  flexShrink: 0,
+};
+
+const sleepGrid = {
+  display: "grid",
+  gridTemplateColumns: "repeat(3, 1fr)",
+  gap: "8px",
+  marginBottom: "14px",
+};
+
+const sleepBtn = {
+  padding: "12px 8px",
+  borderRadius: "12px",
+  border: "1px solid #eddfc8",
+  background: "#fdf8f3",
+  color: "#7a4f10",
+  cursor: "pointer",
+  fontSize: "13px",
+  fontFamily: "sans-serif",
+};
+
+const sleepBtnActive = {
+  background: "linear-gradient(135deg, #c97c2e 0%, #a85e18 100%)",
+  color: "#fff8ee",
+  borderColor: "transparent",
 };

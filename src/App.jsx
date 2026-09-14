@@ -641,19 +641,16 @@ function App() {
 
 
       {/* ==========================================
-          BOTTOM BAR
+          BOTTOM BAR + MINI PLAYER
+          Rendered together as one fixed stack so the player bar
+          always sits flush on top of the nav, whatever height the
+          nav ends up being (it varies with the iOS safe-area inset).
           ========================================== */}
 
-      <BottomBar />
-
-
-      {/* ==========================================
-          MINI PLAYER
-          ========================================== */}
-
-      {location.pathname !== "/player" && (
-        <MiniPlayer />
-      )}
+      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 1000, display: "flex", flexDirection: "column" }}>
+        {location.pathname !== "/player" && <MiniPlayer />}
+        <BottomBar />
+      </div>
 
     </AppGuard>
   );
