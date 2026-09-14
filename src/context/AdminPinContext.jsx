@@ -1,8 +1,22 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { EmailAuthProvider, reauthenticateWithCredential } from "firebase/auth";
 import { useAdminSecurity } from "../hooks/useAdminSecurity";
 import { usePermissions } from "../hooks/usePermissions";
+import { useAuth } from "./AuthContext";
 import { PIN_UNLOCK_SESSION_KEY, isPasskeySupported, SECURITY_CHANGE_ACTION } from "../config/adminSecurity";
 import PinEntry from "../components/Admin/PinEntry";
+
+function authErrorMessage(err) {
+  switch (err?.code) {
+    case "auth/wrong-password":
+    case "auth/invalid-credential":
+      return "Incorrect password.";
+    case "auth/too-many-requests":
+      return "Too many attempts. Try again later.";
+    default:
+      return "Couldn't verify your password.";
+  }
+}
 
 const AdminPinContext = createContext(null);
 
@@ -36,6 +50,7 @@ function writeUnlocked(value) {
 export function AdminPinProvider({ children }) {
   const security = useAdminSecurity();
   const { isRestricted, loading: permsLoading } = usePermissions();
+  const { user } = useAuth();
 
   const [unlocked, setUnlocked] = useState(readUnlocked);
   const [request, setRequest] = useState(null); // { actionKey, resolve }
@@ -45,6 +60,7 @@ export function AdminPinProvider({ children }) {
   useEffect(() => writeUnlocked(unlocked), [unlocked]);
 
   const activePinAvailable = isRestricted ? security.hasRestrictedPin : security.hasOwnerPin;
+  const passwordAvailable = !!user?.providerData?.some((p) => p.providerId === "password");
 
   const requirePin = useMemo(
     () => (actionKey) =>
@@ -86,6 +102,22 @@ export function AdminPinProvider({ children }) {
     }
   };
 
+  const usePassword = async (password) => {
+    setSubmitting(true);
+    setError("");
+    try {
+      if (!user?.email) throw new Error("No signed-in account email.");
+      const credential = EmailAuthProvider.credential(user.email, password);
+      await reauthenticateWithCredential(user, credential);
+      setUnlocked(true);
+      setSubmitting(false);
+      closeRequest(true);
+    } catch (err) {
+      setError(authErrorMessage(err));
+      setSubmitting(false);
+    }
+  };
+
   const usePasskey = async () => {
     setSubmitting(true);
     setError("");
@@ -110,7 +142,9 @@ export function AdminPinProvider({ children }) {
   const entryGated = security.pinEnabled && security.requirePinFor.has("adminEntry") && !unlocked;
 
   if (entryGated) {
-    if (!activePinAvailable) {
+    const ownerPasskeyAvailable = !isRestricted && isPasskeySupported() && security.passkeys.length > 0;
+
+    if (!activePinAvailable && !passwordAvailable && !ownerPasskeyAvailable) {
       return (
         <div style={lockScreenWrap}>
           <div style={lockCard}>
@@ -134,9 +168,12 @@ export function AdminPinProvider({ children }) {
           <PinEntry
             title="Admin Dashboard Locked"
             subtitle="Enter your PIN to continue."
-            onSubmit={submitPin}
+            onSubmitPin={submitPin}
+            onSubmitPassword={usePassword}
             onUsePasskey={usePasskey}
-            showPasskeyOption={!isRestricted && isPasskeySupported() && security.passkeys.length > 0}
+            showPinOption={activePinAvailable}
+            showPasswordOption={passwordAvailable}
+            showPasskeyOption={ownerPasskeyAvailable}
             submitting={submitting}
             error={error}
           />
@@ -153,7 +190,7 @@ export function AdminPinProvider({ children }) {
         <>
           <div style={backdrop} onClick={() => !submitting && closeRequest(false)} />
           <div style={modalWrap}>
-            {!activePinAvailable ? (
+            {!activePinAvailable && !passwordAvailable && !(!isRestricted && isPasskeySupported() && security.passkeys.length > 0) ? (
               <p style={{ fontFamily: "sans-serif", color: "#9b7040", fontSize: "13px", textAlign: "center", margin: 0 }}>
                 {isRestricted
                   ? "A restricted-admin PIN hasn't been set yet. Ask the owner to set one in Security settings."
@@ -163,8 +200,11 @@ export function AdminPinProvider({ children }) {
               <PinEntry
                 title="Confirm With PIN"
                 subtitle="This action requires your admin PIN."
-                onSubmit={submitPin}
+                onSubmitPin={submitPin}
+                onSubmitPassword={usePassword}
                 onUsePasskey={usePasskey}
+                showPinOption={activePinAvailable}
+                showPasswordOption={passwordAvailable}
                 showPasskeyOption={!isRestricted && isPasskeySupported() && security.passkeys.length > 0}
                 submitting={submitting}
                 error={error}
