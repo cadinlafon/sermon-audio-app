@@ -140,10 +140,15 @@ export default function AiSummary({ audio, onSummarySaved }) {
     setIsLoading(true);
     try {
       const token = await currentUser.getIdToken();
+      // A smaller, speech-optimized copy (made at upload time — see
+      // transcodeForTranscription.js) keeps long recordings under
+      // Groq's 25MB cap; fall back to the original for audio uploaded
+      // before that existed.
+      const storageKeyForTranscription = audio.transcribeStorageKey || audio.audioStorageKey;
       let audioUrl = audio.audioURL;
-      if (audio.audioStorageKey) {
+      if (storageKeyForTranscription) {
         const { data: accessData, error: accessError } = await supabase.functions.invoke("audio-download-url", {
-          headers: { Authorization: `Bearer ${token}` }, body: { storageKey: audio.audioStorageKey },
+          headers: { Authorization: `Bearer ${token}` }, body: { storageKey: storageKeyForTranscription },
         });
         if (accessError || !accessData?.url) {
           const responseBody = await accessError?.context?.json().catch(() => null);

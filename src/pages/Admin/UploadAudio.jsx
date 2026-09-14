@@ -3,6 +3,7 @@ import { db } from "../../firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { uploadPrivateAudio } from "../../utils/privateAudioUpload";
 import { getNextAudioOrder } from "../../utils/audioOrder";
+import { createTranscriptionCopy } from "../../utils/transcodeForTranscription";
 import BulkUploadAudio from "./BulkUploadAudio";
 import { useModulePermissions } from "../../hooks/usePermissions";
 import { useAdminPin } from "../../context/AdminPinContext";
@@ -22,6 +23,7 @@ export default function UploadAudio() {
   const [progress, setProgress] = useState(null);
   const [duration, setDuration] = useState(null);
   const [dragOver, setDragOver] = useState(false);
+  const [transcodeStatus, setTranscodeStatus] = useState("");
   const fileInputRef = useRef();
 
   const detectDuration = (f) => {
@@ -59,6 +61,23 @@ export default function UploadAudio() {
 
       setProgress(100);
 
+      // A smaller, speech-optimized copy for AI summaries — keeps long
+      // sermons under Groq's 25MB transcription cap. Best-effort: if
+      // this fails for any reason, the upload still succeeds and AI
+      // summaries just fall back to the original file (same as before
+      // this existed).
+      let transcribeStorageKey = null;
+      try {
+        setTranscodeStatus("Preparing AI transcription copy…");
+        const transcodeFile = await createTranscriptionCopy(file, (p) => {
+          setTranscodeStatus(`Preparing AI transcription copy… ${Math.round(p * 100)}%`);
+        });
+        transcribeStorageKey = await uploadPrivateAudio(transcodeFile, () => {});
+      } catch (transcodeErr) {
+        console.warn("Couldn't create a transcription-optimized copy; AI summaries will use the original file", transcodeErr);
+      }
+      setTranscodeStatus("");
+
       const order = await getNextAudioOrder();
       await addDoc(collection(db, "audio"), {
         title,
@@ -66,6 +85,7 @@ export default function UploadAudio() {
         type,
         duration,
         audioStorageKey,
+        ...(transcribeStorageKey ? { transcribeStorageKey } : {}),
         order,
         createdAt: serverTimestamp(),
       });
@@ -78,6 +98,7 @@ export default function UploadAudio() {
     }
     setUploading(false);
     setProgress(null);
+    setTranscodeStatus("");
   };
 
   const fmt = (s) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
@@ -175,7 +196,9 @@ export default function UploadAudio() {
               )}
             </div>
             <p style={progressLabel}>
-              {progress === null
+              {transcodeStatus
+                ? transcodeStatus
+                : progress === null
                 ? "Preparing upload…"
                 : progress < 100
                 ? `Uploading… ${progress}%`

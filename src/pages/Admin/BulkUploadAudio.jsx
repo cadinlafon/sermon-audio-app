@@ -3,6 +3,7 @@ import { db } from "../../firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { uploadPrivateAudio } from "../../utils/privateAudioUpload";
 import { getNextAudioOrder } from "../../utils/audioOrder";
+import { createTranscriptionCopy } from "../../utils/transcodeForTranscription";
 import {
   expandToAudioFiles,
   filesFromDataTransferItems,
@@ -141,12 +142,24 @@ export default function BulkUploadAudio({ speakers }) {
       try {
         const audioStorageKey = await uploadPrivateAudio(item.file, (pct) => updateItem(item.id, { progress: pct }));
 
+        // A smaller, speech-optimized copy for AI summaries — same
+        // best-effort approach as the single-file uploader: never lets
+        // a transcode failure fail the actual upload.
+        let transcribeStorageKey = null;
+        try {
+          const transcodeFile = await createTranscriptionCopy(item.file);
+          transcribeStorageKey = await uploadPrivateAudio(transcodeFile, () => {});
+        } catch (transcodeErr) {
+          console.warn(`Couldn't create a transcription-optimized copy for ${item.fileName}`, transcodeErr);
+        }
+
         await addDoc(collection(db, "audio"), {
           title: item.title.trim(),
           speaker: item.speaker,
           type: item.type,
           duration: item.duration,
           audioStorageKey,
+          ...(transcribeStorageKey ? { transcribeStorageKey } : {}),
           order: nextOrder++,
           createdAt: serverTimestamp(),
         });

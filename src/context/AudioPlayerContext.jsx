@@ -214,9 +214,17 @@ export function AudioPlayerProvider({ children }) {
     (async () => {
       try {
         const token = await user.getIdToken();
+        // A smaller, speech-optimized copy (made at upload time) keeps
+        // long recordings under Groq's 25MB cap — resolve its own
+        // signed URL rather than reusing the full-quality playback one.
+        // Falls back to the already-resolved playback URL for audio
+        // uploaded before that copy existed.
+        const audioUrl = sermon.transcribeStorageKey
+          ? await requestDownloadUrl({ audioStorageKey: sermon.transcribeStorageKey }, token)
+          : resolvedUrl;
         await supabase.functions.invoke("summarize-audio", {
           headers: { Authorization: `Bearer ${token}` },
-          body: { audioId: sermon.id, audioUrl: resolvedUrl, audioType: sermon.type, title: sermon.title || "Untitled audio" },
+          body: { audioId: sermon.id, audioUrl, audioType: sermon.type, title: sermon.title || "Untitled audio" },
         });
       } catch (error) {
         console.warn("Background AI summary generation failed", error);
