@@ -8,11 +8,17 @@ import {
   deleteDoc,
   deleteField,
 } from "firebase/firestore";
-import { ADMIN_MODULES, blankPermissions } from "../../config/adminModules";
-import { useModulePermissions } from "../../hooks/usePermissions";
+import { ADMIN_MODULES, blankPermissions, NO_ACCESS_MESSAGE } from "../../config/adminModules";
+import { useModulePermissions, usePermissions } from "../../hooks/usePermissions";
+import { useAuth } from "../../context/AuthContext";
 
 export default function Users() {
   const perms = useModulePermissions("users");
+  // The acting admin's own grants — used to stop a restricted admin from
+  // handing out more access than they themselves have, and to stop anyone
+  // from changing their own role/permissions through this page.
+  const actingPerms = usePermissions();
+  const { user: currentUser } = useAuth();
 
   const [users, setUsers] = useState([]);
   const [search, setSearch] = useState("");
@@ -120,10 +126,28 @@ export default function Users() {
   // ADMIN
   //////////////////////////////////////////////////
 
+  // No one can change their own role/permissions from this page — full
+  // admins included. Otherwise a restricted admin with users:edit could
+  // just grant themselves more access directly.
+  const guardNotSelf = (id) => {
+    if (id === currentUser?.uid) {
+      alert("You can't change your own admin status.");
+      return false;
+    }
+    return true;
+  };
+
   // Full, unrestricted admin — clears any prior restricted-admin
-  // permissions object so nothing stale lingers.
+  // permissions object so nothing stale lingers. Only a full (unrestricted)
+  // admin can hand out full access; a restricted admin granting someone
+  // else unrestricted access would be escalating past their own limits.
   const makeAdmin = async (id) => {
     if (!perms.requireEdit()) return;
+    if (!guardNotSelf(id)) return;
+    if (actingPerms.isRestricted) {
+      alert(NO_ACCESS_MESSAGE);
+      return;
+    }
 
     await updateDoc(doc(db, "users", id), {
       role: "admin",
@@ -135,6 +159,7 @@ export default function Users() {
 
   const removeAdmin = async (id) => {
     if (!perms.requireEdit()) return;
+    if (!guardNotSelf(id)) return;
 
     await updateDoc(doc(db, "users", id), {
       role: "user",
@@ -161,6 +186,7 @@ export default function Users() {
   };
 
   const openPermissions = (user, blank) => {
+    if (!guardNotSelf(user.id)) return;
     setPermTarget(user);
     setPermForm(mergePermissions(blank ? null : user.permissions));
   };
@@ -169,7 +195,14 @@ export default function Users() {
     setPermTarget(null);
   };
 
+  // A restricted admin can only hand out (or take away) capabilities they
+  // themselves hold — otherwise they could use this popup to grant a
+  // second account more access than they have, an indirect escalation. A
+  // full admin has no such limit.
+  const isLocked = (key, action) => actingPerms.isRestricted && !actingPerms.can(key, action);
+
   const togglePerm = (key, action) => {
+    if (isLocked(key, action)) return;
     setPermForm((f) => {
       const next = { ...f[key], [action]: !f[key][action] };
       // An edit or delete right without view doesn't make sense.
@@ -179,10 +212,13 @@ export default function Users() {
   };
 
   const setAllPerms = (value) => {
-    setPermForm(() => {
-      const next = blankPermissions();
-      for (const key of Object.keys(next)) {
-        for (const action of Object.keys(next[key])) next[key][action] = value;
+    setPermForm((prev) => {
+      const next = {};
+      for (const key of Object.keys(prev)) {
+        next[key] = { ...prev[key] };
+        for (const action of Object.keys(prev[key])) {
+          if (!isLocked(key, action)) next[key][action] = value;
+        }
       }
       return next;
     });
@@ -191,6 +227,7 @@ export default function Users() {
   const savePermissions = async () => {
     if (!perms.requireEdit()) return;
     if (!permTarget) return;
+    if (!guardNotSelf(permTarget.id)) return;
 
     setSavingPerms(true);
     try {
@@ -284,6 +321,7 @@ export default function Users() {
               const isEditing = editingId === user.id;
               const isAdmin = user.role === "admin";
               const isRestricted = isAdmin && user.permissions && typeof user.permissions === "object";
+              const isSelf = user.id === currentUser?.uid;
               const howFound = getHowFound(user);
 
               return (
@@ -415,21 +453,28 @@ export default function Users() {
 
                         {perms.canEdit && (
                           <>
-                            {isRestricted ? (
+                            {/* No one can change their own admin status here —
+                                see guardNotSelf; keeping these options off this
+                                row's menu avoids the alert entirely. */}
+                            {!isSelf && (
                               <>
-                                <option value="editPermissions">Edit Permissions</option>
-                                <option value="makeAdmin">Make Full Admin</option>
-                                <option value="removeAdmin">Remove Admin</option>
-                              </>
-                            ) : isAdmin ? (
-                              <>
-                                <option value="makeRestricted">Make Restricted Admin</option>
-                                <option value="removeAdmin">Remove Admin</option>
-                              </>
-                            ) : (
-                              <>
-                                <option value="makeAdmin">Make Admin</option>
-                                <option value="makeRestricted">Make Restricted Admin</option>
+                                {isRestricted ? (
+                                  <>
+                                    <option value="editPermissions">Edit Permissions</option>
+                                    {!actingPerms.isRestricted && <option value="makeAdmin">Make Full Admin</option>}
+                                    <option value="removeAdmin">Remove Admin</option>
+                                  </>
+                                ) : isAdmin ? (
+                                  <>
+                                    <option value="makeRestricted">Make Restricted Admin</option>
+                                    <option value="removeAdmin">Remove Admin</option>
+                                  </>
+                                ) : (
+                                  <>
+                                    {!actingPerms.isRestricted && <option value="makeAdmin">Make Admin</option>}
+                                    <option value="makeRestricted">Make Restricted Admin</option>
+                                  </>
+                                )}
                               </>
                             )}
 
@@ -476,21 +521,31 @@ export default function Users() {
               </button>
             </div>
 
+            {actingPerms.isRestricted && (
+              <p style={lockedHint}>
+                Grayed-out boxes are capabilities you don't have yourself — you can only grant what you already have.
+              </p>
+            )}
+
             <div style={moduleList}>
               {ADMIN_MODULES.map((m) => (
                 <div key={m.key} style={moduleRow}>
                   <span style={moduleLabel}>{m.icon} {m.label}</span>
                   <div style={checkRow}>
-                    {m.actions.map((action) => (
-                      <label key={action} style={checkLabel}>
-                        <input
-                          type="checkbox"
-                          checked={permForm[m.key][action]}
-                          onChange={() => togglePerm(m.key, action)}
-                        />
-                        {action === "view" ? "View" : action === "edit" ? "Edit" : "Delete"}
-                      </label>
-                    ))}
+                    {m.actions.map((action) => {
+                      const locked = isLocked(m.key, action);
+                      return (
+                        <label key={action} style={locked ? { ...checkLabel, ...checkLabelLocked } : checkLabel}>
+                          <input
+                            type="checkbox"
+                            checked={permForm[m.key][action]}
+                            onChange={() => togglePerm(m.key, action)}
+                            disabled={locked}
+                          />
+                          {action === "view" ? "View" : action === "edit" ? "Edit" : "Delete"}
+                        </label>
+                      );
+                    })}
                   </div>
                 </div>
               ))}
@@ -808,6 +863,19 @@ const checkLabel = {
   fontFamily: "sans-serif",
   color: "#5c3a1e",
   cursor: "pointer",
+};
+
+const checkLabelLocked = {
+  color: "#b0a494",
+  cursor: "not-allowed",
+};
+
+const lockedHint = {
+  fontSize: "12px",
+  fontFamily: "sans-serif",
+  color: "#9b7040",
+  fontStyle: "italic",
+  margin: 0,
 };
 
 const moduleList = {

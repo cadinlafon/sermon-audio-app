@@ -1,10 +1,16 @@
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { usePermissions } from "../../hooks/usePermissions";
+import { ADMIN_MODULES, NO_ACCESS_MESSAGE } from "../../config/adminModules";
 
 export default function AdminLayout() {
   const location = useLocation();
-  const { visibleModules } = usePermissions();
-  const navLinks = visibleModules.map((m) => ({ to: `/admin/${m.path}`, label: m.label, icon: m.icon }));
+  const { canView } = usePermissions();
+  const navLinks = ADMIN_MODULES.map((m) => ({
+    to: `/admin/${m.path}`,
+    label: m.label,
+    icon: m.icon,
+    accessible: canView(m.key),
+  }));
 
   return (
     <div style={shell}>
@@ -20,14 +26,15 @@ export default function AdminLayout() {
         </div>
 
         <nav style={nav}>
-          {navLinks.map(({ to, label, icon }) => {
-            const active = location.pathname.startsWith(to);
+          {navLinks.map(({ to, label, icon, accessible }) => {
+            const active = accessible && location.pathname.startsWith(to);
 
             return (
               <Link
                 key={to}
                 to={to}
-                style={active ? { ...link, ...linkActive } : link}
+                title={accessible ? undefined : NO_ACCESS_MESSAGE}
+                style={!accessible ? { ...link, ...linkDisabled } : active ? { ...link, ...linkActive } : link}
               >
                 <span style={linkIcon}>{icon}</span>
                 <span>{label}</span>
@@ -137,6 +144,11 @@ const link = {
 const linkActive = {
   background: "rgba(224,137,48,0.18)",
   color: "#fde8b8",
+};
+
+const linkDisabled = {
+  color: "rgba(255,220,160,0.28)",
+  cursor: "not-allowed",
 };
 
 const linkIcon = {
