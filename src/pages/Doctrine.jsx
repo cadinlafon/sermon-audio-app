@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { db } from "../firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { useAudioPlayer } from "../context/AudioPlayerContext";
+import { DOCTRINE_SCHEDULE } from "../data/doctrineSchedule";
 
 export default function Doctrine() {
   const navigate = useNavigate();
@@ -10,6 +11,7 @@ export default function Doctrine() {
   const [content, setContent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [openSections, setOpenSections] = useState({
+    schedule: false,
     questions: false,
     audio: false,
     docs: false,
@@ -86,6 +88,42 @@ export default function Doctrine() {
         {content.speaker && <p style={speaker}>Speaker: {content.speaker}</p>}
 
         {content.details && <p style={details}>{content.details}</p>}
+
+        <Dropdown
+          label="Schedule"
+          open={openSections.schedule}
+          onToggle={() => toggle("schedule")}
+        >
+          <div style={scheduleWrap}>
+            <table style={scheduleTable}>
+              <thead>
+                <tr>
+                  <th style={scheduleTh}>Week</th>
+                  <th style={scheduleTh}>Date</th>
+                  <th style={scheduleTh}>Topic</th>
+                  <th style={scheduleTh}>Memory Text</th>
+                </tr>
+              </thead>
+              <tbody>
+                {DOCTRINE_SCHEDULE.map((row, i) =>
+                  row.break ? (
+                    <tr key={i} style={scheduleBreakRow}>
+                      <td style={scheduleTd} colSpan={2}>{row.date}</td>
+                      <td style={{ ...scheduleTd, ...scheduleBreakText }} colSpan={2}>{row.topic}</td>
+                    </tr>
+                  ) : (
+                    <tr key={i}>
+                      <td style={scheduleTd}>{row.week}</td>
+                      <td style={scheduleTd}>{row.date}</td>
+                      <td style={scheduleTd}>{row.topic}</td>
+                      <td style={scheduleTd}>{row.memoryText || "—"}</td>
+                    </tr>
+                  )
+                )}
+              </tbody>
+            </table>
+          </div>
+        </Dropdown>
 
         <Dropdown
           label="Questions"
@@ -383,6 +421,48 @@ const emptySection = {
   fontFamily: "sans-serif",
   fontStyle: "italic",
   margin: 0,
+};
+
+const scheduleWrap = {
+  overflowX: "auto",
+  margin: "-2px",
+  padding: "2px",
+};
+
+const scheduleTable = {
+  width: "100%",
+  minWidth: "480px",
+  borderCollapse: "collapse",
+  fontFamily: "sans-serif",
+  fontSize: "13px",
+};
+
+const scheduleTh = {
+  textAlign: "left",
+  padding: "8px 10px",
+  fontSize: "11px",
+  letterSpacing: "0.05em",
+  textTransform: "uppercase",
+  color: "#9b7040",
+  borderBottom: "1px solid #eddfc8",
+  whiteSpace: "nowrap",
+};
+
+const scheduleTd = {
+  padding: "8px 10px",
+  color: "#5c3a1e",
+  borderBottom: "1px solid #f0e4d0",
+  verticalAlign: "top",
+};
+
+const scheduleBreakRow = {
+  background: "#fdf1de",
+};
+
+const scheduleBreakText = {
+  fontWeight: "600",
+  color: "#a85e18",
+  letterSpacing: "0.03em",
 };
 
 const link = {
