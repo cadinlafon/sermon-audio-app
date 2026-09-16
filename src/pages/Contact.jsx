@@ -34,6 +34,27 @@ function useTurnstileScript() {
   return ready;
 }
 
+function CopyableValue({ text }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch (error) {
+      console.error("Couldn't copy to clipboard", error);
+    }
+  };
+
+  return (
+    <button type="button" onClick={handleCopy} style={copyValueBtn} title="Click to copy">
+      {copied ? "Copied" : text}
+      <span style={copied ? { ...copyIcon, ...copyIconDone } : copyIcon}>{copied ? "✓" : "📋"}</span>
+    </button>
+  );
+}
+
 export default function Contact() {
   const scriptReady = useTurnstileScript();
   const widgetHostRef = useRef(null);
@@ -108,13 +129,13 @@ export default function Contact() {
 
         <div style={row}>
           <span style={label}>Email</span>
-          <span style={value}>{verified ? contacts.church.email : "Verify above to view"}</span>
+          <span style={value}>{verified ? <CopyableValue text={contacts.church.email} /> : "Verify above to view"}</span>
         </div>
         <div style={divider} />
 
         <div style={row}>
           <span style={label}>Phone</span>
-          <span style={value}>{verified ? contacts.church.phone : "Verify above to view"}</span>
+          <span style={value}>{verified ? <CopyableValue text={contacts.church.phone} /> : "Verify above to view"}</span>
         </div>
         <div style={divider} />
 
@@ -148,13 +169,13 @@ export default function Contact() {
 
         <div style={row}>
           <span style={label}>Email</span>
-          <span style={value}>{verified ? contacts.support.email : "Verify above to view"}</span>
+          <span style={value}>{verified ? <CopyableValue text={contacts.support.email} /> : "Verify above to view"}</span>
         </div>
         <div style={divider} />
 
         <div style={row}>
           <span style={label}>Phone</span>
-          <span style={value}>{verified ? contacts.support.phone : "Verify above to view"}</span>
+          <span style={value}>{verified ? <CopyableValue text={contacts.support.phone} /> : "Verify above to view"}</span>
         </div>
         <div style={divider} />
 
@@ -315,6 +336,29 @@ const value = {
   fontFamily: "sans-serif",
   fontSize: "14px",
   textAlign: "right",
+};
+
+const copyValueBtn = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: "6px",
+  background: "none",
+  border: "none",
+  padding: 0,
+  color: "#3d2200",
+  fontFamily: "sans-serif",
+  fontSize: "14px",
+  cursor: "pointer",
+};
+
+const copyIcon = {
+  fontSize: "11px",
+  opacity: 0.55,
+};
+
+const copyIconDone = {
+  opacity: 1,
+  color: "#16a34a",
 };
 
 const emailButton = {
