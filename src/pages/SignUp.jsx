@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
   createUserWithEmailAndPassword,
   signInWithPopup,
+  signOut,
 } from "firebase/auth";
 import {
   doc,
@@ -13,6 +14,7 @@ import { auth, db, googleProvider } from "../firebase";
 import googleLogo from "../assets/auth/google-logo.png";
 import { logEvent } from "../utils/logEvent";
 import { getTrafficData } from "../utils/trafficSource";
+import { checkRegistrationAllowed, recordRegistration } from "../utils/registrationGate";
 
 const REFERRAL_OPTIONS = [
   "Church Email",
@@ -56,6 +58,13 @@ export default function SignUp() {
       setLoading(true);
       setError("");
 
+      const gate = await checkRegistrationAllowed();
+      if (!gate.allowed) {
+        setError(gate.reason);
+        setLoading(false);
+        return;
+      }
+
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         email,
@@ -95,6 +104,7 @@ export default function SignUp() {
         email: user.email,
         referralSource,
       });
+      await recordRegistration();
 
       setEmail("");
       setPassword("");
@@ -127,6 +137,17 @@ export default function SignUp() {
       const snap = await getDoc(userRef);
 
       if (!snap.exists()) {
+        // Only a genuinely new account (no profile doc yet) is subject to
+        // the registration gate — an existing account signing in via this
+        // page (wrong button, muscle memory) should never be blocked.
+        const gate = await checkRegistrationAllowed();
+        if (!gate.allowed) {
+          await signOut(auth);
+          setError(gate.reason);
+          setLoading(false);
+          return;
+        }
+
         const traffic = getTrafficData();
 
         await setDoc(userRef, {
@@ -156,6 +177,7 @@ export default function SignUp() {
           email: user.email,
           referralSource,
         });
+        await recordRegistration();
       }
     } catch (err) {
       setError("Google sign-up failed. Please try again.");

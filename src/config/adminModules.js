@@ -19,7 +19,7 @@ export const ADMIN_MODULES = [
   { key: "suggestions", path: "suggestions", label: "Suggestions", icon: "💡", actions: ["view", "edit", "delete"] },
   { key: "logs", path: "logs", label: "Logs", icon: "📋", actions: ["view"] },
   { key: "referrals", path: "referrals", label: "Referrals", icon: "📣", actions: ["view", "edit", "delete"] },
-  { key: "settings", path: "settings", label: "Settings", icon: "⚙️", actions: ["view", "edit"] },
+  { key: "settings", path: "settings", label: "Advanced", icon: "⚙️", actions: ["view", "edit"] },
   { key: "security", path: "security", label: "Security", icon: "🔒", actions: ["view", "edit"] },
 ];
 

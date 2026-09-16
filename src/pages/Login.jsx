@@ -4,9 +4,13 @@ import {
   signInWithEmailAndPassword,
   signInWithPopup,
   onAuthStateChanged,
+  getAdditionalUserInfo,
+  signOut,
 } from "firebase/auth";
-import { auth, googleProvider } from "../firebase";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { auth, db, googleProvider } from "../firebase";
 import { logEvent } from "../utils/logEvent";
+import { checkRegistrationAllowed, recordRegistration } from "../utils/registrationGate";
 import googleLogo from "../assets/auth/google-logo.png";
 
 export default function Login() {
@@ -90,6 +94,34 @@ export default function Login() {
       setError("");
 
       const result = await signInWithPopup(auth, googleProvider);
+      const isNewUser = getAdditionalUserInfo(result)?.isNewUser;
+
+      // A first-time Google sign-in here creates an account just like the
+      // Sign Up page's Google button does — so it's subject to the same
+      // registration gate, and needs the same profile doc this page
+      // otherwise never creates.
+      if (isNewUser) {
+        const gate = await checkRegistrationAllowed();
+        if (!gate.allowed) {
+          await signOut(auth);
+          setError(gate.reason);
+          setGoogleLoading(false);
+          return;
+        }
+
+        await setDoc(doc(db, "users", result.user.uid), {
+          uid: result.user.uid,
+          fullName: result.user.displayName,
+          email: result.user.email,
+          role: "user",
+          loginMethod: "google",
+          emailVerified: true,
+          createdAt: serverTimestamp(),
+        });
+
+        await logEvent("account_created_google", { userId: result.user.uid, email: result.user.email });
+        await recordRegistration();
+      }
 
       await logEvent("google_login", {
         uid: result.user.uid,

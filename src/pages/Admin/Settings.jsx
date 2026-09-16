@@ -19,6 +19,9 @@ export default function Settings() {
   const [returnDate, setReturnDate] = useState("");
   const [audioAiEnabled, setAudioAiEnabled] = useState(true);
   const [audioAiAudiences, setAudioAiAudiences] = useState(["guest", "user", "admin"]);
+  const [registrationEnabled, setRegistrationEnabled] = useState(true);
+  const [maxDailyRegistrations, setMaxDailyRegistrations] = useState("");
+  const [todayRegistrationCount, setTodayRegistrationCount] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -36,11 +39,18 @@ export default function Settings() {
           if (data.returnDate) setReturnDate(data.returnDate.toDate().toISOString().slice(0, 16));
           if (data.audioAiEnabled !== undefined) setAudioAiEnabled(data.audioAiEnabled);
           if (data.audioAiAudiences !== undefined) setAudioAiAudiences(data.audioAiAudiences);
+          if (data.registrationEnabled !== undefined) setRegistrationEnabled(data.registrationEnabled);
+          if (data.maxDailyRegistrations) setMaxDailyRegistrations(String(data.maxDailyRegistrations));
         }
       } catch (err) { console.error("Failed to load config:", err); }
       setLoading(false);
     };
     fetchConfig();
+
+    const todayKey = new Date().toISOString().slice(0, 10);
+    getDoc(doc(db, "registrationCounts", todayKey))
+      .then((snap) => setTodayRegistrationCount(snap.exists() ? snap.data().count || 0 : 0))
+      .catch(() => setTodayRegistrationCount(0));
   }, []);
 
   const toggleShutdown = async () => {
@@ -61,6 +71,7 @@ export default function Settings() {
       await updateDoc(configRef, {
         shutdown, message, returnDate: returnDate ? new Date(returnDate) : null,
         audioAiEnabled, audioAiAudiences,
+        registrationEnabled, maxDailyRegistrations: Number(maxDailyRegistrations) || 0,
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
@@ -73,7 +84,7 @@ export default function Settings() {
   return (
     <div style={page}>
       <div style={pageHeader}>
-        <h1 style={pageTitle}>Settings</h1>
+        <h1 style={pageTitle}>Advanced</h1>
         <p style={pageSubtitle}>App-wide configuration options.</p>
       </div>
 
@@ -158,15 +169,56 @@ export default function Settings() {
             ))}
           </div>
         </Field>
+      </div>
 
-        <div style={saveRow}>
-          {perms.canEdit && (
-            <button onClick={handleSave} disabled={saving} style={saving ? { ...saveBtn, opacity: 0.6 } : saveBtn}>
-              {saving ? "Saving…" : "Save Settings"}
-            </button>
-          )}
-          {saved && <span style={savedMsg}>✓ Saved!</span>}
+      <div style={{ ...card, marginTop: "20px" }}>
+        <div style={sectionHeader}>
+          <span style={sectionIcon}>👤</span>
+          <h2 style={sectionTitle}>App Registration</h2>
         </div>
+
+        <div style={toggleRow}>
+          <div>
+            <div style={toggleLabel}>Allow New Sign-Ups</div>
+            <div style={toggleHint}>When off, the Sign Up page (and first-time Google sign-in) turns visitors away.</div>
+          </div>
+          <button
+            onClick={() => setRegistrationEnabled(!registrationEnabled)}
+            style={registrationEnabled ? { ...toggle, ...toggleOn } : toggle}
+            aria-label="Toggle new sign-ups"
+          >
+            <div style={registrationEnabled ? { ...toggleKnob, transform: "translateX(22px)" } : toggleKnob} />
+          </button>
+        </div>
+
+        {!registrationEnabled && (
+          <div style={{ ...statusBanner, background: "#fee2e2", border: "1px solid #fca5a5" }}>
+            <span style={{ color: "#dc2626" }}>⚠️ Sign-ups are OFF — new visitors can't create an account right now.</span>
+          </div>
+        )}
+
+        <Field label="Max Daily Sign-Ups">
+          <input
+            type="number"
+            min="0"
+            value={maxDailyRegistrations}
+            onChange={(e) => setMaxDailyRegistrations(e.target.value)}
+            style={input}
+            placeholder="Leave blank for unlimited"
+          />
+          <div style={toggleHint}>
+            {todayRegistrationCount === null ? "Loading today's count…" : `${todayRegistrationCount} sign-up${todayRegistrationCount === 1 ? "" : "s"} so far today.`}
+          </div>
+        </Field>
+      </div>
+
+      <div style={saveRow}>
+        {perms.canEdit && (
+          <button onClick={handleSave} disabled={saving} style={saving ? { ...saveBtn, opacity: 0.6 } : saveBtn}>
+            {saving ? "Saving…" : "Save Settings"}
+          </button>
+        )}
+        {saved && <span style={savedMsg}>✓ Saved!</span>}
       </div>
     </div>
   );
@@ -199,6 +251,6 @@ const fieldLabel = { fontSize: "11px", fontFamily: "sans-serif", color: "#9b7040
 const checkRow = { display: "flex", gap: "16px", flexWrap: "wrap" };
 const checkLabel = { display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", fontFamily: "sans-serif", color: "#5c3a1e", cursor: "pointer" };
 const input = { padding: "10px 12px", borderRadius: "10px", border: "1px solid #eddfc8", background: "#fdf8f3", fontSize: "14px", fontFamily: "sans-serif", color: "#3d2200", outline: "none", width: "100%", boxSizing: "border-box" };
-const saveRow = { display: "flex", alignItems: "center", gap: "14px" };
+const saveRow = { display: "flex", alignItems: "center", gap: "14px", marginTop: "20px" };
 const saveBtn = { padding: "12px 24px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, #c97c2e, #a85e18)", color: "#fff8ee", fontSize: "14px", fontFamily: "sans-serif", cursor: "pointer", boxShadow: "0 3px 10px rgba(160,80,20,0.25)" };
 const savedMsg = { fontSize: "13px", fontFamily: "sans-serif", color: "#16a34a", fontWeight: "600" };
