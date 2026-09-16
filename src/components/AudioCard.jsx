@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "../firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { toggleSaveSermon } from "../utils/saveSermon";
@@ -8,12 +9,15 @@ import AiSummary from "./AiSummary";
 
 export default function AudioCard({ audio, onPlay, onSummarySaved, onSaveChange }) {
   const { playNext, current, isPlaying, togglePlay, duration, currentTime } = useAudioPlayer();
+  const [user, setUser] = useState(auth.currentUser);
   const [isSaved, setIsSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [queued, setQueued] = useState(false);
   const [progress, setProgress] = useState(null);
   const [statusError, setStatusError] = useState("");
+
+  useEffect(() => onAuthStateChanged(auth, setUser), []);
 
   useEffect(() => {
     let isCurrent = true;
@@ -157,6 +161,7 @@ export default function AudioCard({ audio, onPlay, onSummarySaved, onSaveChange 
           <option value="not-started">Mark Not Started</option>
         </select>
       </div>
+      {!user && <p style={signInHint}>🔒 Sign in to save your spot — it'll be right here to resume next time you open the app.</p>}
       {saveError && <p style={saveErrorStyle} role="alert">{saveError}</p>}
       {statusError && <p style={saveErrorStyle} role="alert">{statusError}</p>}
       <AiSummary audio={audio} onSummarySaved={onSummarySaved} />
@@ -177,3 +182,4 @@ const completedBadge = { display: "inline-block", fontSize: "11px", padding: "3p
 const resumeTrack = { height: "5px", borderRadius: "999px", background: "#eddfc8", overflow: "hidden", marginBottom: "14px" };
 const resumeFill = { height: "100%", background: "linear-gradient(to right, #e08930, #c97c2e)" };
 const saveErrorStyle = { color: "#a33622", fontSize: "13px", fontFamily: "sans-serif", margin: "10px 0 0" };
+const signInHint = { color: "#9b7040", fontSize: "12px", fontFamily: "sans-serif", fontStyle: "italic", margin: "10px 0 0" };

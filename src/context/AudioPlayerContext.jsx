@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "../firebase";
+import { doc, getDoc } from "firebase/firestore";
+import { auth, db } from "../firebase";
 import { trackListenTime, trackPlay } from "../utils/listenTracker";
 import { saveListenProgress } from "../utils/listenProgress";
 import { supabase } from "../supabase";
@@ -17,6 +18,8 @@ export function AudioPlayerProvider({ children }) {
   const pendingSecondsRef = useRef(0);
   const playedCurrentRef = useRef(null);
   const pendingResumeRef = useRef(null);
+  const pendingAutoplayRef = useRef(true);
+  const autoResumeAttemptedRef = useRef(false);
   const autoSummarizedRef = useRef(new Set());
 
   const [current, setCurrent] = useState(null);
@@ -46,8 +49,34 @@ export function AudioPlayerProvider({ children }) {
     currentRef.current = current;
   }, [current]);
 
+  // Picks back up a signed-in listener's last in-progress track on app
+  // open — loaded and seeked to the right spot, but not auto-played
+  // (browsers block audio.play() without a real tap anyway, and even
+  // where they wouldn't, starting sermon audio the instant the app
+  // opens with no warning would be a bad surprise). One tap on the
+  // mini player's Play button — a real user gesture — continues it.
+  // Only ever attempted once per page load, and never if the listener
+  // already started something else before this resolves.
   useEffect(() => onAuthStateChanged(auth, (user) => {
     userRef.current = user;
+    if (!user || autoResumeAttemptedRef.current) return;
+    autoResumeAttemptedRef.current = true;
+
+    (async () => {
+      try {
+        const userSnap = await getDoc(doc(db, "users", user.uid));
+        const lastPlayed = userSnap.exists() ? userSnap.data().lastPlayed : null;
+        if (!lastPlayed?.audioId || currentRef.current) return;
+
+        const audioSnap = await getDoc(doc(db, "audio", lastPlayed.audioId));
+        if (!audioSnap.exists() || currentRef.current) return;
+
+        const sermon = { id: audioSnap.id, ...audioSnap.data() };
+        playSermon(sermon, { resumeAt: lastPlayed.position, autoplay: false });
+      } catch (error) {
+        console.warn("Couldn't restore last-played audio", error);
+      }
+    })();
   }), []);
 
   const flushListenTime = useCallback(() => {
@@ -192,7 +221,9 @@ export function AudioPlayerProvider({ children }) {
       audio.addEventListener("loadedmetadata", onLoaded);
     }
 
-    audio.play().catch(() => setIsPlaying(false));
+    const shouldAutoplay = pendingAutoplayRef.current;
+    pendingAutoplayRef.current = true; // reset to the default for next time
+    if (shouldAutoplay) audio.play().catch(() => setIsPlaying(false));
   }, [current, audioUrl]);
 
   // Fires a silent, non-blocking AI summary generation the first time a
@@ -258,7 +289,9 @@ export function AudioPlayerProvider({ children }) {
   // but a missing/anonymous user is not blocked from playing.
   // `options.resumeAt` (seconds) seeks there once metadata loads —
   // used by the "Resume" button on a card that was left partway
-  // through.
+  // through. `options.autoplay` (default true) set to false loads and
+  // seeks without calling .play() — used by the app-open auto-resume
+  // effect above, which shouldn't start sound without a real tap.
   const playSermon = async (sermon, options = {}) => {
     flushListenTime();
     const user = auth.currentUser;
@@ -278,6 +311,7 @@ export function AudioPlayerProvider({ children }) {
         }
       }
       pendingResumeRef.current = options.resumeAt || null;
+      pendingAutoplayRef.current = options.autoplay !== false;
       setAudioUrl(url);
       setCurrent(sermon);
       triggerAutoSummary(sermon, url);

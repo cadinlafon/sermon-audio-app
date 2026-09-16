@@ -23,7 +23,12 @@ export async function fetchListenProgress(userId, audioId) {
   return snap.exists() ? snap.data() : null;
 }
 
-// Called from AudioPlayerContext as playback progresses/stops.
+// Called from AudioPlayerContext as playback progresses/stops. Also
+// keeps users/{userId}.lastPlayed pointed at whatever's actually
+// resumable, so the app can offer to pick back up where a signed-in
+// listener left off next time they open it — see AudioPlayerContext's
+// auto-resume effect. Cleared once something's finished; there's
+// nothing to resume from a completed track.
 export async function saveListenProgress(userId, audioId, { position, duration }) {
   if (!userId || !audioId) return;
   const status = statusFromPosition(position, duration);
@@ -32,6 +37,11 @@ export async function saveListenProgress(userId, audioId, { position, duration }
     await setDoc(
       progressDocRef(userId, audioId),
       { position, duration, status, updatedAt: serverTimestamp() },
+      { merge: true }
+    );
+    await setDoc(
+      doc(db, "users", userId),
+      { lastPlayed: status === "in-progress" ? { audioId, position, duration, updatedAt: serverTimestamp() } : null },
       { merge: true }
     );
   } catch (error) {
