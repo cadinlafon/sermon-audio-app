@@ -51,7 +51,7 @@ export default function AudioCard({ audio, onPlay, onSummarySaved, onSaveChange 
   const handleSave = async () => {
     const user = auth.currentUser;
     if (!user) {
-      setSaveError("Please sign in to save audio.");
+      setSaveError("Please sign in to like audio.");
       return;
     }
 
@@ -63,7 +63,7 @@ export default function AudioCard({ audio, onPlay, onSummarySaved, onSaveChange 
       onSaveChange?.(saved, audio.id);
     } catch (error) {
       console.error("Unable to save audio", error);
-      setSaveError("We couldn't update your saved audio. Please try again.");
+      setSaveError("We couldn't update your liked sermons. Please try again.");
     } finally {
       setIsSaving(false);
     }
@@ -124,8 +124,16 @@ export default function AudioCard({ audio, onPlay, onSummarySaved, onSaveChange 
 
   return (
     <div style={card}>
-      <button type="button" onClick={handleSave} style={saveButton} disabled={isSaving} aria-pressed={isSaved}>
-        {isSaving ? "Saving…" : isSaved ? "Saved" : "Save"}
+      <button
+        type="button"
+        onClick={handleSave}
+        style={saveButton}
+        disabled={isSaving}
+        aria-pressed={isSaved}
+        aria-label={isSaved ? "Unlike" : "Like"}
+        title={isSaved ? "Unlike" : "Like"}
+      >
+        {isSaved ? "❤️" : "🤍"}
       </button>
       <span style={tagStyle(audio.type)}>{label}</span>
       {status === "completed" && <span style={completedBadge}>✓ Completed</span>}
@@ -170,7 +178,7 @@ export default function AudioCard({ audio, onPlay, onSummarySaved, onSaveChange 
 }
 
 const card = { position: "relative", background: "#fffdf9", borderRadius: "18px", padding: "22px 22px 18px", marginBottom: "16px", border: "1px solid #eddfc8", boxShadow: "0 2px 12px rgba(160,100,40,0.07)" };
-const saveButton = { position: "absolute", top: "16px", right: "16px", padding: "7px 13px", borderRadius: "999px", border: "1px solid #c8922a", background: "#fffdf9", color: "#7a4f10", cursor: "pointer", fontSize: "12px", fontFamily: "sans-serif" };
+const saveButton = { position: "absolute", top: "14px", right: "14px", width: "36px", height: "36px", borderRadius: "50%", border: "1px solid #eddfc8", background: "#fffdf9", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: "17px", lineHeight: 1 };
 const tagStyle = (type) => ({ display: "inline-block", fontSize: "11px", padding: "3px 10px", borderRadius: "999px", background: type === "homily" ? "#e8f0fe" : type === "sundayschool" ? "#e9f5e8" : "#f6e4b0", color: type === "homily" ? "#2a5ab5" : type === "sundayschool" ? "#39763c" : "#7a5a10", fontFamily: "sans-serif", marginBottom: "10px", letterSpacing: "0.04em" });
 const titleStyle = { marginBottom: "5px", fontSize: "17px", fontWeight: "normal", color: "#3d2200" };
 const speakerStyle = { color: "#9b7040", fontSize: "13px", marginBottom: "14px", fontFamily: "sans-serif" };

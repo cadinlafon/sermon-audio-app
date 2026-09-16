@@ -70,9 +70,9 @@ export default function Saved() {
       <div style={page}>
         <div style={emptyCard}>
           <span style={emptyIcon}>🔒</span>
-          <h2 style={emptyTitle}>Sign in to see your saved sermons</h2>
+          <h2 style={emptyTitle}>Sign in to see your liked sermons</h2>
           <p style={emptyBody}>
-            Create a free account to save sermons and pick up right where you left off.
+            Create a free account to like sermons and pick up right where you left off.
           </p>
         </div>
       </div>
@@ -88,8 +88,8 @@ export default function Saved() {
   //////////////////////////////////////////////////
   return (
     <div style={page}>
-      <h1 style={pageTitle}>Saved Sermons</h1>
-      <p style={pageSubtitle}>Sermons you've bookmarked for later.</p>
+      <h1 style={pageTitle}>Liked Sermons</h1>
+      <p style={pageSubtitle}>Sermons you've liked for later.</p>
 
       {loading && (
         <p style={loadingText}>Loading…</p>
@@ -97,10 +97,10 @@ export default function Saved() {
 
       {!loading && saved.length === 0 && (
         <div style={emptyCard}>
-          <span style={emptyIcon}>🔖</span>
-          <h2 style={emptyTitle}>Nothing saved yet</h2>
+          <span style={emptyIcon}>🤍</span>
+          <h2 style={emptyTitle}>Nothing liked yet</h2>
           <p style={emptyBody}>
-            Tap the bookmark icon on any sermon to save it here for easy access.
+            Tap the heart icon on any sermon to like it and find it here for easy access.
           </p>
         </div>
       )}

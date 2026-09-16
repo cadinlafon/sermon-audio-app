@@ -100,9 +100,9 @@ export const PAGE_REGISTRY = [
   {
     id: "saved",
     route: "/saved",
-    defaultName: "Saved",
-    defaultIcon: "🔖",
-    defaultDescription: "Sermons and recordings you've saved.",
+    defaultName: "Liked Sermons",
+    defaultIcon: "❤️",
+    defaultDescription: "Sermons and recordings you've liked.",
     navSlot: "account",
     defaultOrder: 1,
     defaultRequireLogin: true,

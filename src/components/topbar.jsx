@@ -212,7 +212,7 @@ export default function TopBar() {
             </button>
 
             <button style={accountButton} onClick={() => navigate("/saved")}>
-              Saved
+              Liked Sermons
             </button>
 
             <button style={accountButton} onClick={() => navigate("/stats")}>
