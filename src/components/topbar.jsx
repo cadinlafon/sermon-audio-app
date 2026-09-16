@@ -11,7 +11,9 @@ import {
   doc,
   getDoc,
   setDoc,
-  serverTimestamp
+  serverTimestamp,
+  collection,
+  getDocs,
 } from "firebase/firestore";
 
 import { auth, db, googleProvider } from "../firebase";
@@ -19,6 +21,72 @@ import { logEvent } from "../utils/logEvent";
 
 import googleLogo from "../assets/auth/google-logo.png";
 import userIcon from "../assets/auth/user-icon.png";
+
+const TYPE_LABEL = { sundayschool: "Sunday School", homily: "Homily", sermon: "Sermon" };
+
+function GlobalSearch({ onClose }) {
+  const navigate = useNavigate();
+  const [query, setQuery] = useState("");
+  const [allAudio, setAllAudio] = useState([]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    getDocs(collection(db, "audio")).then((snap) => {
+      setAllAudio(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      setLoaded(true);
+    }).catch((error) => {
+      console.error("Unable to load search index", error);
+      setLoaded(true);
+    });
+  }, []);
+
+  const q = query.trim().toLowerCase();
+  const results = q
+    ? allAudio
+        .filter((a) => (a.title || "").toLowerCase().includes(q) || (a.speaker || "").toLowerCase().includes(q))
+        .slice(0, 20)
+    : [];
+
+  const goTo = (id) => {
+    navigate(`/listen/${id}`);
+    onClose();
+  };
+
+  return (
+    <div style={searchOverlay} onClick={onClose}>
+      <div style={searchPanel} onClick={(e) => e.stopPropagation()}>
+        <input
+          autoFocus
+          type="text"
+          placeholder="Search sermons, homilies, Sunday School…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          style={searchInput}
+        />
+
+        {q && (
+          <div style={searchResults}>
+            {!loaded ? (
+              <p style={searchHint}>Loading…</p>
+            ) : results.length === 0 ? (
+              <p style={searchHint}>No matches.</p>
+            ) : (
+              results.map((r) => (
+                <button key={r.id} style={searchResultRow} onClick={() => goTo(r.id)}>
+                  <span style={searchResultTag}>{TYPE_LABEL[r.type] || "Sermon"}</span>
+                  <span style={searchResultTitle}>{r.title}</span>
+                  <span style={searchResultMeta}>{r.speaker}</span>
+                </button>
+              ))
+            )}
+          </div>
+        )}
+
+        <button style={searchCloseBtn} onClick={onClose}>Close</button>
+      </div>
+    </div>
+  );
+}
 
 export default function TopBar() {
   const navigate = useNavigate();
@@ -28,6 +96,7 @@ export default function TopBar() {
   const [isAdmin, setIsAdmin] = useState(false);
 
   const [showProfile, setShowProfile] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -135,7 +204,12 @@ export default function TopBar() {
     <div style={topBar}>
       <div style={title}>Palouse Fellowship</div>
 
-      <div ref={profileRef} style={rightSide}>
+      <div style={rightGroup}>
+        <button style={searchIconBtn} onClick={() => setShowSearch(true)} aria-label="Search" title="Search">
+          🔍
+        </button>
+
+        <div ref={profileRef} style={rightSide}>
         <div
           style={{ cursor: "pointer" }}
           onClick={() => setShowProfile(!showProfile)}
@@ -241,7 +315,10 @@ export default function TopBar() {
             </button>
           </div>
         )}
+        </div>
       </div>
+
+      {showSearch && <GlobalSearch onClose={() => setShowSearch(false)} />}
     </div>
   );
 }
@@ -463,4 +540,127 @@ const errorText = {
   fontSize: "12px",
   fontFamily: "sans-serif",
   margin: "2px 0 0"
+};
+
+const rightGroup = {
+  display: "flex",
+  alignItems: "center",
+  gap: "10px",
+};
+
+const searchIconBtn = {
+  width: "36px",
+  height: "36px",
+  borderRadius: "50%",
+  border: "1px solid #eddfc8",
+  background: "#fdf8f3",
+  color: "#7a4f10",
+  fontSize: "15px",
+  cursor: "pointer",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+};
+
+const searchOverlay = {
+  position: "fixed",
+  inset: 0,
+  background: "rgba(40,18,0,0.45)",
+  zIndex: 3000,
+  display: "flex",
+  justifyContent: "center",
+  paddingTop: "80px",
+};
+
+const searchPanel = {
+  background: "#fffdf9",
+  border: "1px solid #eddfc8",
+  borderRadius: "18px",
+  padding: "20px",
+  width: "92%",
+  maxWidth: "480px",
+  maxHeight: "70vh",
+  display: "flex",
+  flexDirection: "column",
+  gap: "14px",
+  boxShadow: "0 16px 48px rgba(40,18,0,0.3)",
+};
+
+const searchInput = {
+  padding: "12px 16px",
+  borderRadius: "12px",
+  border: "1px solid #eddfc8",
+  background: "#fdf8f3",
+  fontSize: "15px",
+  fontFamily: "sans-serif",
+  color: "#3d2200",
+  outline: "none",
+};
+
+const searchResults = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "6px",
+  overflowY: "auto",
+};
+
+const searchHint = {
+  textAlign: "center",
+  color: "#b08050",
+  fontStyle: "italic",
+  fontFamily: "sans-serif",
+  fontSize: "13px",
+  padding: "16px 0",
+  margin: 0,
+};
+
+const searchResultRow = {
+  display: "flex",
+  alignItems: "center",
+  gap: "10px",
+  padding: "10px 12px",
+  borderRadius: "10px",
+  border: "1px solid #f0e4d0",
+  background: "#fdf8f3",
+  cursor: "pointer",
+  textAlign: "left",
+};
+
+const searchResultTag = {
+  fontSize: "10px",
+  padding: "2px 8px",
+  borderRadius: "999px",
+  background: "#f6e4b0",
+  color: "#7a5a10",
+  fontFamily: "sans-serif",
+  flexShrink: 0,
+};
+
+const searchResultTitle = {
+  fontSize: "13px",
+  color: "#3d2200",
+  fontFamily: "sans-serif",
+  fontWeight: "600",
+  flex: 1,
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+};
+
+const searchResultMeta = {
+  fontSize: "11px",
+  color: "#9b7040",
+  fontFamily: "sans-serif",
+  flexShrink: 0,
+};
+
+const searchCloseBtn = {
+  padding: "10px",
+  borderRadius: "10px",
+  border: "1px solid #eddfc8",
+  background: "transparent",
+  color: "#9b7040",
+  fontFamily: "sans-serif",
+  fontSize: "13px",
+  cursor: "pointer",
 };

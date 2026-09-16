@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { auth } from "../firebase";
 import { useAudioPlayer } from "../context/AudioPlayerContext";
 import { useDocumentPiP } from "../hooks/useDocumentPiP";
+import { fetchNote, saveNote } from "../utils/notes";
 import DesktopMiniPlayerContent from "../components/DesktopMiniPlayerContent";
 import RelatedAudio from "../components/RelatedAudio";
 
@@ -41,6 +43,10 @@ export default function Player() {
   const [deviceStatus, setDeviceStatus] = useState("");
   const [selectedSleepPreset, setSelectedSleepPreset] = useState(null);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [showNotes, setShowNotes] = useState(false);
+  const [noteText, setNoteText] = useState("");
+  const [noteStatus, setNoteStatus] = useState("");
+  const noteSaveTimer = useRef(null);
 
   //////////////////////////////////////////////////
   // AUDIO EVENTS
@@ -55,6 +61,36 @@ export default function Player() {
   useEffect(() => {
     if (!isDragging) setProgress(currentTime);
   }, [currentTime, isDragging]);
+
+  //////////////////////////////////////////////////
+  // NOTES
+  //////////////////////////////////////////////////
+  useEffect(() => {
+    const user = auth.currentUser;
+    if (!user || !current?.id) {
+      setNoteText("");
+      return;
+    }
+    let cancelled = false;
+    fetchNote(user.uid, current.id).then((text) => {
+      if (!cancelled) setNoteText(text);
+    });
+    return () => { cancelled = true; };
+  }, [current?.id]);
+
+  const handleNoteChange = (e) => {
+    const text = e.target.value;
+    setNoteText(text);
+    setNoteStatus("");
+    clearTimeout(noteSaveTimer.current);
+    noteSaveTimer.current = setTimeout(async () => {
+      const user = auth.currentUser;
+      if (!user || !current?.id) return;
+      await saveNote(user.uid, current.id, text);
+      setNoteStatus("Saved");
+      setTimeout(() => setNoteStatus(""), 1500);
+    }, 800);
+  };
 
   //////////////////////////////////////////////////
   // SEEK
@@ -379,6 +415,12 @@ export default function Player() {
               🗔 {pip.active ? "Close Mini Player" : "Mini Player"}
             </button>
           )}
+
+          {auth.currentUser && (
+            <button style={extraBtn} onClick={() => setShowNotes(true)}>
+              📝 {noteText ? "Notes" : "Take Notes"}
+            </button>
+          )}
         </div>
 
         {deviceStatus && <p style={deviceStatusText}>{deviceStatus}</p>}
@@ -446,6 +488,27 @@ export default function Player() {
               Turn Off
             </button>
             <button style={sheetCloseBtn} onClick={() => setShowSleepMenu(false)}>Close</button>
+          </div>
+        </>
+      )}
+
+      {/* NOTES SHEET */}
+      {showNotes && (
+        <>
+          <div style={backdrop} onClick={() => setShowNotes(false)} />
+          <div style={sheet}>
+            <div style={sheetHeader}>
+              <h3 style={sheetTitle}>Notes</h3>
+              {noteStatus && <span style={noteStatusText}>{noteStatus}</span>}
+            </div>
+            <textarea
+              autoFocus
+              value={noteText}
+              onChange={handleNoteChange}
+              placeholder="Jot down anything that stands out while you listen…"
+              style={noteTextarea}
+            />
+            <button style={sheetCloseBtn} onClick={() => setShowNotes(false)}>Close</button>
           </div>
         </>
       )}
@@ -813,6 +876,30 @@ const sheetLinkBtn = {
   fontSize: "13px",
   cursor: "pointer",
   padding: "4px",
+};
+
+const noteTextarea = {
+  width: "100%",
+  minHeight: "160px",
+  padding: "14px",
+  borderRadius: "12px",
+  border: "1px solid #eddfc8",
+  background: "#fdf8f3",
+  color: "#3d2200",
+  fontSize: "14px",
+  fontFamily: "sans-serif",
+  lineHeight: 1.6,
+  resize: "vertical",
+  outline: "none",
+  boxSizing: "border-box",
+  marginBottom: "12px",
+};
+
+const noteStatusText = {
+  fontSize: "12px",
+  color: "#16a34a",
+  fontFamily: "sans-serif",
+  fontWeight: "600",
 };
 
 const sheetEmptyText = {
