@@ -4,6 +4,7 @@ import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "../firebase";
 import { trackListenTime, trackPlay, recordListen } from "../utils/listenTracker";
 import { saveListenProgress } from "../utils/listenProgress";
+import { getLocalBlobUrl } from "../utils/offlineDownloads";
 import { supabase } from "../supabase";
 
 const AudioPlayerContext = createContext();
@@ -303,23 +304,35 @@ export function AudioPlayerProvider({ children }) {
     setPlayError("");
     try {
       let url;
-      try {
-        url = await requestDownloadUrl(sermon, user ? await user.getIdToken() : null);
-      } catch (err) {
-        // A stale cached ID token is a common, silent cause of "audio
-        // won't play" — retry once with a forced-fresh token before
-        // surfacing an error to the user.
-        if (err.status === 401 && user) {
-          url = await requestDownloadUrl(sermon, await user.getIdToken(true));
-        } else {
-          throw err;
+
+      if (!navigator.onLine) {
+        // Offline: only a downloaded-for-offline copy can play at all —
+        // there's nothing to fall back to fetch a signed URL from.
+        url = user ? await getLocalBlobUrl(user.uid, sermon.id) : null;
+        if (!url) {
+          setPlayError("You're offline and this hasn't been downloaded for offline listening.");
+          return;
+        }
+      } else {
+        try {
+          url = await requestDownloadUrl(sermon, user ? await user.getIdToken() : null);
+        } catch (err) {
+          // A stale cached ID token is a common, silent cause of "audio
+          // won't play" — retry once with a forced-fresh token before
+          // surfacing an error to the user.
+          if (err.status === 401 && user) {
+            url = await requestDownloadUrl(sermon, await user.getIdToken(true));
+          } else {
+            throw err;
+          }
         }
       }
+
       pendingResumeRef.current = options.resumeAt || null;
       pendingAutoplayRef.current = options.autoplay !== false;
       setAudioUrl(url);
       setCurrent(sermon);
-      triggerAutoSummary(sermon, url);
+      if (navigator.onLine) triggerAutoSummary(sermon, url);
     } catch (error) {
       console.error("Unable to prepare private audio", error);
       setPlayError(error.message || "Audio is unavailable.");

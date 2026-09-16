@@ -4,6 +4,8 @@ import { auth, db } from "../firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { toggleSaveSermon } from "../utils/saveSermon";
 import { fetchListenProgress, setListenStatus } from "../utils/listenProgress";
+import { isDownloadedLocally, downloadForOffline, removeOfflineDownload } from "../utils/offlineDownloads";
+import useOnlineStatus from "../hooks/useOnlineStatus";
 import { useAudioPlayer } from "../context/AudioPlayerContext";
 import AiSummary from "./AiSummary";
 
@@ -28,8 +30,24 @@ export default function AudioCard({ audio, onPlay, onSummarySaved, onSaveChange 
   const [progress, setProgress] = useState(null);
   const [statusError, setStatusError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [isDownloaded, setIsDownloaded] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState("");
+  const isOnline = useOnlineStatus();
 
   useEffect(() => onAuthStateChanged(auth, setUser), []);
+
+  useEffect(() => {
+    let isCurrent = true;
+    if (!user) {
+      setIsDownloaded(false);
+      return undefined;
+    }
+    isDownloadedLocally(user.uid, audio.id).then((value) => {
+      if (isCurrent) setIsDownloaded(value);
+    });
+    return () => { isCurrent = false; };
+  }, [audio.id, user]);
 
   useEffect(() => {
     let isCurrent = true;
@@ -116,7 +134,33 @@ export default function AudioCard({ audio, onPlay, onSummarySaved, onSaveChange 
     }
   };
 
+  const handleToggleDownload = async () => {
+    if (!user) {
+      setDownloadError("Please sign in to download audio for offline listening.");
+      return;
+    }
+    setDownloadError("");
+    setDownloading(true);
+    try {
+      if (isDownloaded) {
+        await removeOfflineDownload(user, audio.id);
+        setIsDownloaded(false);
+      } else {
+        await downloadForOffline(user, audio);
+        setIsDownloaded(true);
+      }
+    } catch (error) {
+      console.error("Couldn't update offline download", error);
+      setDownloadError(error.message || "Couldn't update this download.");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const offlineDisabled = !isOnline && !isDownloaded;
+
   const handlePlayClick = () => {
+    if (offlineDisabled) return;
     if (isThisTrack) {
       togglePlay();
       return;
@@ -160,7 +204,7 @@ export default function AudioCard({ audio, onPlay, onSummarySaved, onSaveChange 
   const showProgressBar = isThisTrack ? isPlaying || currentTime > 0 : status === "in-progress";
 
   return (
-    <div style={card}>
+    <div style={offlineDisabled ? { ...card, ...cardOffline } : card}>
       <button
         type="button"
         onClick={handleSave}
@@ -176,6 +220,7 @@ export default function AudioCard({ audio, onPlay, onSummarySaved, onSaveChange 
       {isNew && <span style={newBadge}>✨ New</span>}
       {durationLabel && <span style={durationBadge}>⏱ {durationLabel}</span>}
       {status === "completed" && <span style={completedBadge}>✓ Completed</span>}
+      {isDownloaded && <span style={downloadedBadge}>⬇ Downloaded</span>}
       <h3 style={titleStyle}>{audio.title}</h3>
       <p style={speakerStyle}>{audio.speaker}</p>
 
@@ -186,7 +231,7 @@ export default function AudioCard({ audio, onPlay, onSummarySaved, onSaveChange 
       )}
 
       <div style={playRow}>
-        <button onClick={handlePlayClick} style={playButton}>
+        <button onClick={handlePlayClick} style={playButton} disabled={offlineDisabled}>
           {isThisTrack ? (
             <>
               <span style={{ fontSize: "11px" }}>{isPlaying ? "❚❚" : "▶"}</span>
@@ -199,7 +244,7 @@ export default function AudioCard({ audio, onPlay, onSummarySaved, onSaveChange 
             </>
           )}
         </button>
-        <button onClick={handlePlayNext} style={playNextButton}>
+        <button onClick={handlePlayNext} style={playNextButton} disabled={offlineDisabled}>
           {queued ? "✓ Added" : "+ Play Next"}
         </button>
         <select defaultValue="" onChange={handleStatusChange} style={statusSelect} aria-label="Change listen status">
@@ -215,10 +260,23 @@ export default function AudioCard({ audio, onPlay, onSummarySaved, onSaveChange 
             ↗
           </button>
         )}
+        {user && (
+          <button
+            onClick={handleToggleDownload}
+            style={isDownloaded ? { ...iconOnlyButton, ...iconOnlyButtonActive } : iconOnlyButton}
+            disabled={downloading}
+            title={isDownloaded ? "Remove offline download" : "Download for offline listening"}
+            aria-label={isDownloaded ? "Remove offline download" : "Download for offline listening"}
+          >
+            {downloading ? "…" : isDownloaded ? "✓" : "⬇"}
+          </button>
+        )}
       </div>
+      {offlineDisabled && <p style={offlineHint}>📴 You're offline — download this to listen without a connection.</p>}
       {!user && <p style={signInHint}>🔒 Sign in to save your spot — it'll be right here to resume next time you open the app.</p>}
       {saveError && <p style={saveErrorStyle} role="alert">{saveError}</p>}
       {statusError && <p style={saveErrorStyle} role="alert">{statusError}</p>}
+      {downloadError && <p style={saveErrorStyle} role="alert">{downloadError}</p>}
       <AiSummary audio={audio} onSummarySaved={onSummarySaved} />
     </div>
   );
@@ -237,7 +295,11 @@ const completedBadge = { display: "inline-block", fontSize: "11px", padding: "3p
 const newBadge = { display: "inline-block", fontSize: "11px", padding: "3px 10px", borderRadius: "999px", background: "#fde8b8", color: "#8a5a10", fontFamily: "sans-serif", marginLeft: "8px", marginBottom: "10px", fontWeight: "600" };
 const durationBadge = { display: "inline-block", fontSize: "11px", padding: "3px 10px", borderRadius: "999px", background: "#f0e4d0", color: "#7a5530", fontFamily: "sans-serif", marginLeft: "8px", marginBottom: "10px" };
 const iconOnlyButton = { display: "inline-flex", alignItems: "center", justifyContent: "center", width: "34px", height: "34px", borderRadius: "999px", border: "1px solid #eddfc8", background: "#fdf8f3", color: "#7a4f10", cursor: "pointer", fontSize: "14px" };
+const iconOnlyButtonActive = { background: "#e3f5e6", color: "#2f8a4a", borderColor: "#bfe6c8" };
 const resumeTrack = { height: "5px", borderRadius: "999px", background: "#eddfc8", overflow: "hidden", marginBottom: "14px" };
 const resumeFill = { height: "100%", background: "linear-gradient(to right, #e08930, #c97c2e)" };
 const saveErrorStyle = { color: "#a33622", fontSize: "13px", fontFamily: "sans-serif", margin: "10px 0 0" };
 const signInHint = { color: "#9b7040", fontSize: "12px", fontFamily: "sans-serif", fontStyle: "italic", margin: "10px 0 0" };
+const downloadedBadge = { display: "inline-block", fontSize: "11px", padding: "3px 10px", borderRadius: "999px", background: "#e3f5e6", color: "#2f8a4a", fontFamily: "sans-serif", marginLeft: "8px", marginBottom: "10px", fontWeight: "600" };
+const cardOffline = { opacity: 0.55 };
+const offlineHint = { color: "#9b7040", fontSize: "12px", fontFamily: "sans-serif", fontStyle: "italic", margin: "10px 0 0" };
