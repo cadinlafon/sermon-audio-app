@@ -145,12 +145,20 @@ export default function Contact() {
         </div>
 
         {verified && (
-          <button
-            style={emailButton}
-            onClick={() => (window.location.href = `mailto:${contacts.church.email}`)}
-          >
-            ✉ Send Email
-          </button>
+          <div style={actionRow}>
+            <button
+              style={emailButton}
+              onClick={() => (window.location.href = `mailto:${contacts.church.email}`)}
+            >
+              ✉ Email
+            </button>
+            <button
+              style={textButton}
+              onClick={() => (window.location.href = `sms:${contacts.church.phone.replace(/\D/g, "")}`)}
+            >
+              💬 Text
+            </button>
+          </div>
         )}
       </div>
 
@@ -185,12 +193,20 @@ export default function Contact() {
         </div>
 
         {verified && (
-          <button
-            style={emailButton}
-            onClick={() => (window.location.href = `mailto:${contacts.support.email}`)}
-          >
-            ✉ Send Email
-          </button>
+          <div style={actionRow}>
+            <button
+              style={emailButton}
+              onClick={() => (window.location.href = `mailto:${contacts.support.email}`)}
+            >
+              ✉ Email
+            </button>
+            <button
+              style={textButton}
+              onClick={() => (window.location.href = `sms:${contacts.support.phone.replace(/\D/g, "")}`)}
+            >
+              💬 Text
+            </button>
+          </div>
         )}
       </div>
 
@@ -361,18 +377,36 @@ const copyIconDone = {
   color: "#16a34a",
 };
 
-const emailButton = {
+const actionRow = {
+  display: "flex",
+  gap: "10px",
   marginTop: "18px",
-  width: "100%",
-  padding: "13px",
-  borderRadius: "12px",
+};
+
+const emailButton = {
+  flex: 1,
+  padding: "10px",
+  borderRadius: "10px",
   border: "none",
   background: "linear-gradient(135deg, #c97c2e 0%, #a85e18 100%)",
   color: "#fff8ee",
   cursor: "pointer",
-  fontSize: "15px",
+  fontSize: "13px",
   fontFamily: "sans-serif",
-  boxShadow: "0 4px 14px rgba(160,80,20,0.28)",
+  boxShadow: "0 3px 10px rgba(160,80,20,0.22)",
+  letterSpacing: "0.02em",
+};
+
+const textButton = {
+  flex: 1,
+  padding: "10px",
+  borderRadius: "10px",
+  border: "1px solid #c8922a",
+  background: "transparent",
+  color: "#7a4f10",
+  cursor: "pointer",
+  fontSize: "13px",
+  fontFamily: "sans-serif",
   letterSpacing: "0.02em",
 };
 
