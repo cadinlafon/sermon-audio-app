@@ -6,6 +6,8 @@ import { auth, db } from "./firebase";
 
 import LoadingScreen from "./components/LoadingScreen";
 import PopupNotification from "./components/PopupNotification";
+import NetworkStatus from "./components/NetworkStatus";
+import BackToTop from "./components/BackToTop";
 import NotificationPopup from "./components/NotificationPopup";
 import IosInstallPopup from "./components/IosInstallPopup";
 import TopBar from "./components/topbar";
@@ -308,6 +310,8 @@ function App() {
 
   return (
     <AppGuard user={isAdmin ? { role: "admin" } : null}>
+
+      <NetworkStatus />
 
       <PopupNotification />
 
@@ -663,6 +667,8 @@ function App() {
         {location.pathname !== "/player" && <MiniPlayer />}
         <BottomBar />
       </div>
+
+      <BackToTop />
 
     </AppGuard>
   );
