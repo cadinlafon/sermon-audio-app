@@ -34,6 +34,7 @@ import AdminAccess from "./pages/AdminAccess";
 import Player from "./pages/Player";
 import SuggestFeature from "./pages/SuggestFeature";
 import Contact from "./pages/Contact";
+import ListenDeepLink from "./pages/ListenDeepLink";
 import Account from "./pages/Settings/Account";
 import AudioAppLanding from "./pages/AudioAppLanding";
 import Doctrine from "./pages/Doctrine";
@@ -393,6 +394,11 @@ function App() {
                 <Contact />
               </PageGate>
             }
+          />
+
+          <Route
+            path="/listen/:audioId"
+            element={<ListenDeepLink />}
           />
 
           <Route

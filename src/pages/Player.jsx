@@ -40,6 +40,7 @@ export default function Player() {
   const [showSleepMenu, setShowSleepMenu] = useState(false);
   const [deviceStatus, setDeviceStatus] = useState("");
   const [selectedSleepPreset, setSelectedSleepPreset] = useState(null);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   //////////////////////////////////////////////////
   // AUDIO EVENTS
@@ -90,6 +91,34 @@ export default function Player() {
   const jumpForward = () => {
     const audio = audioRef.current;
     audio.currentTime = Math.min(duration, audio.currentTime + 30);
+  };
+
+  const startFromBeginning = () => {
+    seekTo(0);
+    if (audioRef.current?.paused) audioRef.current.play().catch(() => {});
+  };
+
+  //////////////////////////////////////////////////
+  // SHARE / COPY LINK
+  //////////////////////////////////////////////////
+  const deepLink = current ? `${window.location.origin}/listen/${current.id}` : "";
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(deepLink);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 1500);
+    } catch (error) {
+      console.error("Couldn't copy link", error);
+    }
+  };
+
+  const handleShare = async () => {
+    try {
+      await navigator.share?.({ title: current?.title, text: current?.speaker, url: deepLink });
+    } catch (error) {
+      if (error?.name !== "AbortError") console.error("Share failed", error);
+    }
   };
 
   //////////////////////////////////////////////////
@@ -309,23 +338,24 @@ export default function Player() {
             ))}
           </div>
 
-          <button
-            className="pf-share-btn"
-            style={shareBtn}
-            onClick={() =>
-              navigator.share?.({
-                title: current.title,
-                text: current.speaker,
-                url: window.location.href,
-              })
-            }
-          >
-            ↑ Share
-          </button>
+          <div style={shareGroup}>
+            <button style={shareBtn} onClick={handleCopyLink}>
+              {linkCopied ? "✓ Copied" : "🔗 Copy Link"}
+            </button>
+            {typeof navigator !== "undefined" && navigator.share && (
+              <button className="pf-share-btn" style={shareBtn} onClick={handleShare}>
+                ↑ Share
+              </button>
+            )}
+          </div>
         </div>
 
         {/* EXTRAS: QUEUE / SLEEP TIMER / OUTPUT / MINI PLAYER */}
         <div style={extrasRow}>
+          <button style={extraBtn} onClick={startFromBeginning}>
+            ⟲ Start from Beginning
+          </button>
+
           <button style={extraBtn} onClick={() => setShowQueue(true)}>
             📋 Playing Next{queue.length > 0 ? ` (${queue.length})` : ""}
           </button>
@@ -691,6 +721,12 @@ const shareBtn = {
   fontSize: "13px",
   fontFamily: "sans-serif",
   transition: "background 0.15s ease",
+};
+
+const shareGroup = {
+  display: "flex",
+  gap: "8px",
+  flexWrap: "wrap",
 };
 
 // Extras row (queue / sleep timer / device / mini player)

@@ -7,6 +7,17 @@ import { fetchListenProgress, setListenStatus } from "../utils/listenProgress";
 import { useAudioPlayer } from "../context/AudioPlayerContext";
 import AiSummary from "./AiSummary";
 
+const NEW_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+
+function formatDuration(seconds) {
+  const s = Number(seconds);
+  if (!s || !Number.isFinite(s)) return null;
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = Math.floor(s % 60);
+  return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}` : `${m}:${String(sec).padStart(2, "0")}`;
+}
+
 export default function AudioCard({ audio, onPlay, onSummarySaved, onSaveChange }) {
   const { playNext, current, isPlaying, togglePlay, duration, currentTime } = useAudioPlayer();
   const [user, setUser] = useState(auth.currentUser);
@@ -16,6 +27,7 @@ export default function AudioCard({ audio, onPlay, onSummarySaved, onSaveChange 
   const [queued, setQueued] = useState(false);
   const [progress, setProgress] = useState(null);
   const [statusError, setStatusError] = useState("");
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => onAuthStateChanged(auth, setUser), []);
 
@@ -72,11 +84,36 @@ export default function AudioCard({ audio, onPlay, onSummarySaved, onSaveChange 
   const label = audio.type === "sundayschool" ? "Sunday School" : audio.type === "homily" ? "Homily" : "Sermon";
   const status = progress?.status || "not-started";
   const isThisTrack = current?.id === audio.id;
+  const isNew = audio.createdAt?.seconds && Date.now() - audio.createdAt.seconds * 1000 < NEW_WINDOW_MS;
+  const durationLabel = formatDuration(audio.duration);
+  const deepLink = `${window.location.origin}/listen/${audio.id}`;
 
   const handlePlayNext = () => {
     playNext(audio);
     setQueued(true);
     setTimeout(() => setQueued(false), 1800);
+  };
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(deepLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch (error) {
+      console.error("Couldn't copy link", error);
+    }
+  };
+
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: audio.title, text: audio.speaker, url: deepLink });
+      } catch (error) {
+        if (error?.name !== "AbortError") console.error("Share failed", error);
+      }
+    } else {
+      handleCopyLink();
+    }
   };
 
   const handlePlayClick = () => {
@@ -136,6 +173,8 @@ export default function AudioCard({ audio, onPlay, onSummarySaved, onSaveChange 
         {isSaved ? "❤️" : "🤍"}
       </button>
       <span style={tagStyle(audio.type)}>{label}</span>
+      {isNew && <span style={newBadge}>✨ New</span>}
+      {durationLabel && <span style={durationBadge}>⏱ {durationLabel}</span>}
       {status === "completed" && <span style={completedBadge}>✓ Completed</span>}
       <h3 style={titleStyle}>{audio.title}</h3>
       <p style={speakerStyle}>{audio.speaker}</p>
@@ -168,6 +207,14 @@ export default function AudioCard({ audio, onPlay, onSummarySaved, onSaveChange 
           <option value="completed">Mark Completed</option>
           <option value="not-started">Mark Not Started</option>
         </select>
+        <button onClick={handleCopyLink} style={iconOnlyButton} title="Copy link" aria-label="Copy link">
+          {copied ? "✓" : "🔗"}
+        </button>
+        {typeof navigator !== "undefined" && navigator.share && (
+          <button onClick={handleShare} style={iconOnlyButton} title="Share" aria-label="Share">
+            ↗
+          </button>
+        )}
       </div>
       {!user && <p style={signInHint}>🔒 Sign in to save your spot — it'll be right here to resume next time you open the app.</p>}
       {saveError && <p style={saveErrorStyle} role="alert">{saveError}</p>}
@@ -187,6 +234,9 @@ const playRow = { display: "flex", gap: "8px", flexWrap: "wrap" };
 const playNextButton = { display: "inline-flex", alignItems: "center", padding: "8px 14px", borderRadius: "999px", border: "1px solid #eddfc8", background: "#fdf8f3", color: "#7a4f10", cursor: "pointer", fontSize: "13px", fontFamily: "sans-serif" };
 const statusSelect = { padding: "8px 10px", borderRadius: "999px", border: "1px solid #eddfc8", background: "#fdf8f3", color: "#7a4f10", cursor: "pointer", fontSize: "13px", fontFamily: "sans-serif" };
 const completedBadge = { display: "inline-block", fontSize: "11px", padding: "3px 10px", borderRadius: "999px", background: "#e3f5e6", color: "#2f8a4a", fontFamily: "sans-serif", marginLeft: "8px", marginBottom: "10px", fontWeight: "600" };
+const newBadge = { display: "inline-block", fontSize: "11px", padding: "3px 10px", borderRadius: "999px", background: "#fde8b8", color: "#8a5a10", fontFamily: "sans-serif", marginLeft: "8px", marginBottom: "10px", fontWeight: "600" };
+const durationBadge = { display: "inline-block", fontSize: "11px", padding: "3px 10px", borderRadius: "999px", background: "#f0e4d0", color: "#7a5530", fontFamily: "sans-serif", marginLeft: "8px", marginBottom: "10px" };
+const iconOnlyButton = { display: "inline-flex", alignItems: "center", justifyContent: "center", width: "34px", height: "34px", borderRadius: "999px", border: "1px solid #eddfc8", background: "#fdf8f3", color: "#7a4f10", cursor: "pointer", fontSize: "14px" };
 const resumeTrack = { height: "5px", borderRadius: "999px", background: "#eddfc8", overflow: "hidden", marginBottom: "14px" };
 const resumeFill = { height: "100%", background: "linear-gradient(to right, #e08930, #c97c2e)" };
 const saveErrorStyle = { color: "#a33622", fontSize: "13px", fontFamily: "sans-serif", margin: "10px 0 0" };
