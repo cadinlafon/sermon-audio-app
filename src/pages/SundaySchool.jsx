@@ -1,32 +1,23 @@
 import { useEffect, useState } from "react";
-import { db, auth } from "../firebase";
+import { db } from "../firebase";
 import {
   collection,
   getDocs,
-  addDoc,
-  serverTimestamp,
   query,
   where,
 } from "firebase/firestore";
-import { onAuthStateChanged } from "firebase/auth";
 import { useAudioPlayer } from "../context/AudioPlayerContext";
 import AudioCard from "../components/AudioCard";
 
 export default function SundaySchool() {
   const [lessons, setLessons] = useState([]);
   const [notices, setNotices] = useState([]);
-  const [user, setUser] = useState(null);
 
   const [search, setSearch] = useState("");
   const [sortOrder, setSortOrder] = useState("desc");
   const [speakerFilter, setSpeakerFilter] = useState("all");
 
   const { playSermon } = useAudioPlayer();
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, setUser);
-    return () => unsubscribe();
-  }, []);
 
   useEffect(() => {
     async function fetchLessons() {
@@ -47,12 +38,6 @@ export default function SundaySchool() {
     }
     fetchNotices();
   }, []);
-
-  const handlePlay = async (lesson, options) => {
-    playSermon(lesson, options);
-    if (!user) return;
-    await addDoc(collection(db, "appUsage"), { sermonId: lesson.id, userId: user.uid, createdAt: serverTimestamp() });
-  };
 
   const saveSummaryLocally = (id, aiSummary) => {
     setLessons((items) => items.map((item) => item.id === id ? { ...item, aiSummary } : item));
@@ -92,7 +77,7 @@ export default function SundaySchool() {
       {displayList.length === 0 && <p style={emptyText}>Nothing found — try adjusting your filters.</p>}
 
       {displayList.map((item) => (
-        <AudioCard key={item.id} audio={item} onPlay={handlePlay} onSummarySaved={saveSummaryLocally} />
+        <AudioCard key={item.id} audio={item} onPlay={playSermon} onSummarySaved={saveSummaryLocally} />
       ))}
 
       {notices.filter((n) => n.position === "bottom").map((n) => (

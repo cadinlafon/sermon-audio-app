@@ -50,6 +50,7 @@ import Dashboard from "./pages/Admin/Dashboard";
 import UploadAudio from "./pages/Admin/UploadAudio";
 import Users from "./pages/Admin/Users";
 import Analytics from "./pages/Admin/Analytics";
+import AudioStats from "./pages/Admin/AudioStats";
 import AdminContentManager from "./pages/Admin/AdminContentManager";
 import AdminSettings from "./pages/Admin/Settings";
 import Logs from "./pages/Admin/Logs";
@@ -559,6 +560,11 @@ function App() {
               <Route
                 path="analytics"
                 element={<ModuleGate moduleKey="analytics"><Analytics /></ModuleGate>}
+              />
+
+              <Route
+                path="audio-stats"
+                element={<ModuleGate moduleKey="audioStats"><AudioStats /></ModuleGate>}
               />
 
               <Route

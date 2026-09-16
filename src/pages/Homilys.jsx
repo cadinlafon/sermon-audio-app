@@ -1,35 +1,23 @@
 import { useEffect, useState } from "react";
-import { db, auth } from "../firebase";
+import { db } from "../firebase";
 import {
   collection,
   getDocs,
-  addDoc,
-  serverTimestamp,
   query,
   where,
 } from "firebase/firestore";
-import { onAuthStateChanged } from "firebase/auth";
 import { useAudioPlayer } from "../context/AudioPlayerContext";
 import AudioCard from "../components/AudioCard";
 
 export default function Homilies() {
   const [homilies, setHomilies] = useState([]);
   const [notices, setNotices] = useState([]);
-  const [user, setUser] = useState(null);
 
   const [search, setSearch] = useState("");
   const [sortOrder, setSortOrder] = useState("desc");
   const [speakerFilter, setSpeakerFilter] = useState("all");
 
   const { playSermon } = useAudioPlayer();
-
-  ////////////////////////////////////////////////
-  // AUTH
-  ////////////////////////////////////////////////
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, setUser);
-    return () => unsubscribe();
-  }, []);
 
   ////////////////////////////////////////////////
   // FETCH AUDIO
@@ -78,21 +66,6 @@ export default function Homilies() {
 
     fetchNotices();
   }, []);
-
-  ////////////////////////////////////////////////
-  // PLAY
-  ////////////////////////////////////////////////
-  const handlePlay = async (item, options) => {
-    playSermon(item, options);
-
-    if (!user) return;
-
-    await addDoc(collection(db, "appUsage"), {
-      sermonId: item.id,
-      userId: user.uid,
-      createdAt: serverTimestamp(),
-    });
-  };
 
   const saveSummaryLocally = (id, aiSummary) => {
     setHomilies((items) => items.map((item) => item.id === id ? { ...item, aiSummary } : item));
@@ -164,7 +137,7 @@ export default function Homilies() {
 
       {/* LIST */}
       {displayList.map((item) => (
-        <AudioCard key={item.id} audio={item} onPlay={handlePlay} onSummarySaved={saveSummaryLocally} />
+        <AudioCard key={item.id} audio={item} onPlay={playSermon} onSummarySaved={saveSummaryLocally} />
       ))}
 
       {/* 🔥 NOTICES (BOTTOM) */}

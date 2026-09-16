@@ -9,6 +9,7 @@ export const ADMIN_MODULES = [
   { key: "content", path: "content", label: "Content Manager", icon: "📂", actions: ["view", "edit", "delete"] },
   { key: "users", path: "users", label: "Users", icon: "👥", actions: ["view", "edit", "delete"] },
   { key: "analytics", path: "analytics", label: "Analytics", icon: "📈", actions: ["view"] },
+  { key: "audioStats", path: "audio-stats", label: "Audio Stats", icon: "🎧", actions: ["view"] },
   { key: "notifications", path: "notifications", label: "Notifications", icon: "🔔", actions: ["view"] },
   { key: "sendNotifications", path: "send-notifications", label: "Send Push", icon: "📣", actions: ["view", "edit"] },
   { key: "notices", path: "notices", label: "Notices", icon: "📌", actions: ["view", "edit", "delete"] },

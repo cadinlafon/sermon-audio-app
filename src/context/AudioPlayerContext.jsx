@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "../firebase";
-import { trackListenTime, trackPlay } from "../utils/listenTracker";
+import { trackListenTime, trackPlay, recordListen } from "../utils/listenTracker";
 import { saveListenProgress } from "../utils/listenProgress";
 import { supabase } from "../supabase";
 
@@ -121,14 +121,19 @@ export function AudioPlayerProvider({ children }) {
 
       const sermon = currentRef.current;
       const user = userRef.current;
-      if (sermon && user && playedCurrentRef.current !== sermon.id) {
+      if (sermon && playedCurrentRef.current !== sermon.id) {
         playedCurrentRef.current = sermon.id;
-        void trackPlay({
-          userId: user.uid,
-          sermonId: sermon.id,
-          title: sermon.title,
-          speaker: sermon.speaker,
-        });
+        // Guest-inclusive — the only thing that records a guest listen
+        // at all. Feeds the admin Audio Stats page.
+        void recordListen({ sermonId: sermon.id, userId: user?.uid || null });
+        if (user) {
+          void trackPlay({
+            userId: user.uid,
+            sermonId: sermon.id,
+            title: sermon.title,
+            speaker: sermon.speaker,
+          });
+        }
       }
     };
 
