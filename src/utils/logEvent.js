@@ -1,4 +1,4 @@
-import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { addDoc, collection, doc, serverTimestamp, setDoc } from "firebase/firestore";
 import { db, auth } from "../firebase";
 import { getTrafficData } from "./trafficSource";
 
@@ -113,6 +113,13 @@ export async function logEvent(event, data = {}) {
     console.log("Logging event:", logData);
 
     await addDoc(collection(db, "logs"), logData);
+
+    // Cheap "last active" marker on the user's own doc — lets the admin
+    // Users list filter/sort by activity without an expensive per-user
+    // logs query for every row.
+    if (currentUser) {
+      void setDoc(doc(db, "users", currentUser.uid), { lastActiveAt: serverTimestamp() }, { merge: true });
+    }
 
   } catch (error) {
     console.error("Logging error:", error);

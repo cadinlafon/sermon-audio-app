@@ -5,13 +5,13 @@ import {
   getDocs,
   doc,
   updateDoc,
-  deleteDoc,
   deleteField,
 } from "firebase/firestore";
 import { ADMIN_MODULES, blankPermissions, NO_ACCESS_MESSAGE } from "../../config/adminModules";
 import { useModulePermissions, usePermissions } from "../../hooks/usePermissions";
 import { useAuth } from "../../context/AuthContext";
 import { useAdminPin } from "../../context/AdminPinContext";
+import { disableUser, enableUser, resetNotificationSubscription, deleteUserData, exportUserData, downloadJson } from "../../utils/userAdmin";
 import UserStatsModal from "./UserStatsModal";
 
 export default function Users() {
@@ -32,6 +32,11 @@ export default function Users() {
     email: "",
   });
 
+  // Filters
+  const [adminFilter, setAdminFilter] = useState("all");
+  const [registrationFilter, setRegistrationFilter] = useState("all");
+  const [activityFilter, setActivityFilter] = useState("all");
+
   // Permissions popup — for promoting/adjusting a Restricted Admin.
   const [permTarget, setPermTarget] = useState(null);
   const [permForm, setPermForm] = useState(blankPermissions());
@@ -39,6 +44,7 @@ export default function Users() {
 
   // Stats popup — per-user activity charts and history.
   const [statsTarget, setStatsTarget] = useState(null);
+  const [exportingId, setExportingId] = useState(null);
 
   const fetchUsers = async () => {
     const snapshot = await getDocs(collection(db, "users"));
@@ -253,22 +259,68 @@ export default function Users() {
   };
 
   //////////////////////////////////////////////////
-  // DELETE
+  // DELETE — purges everything this app can attribute to the account,
+  // then the profile doc itself. No Admin SDK wired up, so the actual
+  // Firebase Auth login technically still exists underneath — same
+  // client-enforced model as disable (see AuthContext).
   //////////////////////////////////////////////////
 
   const deleteUser = async (id) => {
     if (!perms.requireDelete()) return;
-    if (!window.confirm("Delete this user?")) return;
+    if (!guardNotSelf(id)) return;
+    if (!window.confirm("Delete this user? This removes their profile, liked sermons, notes, and listening progress. This can't be undone.")) return;
     if (!(await requirePin("deleteUser"))) return;
 
-    await deleteDoc(doc(db, "users", id));
+    await deleteUserData(id);
 
     fetchUsers();
   };
 
   //////////////////////////////////////////////////
-  // SEARCH
+  // ACCOUNT STATUS / NOTIFICATIONS / EXPORT
   //////////////////////////////////////////////////
+
+  const handleDisable = async (id) => {
+    if (!perms.requireEdit()) return;
+    if (!guardNotSelf(id)) return;
+    const reason = window.prompt("Reason (optional) — shown to the user when they're signed out:") || "";
+    if (!(await requirePin("roleChange"))) return;
+    await disableUser(id, reason);
+    fetchUsers();
+  };
+
+  const handleEnable = async (id) => {
+    if (!perms.requireEdit()) return;
+    if (!(await requirePin("roleChange"))) return;
+    await enableUser(id);
+    fetchUsers();
+  };
+
+  const handleResetNotifications = async (id) => {
+    if (!perms.requireEdit()) return;
+    if (!window.confirm("Reset this user's notification subscription? They'll need to re-enable notifications in the app.")) return;
+    await resetNotificationSubscription(id);
+    fetchUsers();
+  };
+
+  const handleExport = async (user) => {
+    if (!perms.requireEdit()) return;
+    setExportingId(user.id);
+    try {
+      const data = await exportUserData(user.id);
+      downloadJson(data, `user-${user.id}.json`);
+    } catch (err) {
+      console.error("Export failed", err);
+      alert("Couldn't export this user's data. Please try again.");
+    }
+    setExportingId(null);
+  };
+
+  //////////////////////////////////////////////////
+  // SEARCH / FILTERS
+  //////////////////////////////////////////////////
+
+  const DAY_MS = 24 * 60 * 60 * 1000;
 
   const filtered = users.filter((u) => {
     const name = (u.fullName || u.name || "").toLowerCase();
@@ -276,12 +328,30 @@ export default function Users() {
     const howFound = getHowFound(u).toLowerCase();
 
     const searchText = search.toLowerCase();
+    if (searchText && !name.includes(searchText) && !email.includes(searchText) && !howFound.includes(searchText)) {
+      return false;
+    }
 
-    return (
-      name.includes(searchText) ||
-      email.includes(searchText) ||
-      howFound.includes(searchText)
-    );
+    const isAdmin = u.role === "admin";
+    const isRestricted = isAdmin && u.permissions && typeof u.permissions === "object";
+    if (adminFilter === "admin" && !(isAdmin && !isRestricted)) return false;
+    if (adminFilter === "restricted" && !isRestricted) return false;
+    if (adminFilter === "user" && isAdmin) return false;
+
+    if (registrationFilter !== "all") {
+      const days = Number(registrationFilter);
+      const createdMs = u.createdAt?.seconds ? u.createdAt.seconds * 1000 : null;
+      if (!createdMs || Date.now() - createdMs > days * DAY_MS) return false;
+    }
+
+    if (activityFilter !== "all") {
+      const lastActiveMs = u.lastActiveAt?.seconds ? u.lastActiveAt.seconds * 1000 : null;
+      const active30 = lastActiveMs && Date.now() - lastActiveMs <= 30 * DAY_MS;
+      if (activityFilter === "active" && !active30) return false;
+      if (activityFilter === "inactive" && active30) return false;
+    }
+
+    return true;
   });
 
   //////////////////////////////////////////////////
@@ -306,6 +376,23 @@ export default function Users() {
           onChange={(e) => setSearch(e.target.value)}
           style={searchInput}
         />
+        <select value={adminFilter} onChange={(e) => setAdminFilter(e.target.value)} style={filterSelect}>
+          <option value="all">All Roles</option>
+          <option value="admin">Full Admins</option>
+          <option value="restricted">Restricted Admins</option>
+          <option value="user">Users</option>
+        </select>
+        <select value={registrationFilter} onChange={(e) => setRegistrationFilter(e.target.value)} style={filterSelect}>
+          <option value="all">Any Registration Date</option>
+          <option value="7">Last 7 Days</option>
+          <option value="30">Last 30 Days</option>
+          <option value="90">Last 90 Days</option>
+        </select>
+        <select value={activityFilter} onChange={(e) => setActivityFilter(e.target.value)} style={filterSelect}>
+          <option value="all">Any Activity</option>
+          <option value="active">Active in Last 30 Days</option>
+          <option value="inactive">Inactive 30+ Days</option>
+        </select>
       </div>
 
       <div style={tableWrap}>
@@ -404,6 +491,7 @@ export default function Users() {
                     >
                       {isRestricted ? "Restricted" : isAdmin ? "Admin" : "User"}
                     </span>
+                    {user.disabled && <span style={disabledBadge}>Disabled</span>}
                   </td>
 
                   {/* ACTIONS */}
@@ -462,6 +550,22 @@ export default function Users() {
                           if (a === "editPermissions") {
                             openPermissions(user, false);
                           }
+
+                          if (a === "disable") {
+                            handleDisable(user.id);
+                          }
+
+                          if (a === "enable") {
+                            handleEnable(user.id);
+                          }
+
+                          if (a === "resetNotifications") {
+                            handleResetNotifications(user.id);
+                          }
+
+                          if (a === "export") {
+                            handleExport(user);
+                          }
                         }}
                         style={actionSelect}
                       >
@@ -497,6 +601,15 @@ export default function Users() {
                             )}
 
                             <option value="edit">Edit</option>
+                            <option value="export">Export User Data</option>
+                            <option value="resetNotifications">Reset Notifications</option>
+                            {!isSelf && (
+                              user.disabled ? (
+                                <option value="enable">Enable Account</option>
+                              ) : (
+                                <option value="disable">Disable Account</option>
+                              )
+                            )}
                           </>
                         )}
 
@@ -507,6 +620,7 @@ export default function Users() {
                         )}
                           </select>
                         )}
+                        {exportingId === user.id && <span style={exportingHint}>Exporting…</span>}
                       </>
                     )}
                     </div>
@@ -687,6 +801,9 @@ const pageSubtitle = {
 
 const toolbar = {
   marginBottom: "16px",
+  display: "flex",
+  gap: "10px",
+  flexWrap: "wrap",
 };
 
 const searchInput = {
@@ -698,7 +815,19 @@ const searchInput = {
   fontFamily: "sans-serif",
   color: "#3d2200",
   outline: "none",
-  width: "320px",
+  width: "280px",
+  flexShrink: 0,
+};
+
+const filterSelect = {
+  padding: "9px 12px",
+  borderRadius: "10px",
+  border: "1px solid #eddfc8",
+  background: "#fffdf9",
+  fontSize: "13px",
+  fontFamily: "sans-serif",
+  color: "#3d2200",
+  cursor: "pointer",
 };
 
 const tableWrap = {
@@ -850,6 +979,24 @@ const restrictedBadge = {
   background: "#fde8d8",
   color: "#a3551f",
   fontFamily: "sans-serif",
+};
+
+const disabledBadge = {
+  display: "inline-block",
+  fontSize: "11px",
+  padding: "3px 8px",
+  borderRadius: "999px",
+  background: "#fee2e2",
+  color: "#991b1b",
+  fontFamily: "sans-serif",
+  marginLeft: "6px",
+};
+
+const exportingHint = {
+  fontSize: "11px",
+  color: "#9b7040",
+  fontFamily: "sans-serif",
+  fontStyle: "italic",
 };
 
 const modalBg = {

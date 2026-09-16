@@ -36,7 +36,7 @@ export async function saveListenProgress(userId, audioId, { position, duration }
   try {
     await setDoc(
       progressDocRef(userId, audioId),
-      { position, duration, status, updatedAt: serverTimestamp() },
+      { userId, audioId, position, duration, status, updatedAt: serverTimestamp() },
       { merge: true }
     );
     await setDoc(
@@ -52,7 +52,7 @@ export async function saveListenProgress(userId, audioId, { position, duration }
 // The "Change" dropdown — an explicit manual override.
 export async function setListenStatus(userId, audioId, status) {
   if (!userId || !audioId) return;
-  const data = { status, manual: true, updatedAt: serverTimestamp() };
+  const data = { userId, audioId, status, manual: true, updatedAt: serverTimestamp() };
   if (status === "not-started") data.position = 0;
   await setDoc(progressDocRef(userId, audioId), data, { merge: true });
 }

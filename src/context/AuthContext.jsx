@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, onSnapshot } from "firebase/firestore";
 import { auth, db } from "../firebase";
 
@@ -13,6 +13,9 @@ export function AuthProvider({ children }) {
   // carries a real { moduleKey: { view, edit, delete } } object here.
   const [permissions, setPermissions] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
+  // Set briefly right before the forced sign-out below completes, so the
+  // app can show a real reason instead of a silent, confusing logout.
+  const [accountDisabledMessage, setAccountDisabledMessage] = useState("");
 
   useEffect(() => {
     let unsubRole = null;
@@ -30,6 +33,17 @@ export function AuthProvider({ children }) {
           doc(db, "users", currentUser.uid),
           (snap) => {
             const data = snap.exists() ? snap.data() : null;
+
+            // Same client-side enforcement model as the rest of this admin
+            // panel — a flag on the profile, checked here and forced out,
+            // rather than a real Firebase Auth account disable (no Admin
+            // SDK credentials wired up for that).
+            if (data?.disabled) {
+              setAccountDisabledMessage(data.disabledReason || "This account has been disabled. Contact an admin if you believe this is a mistake.");
+              signOut(auth);
+              return;
+            }
+
             setRole(data?.role || "user");
             const perms = data?.permissions;
             setPermissions(perms && typeof perms === "object" ? perms : null);
@@ -53,7 +67,7 @@ export function AuthProvider({ children }) {
   const isAdmin = role === "admin";
 
   return (
-    <AuthContext.Provider value={{ user, role, isAdmin, permissions, authLoading }}>
+    <AuthContext.Provider value={{ user, role, isAdmin, permissions, authLoading, accountDisabledMessage, clearAccountDisabledMessage: () => setAccountDisabledMessage("") }}>
       {children}
     </AuthContext.Provider>
   );

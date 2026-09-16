@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
 import { db } from "../../firebase";
 import {
   ResponsiveContainer,
@@ -33,6 +33,8 @@ function getLoginMethod(u) {
 
 export default function UserStatsModal({ user, onClose }) {
   const [logs, setLogs] = useState([]);
+  const [totalListenSeconds, setTotalListenSeconds] = useState(0);
+  const [savedCount, setSavedCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [range, setRange] = useState("daily");
 
@@ -42,11 +44,18 @@ export default function UserStatsModal({ user, onClose }) {
     async function load() {
       setLoading(true);
       try {
-        const snap = await getDocs(query(collection(db, "logs"), where("userId", "==", user.id)));
-        if (!cancelled) setLogs(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+        const [logsSnap, statsSnap, savedSnap] = await Promise.all([
+          getDocs(query(collection(db, "logs"), where("userId", "==", user.id))),
+          getDoc(doc(db, "userStats", user.id)),
+          getDocs(query(collection(db, "saved"), where("userId", "==", user.id))),
+        ]);
+        if (cancelled) return;
+        setLogs(logsSnap.docs.map((d) => ({ id: d.id, ...d.data() })));
+        setTotalListenSeconds(statsSnap.exists() ? statsSnap.data().totalSeconds || 0 : 0);
+        setSavedCount(savedSnap.size);
       } catch (err) {
         console.error("Couldn't load user stats:", err);
-        if (!cancelled) setLogs([]);
+        if (!cancelled) { setLogs([]); setTotalListenSeconds(0); setSavedCount(0); }
       }
       if (!cancelled) setLoading(false);
     }
@@ -111,6 +120,17 @@ export default function UserStatsModal({ user, onClose }) {
 
   const maxPageCount = Math.max(...mostUsedPages.map((p) => p.count), 1);
 
+  const mostRecentDevice = useMemo(() => {
+    const withDevice = logs.filter((l) => l.device && toDate(l)).sort((a, b) => toDate(b) - toDate(a));
+    const d = withDevice[0]?.device;
+    if (!d) return "Unknown";
+    const platform = d.isMobile ? (d.userAgent?.includes("iPhone") || d.userAgent?.includes("iPad") ? "iOS" : d.userAgent?.includes("Android") ? "Android" : "Mobile") : "Desktop";
+    return `${platform}${d.isStandalone ? " (installed app)" : ""}`;
+  }, [logs]);
+
+  const notificationsEnabled = !!(user.fcmToken || user.pushToken);
+  const totalListenMinutes = Math.round(totalListenSeconds / 60);
+
   return (
     <div style={modalBg}>
       <div style={modal}>
@@ -134,6 +154,10 @@ export default function UserStatsModal({ user, onClose }) {
               <StatTile label="Total Sessions" value={totalSessions} />
               <StatTile label="Total Events" value={logs.length} />
               <StatTile label="Login Method" value={getLoginMethod(user)} />
+              <StatTile label="Listening Time" value={`${totalListenMinutes} min`} />
+              <StatTile label="Liked Sermons" value={savedCount} />
+              <StatTile label="Last Known Device" value={mostRecentDevice} />
+              <StatTile label="Notifications" value={notificationsEnabled ? "Subscribed" : "Not subscribed"} />
             </div>
 
             <div style={chartCard}>

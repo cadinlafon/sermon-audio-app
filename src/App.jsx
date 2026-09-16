@@ -7,6 +7,7 @@ import { auth, db } from "./firebase";
 import LoadingScreen from "./components/LoadingScreen";
 import PopupNotification from "./components/PopupNotification";
 import NetworkStatus from "./components/NetworkStatus";
+import AccountDisabledBanner from "./components/AccountDisabledBanner";
 import BackToTop from "./components/BackToTop";
 import NotificationPopup from "./components/NotificationPopup";
 import IosInstallPopup from "./components/IosInstallPopup";
@@ -312,6 +313,8 @@ function App() {
     <AppGuard user={isAdmin ? { role: "admin" } : null}>
 
       <NetworkStatus />
+
+      <AccountDisabledBanner />
 
       <PopupNotification />
 
