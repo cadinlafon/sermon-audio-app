@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { collection, onSnapshot, getDocs } from "firebase/firestore";
 import { db } from "../../firebase";
+import AdminActionsLog from "./AdminActionsLog";
 
 // Event type → badge color
 const EVENT_COLORS = {
@@ -84,6 +85,8 @@ const defaultFilters = {
 const SESSION_ACTIVE_WINDOW_MS = 10 * 60 * 1000;
 
 export default function Logs() {
+  const [tab, setTab] = useState("activity");
+
   const [logs, setLogs] = useState([]);
   const [userMap, setUserMap] = useState({});
 
@@ -774,37 +777,67 @@ export default function Logs() {
       <div style={pageHeader}>
         <div>
           <h1 style={pageTitle}>
-            Activity Logs
+            {tab === "activity" ? "Activity Logs" : "Admin Actions"}
           </h1>
 
-          <p style={pageSubtitle}>
-            <strong>{sessions.length}</strong> session
-            {sessions.length === 1 ? "" : "s"} · showing{" "}
-            <strong>
-              {filteredLogs.length}
-            </strong>{" "}
-            of {logs.length} events
-          </p>
+          {tab === "activity" ? (
+            <p style={pageSubtitle}>
+              <strong>{sessions.length}</strong> session
+              {sessions.length === 1 ? "" : "s"} · showing{" "}
+              <strong>
+                {filteredLogs.length}
+              </strong>{" "}
+              of {logs.length} events
+            </p>
+          ) : (
+            <p style={pageSubtitle}>
+              An audit trail of role, account, content, and settings changes made by administrators.
+            </p>
+          )}
         </div>
 
+        {tab === "activity" && (
+          <button
+            onClick={() =>
+              setShowAdvanced(
+                !showAdvanced
+              )
+            }
+            style={
+              showAdvanced
+                ? {
+                    ...advancedButton,
+                    ...advancedButtonActive,
+                  }
+                : advancedButton
+            }
+          >
+            ⚙ Filters
+          </button>
+        )}
+      </div>
+
+      {/* TABS */}
+
+      <div style={tabBar}>
         <button
-          onClick={() =>
-            setShowAdvanced(
-              !showAdvanced
-            )
-          }
-          style={
-            showAdvanced
-              ? {
-                  ...advancedButton,
-                  ...advancedButtonActive,
-                }
-              : advancedButton
-          }
+          onClick={() => setTab("activity")}
+          style={tab === "activity" ? { ...tabButton, ...tabButtonActive } : tabButton}
         >
-          ⚙ Filters
+          Activity Logs
+        </button>
+        <button
+          onClick={() => setTab("adminActions")}
+          style={tab === "adminActions" ? { ...tabButton, ...tabButtonActive } : tabButton}
+        >
+          Admin Actions
         </button>
       </div>
+
+      {tab === "adminActions" ? (
+        <AdminActionsLog />
+      ) : (
+        <>
 
       {/* SEARCH */}
 
@@ -1520,6 +1553,8 @@ export default function Logs() {
           </div>
         )}
       </div>
+        </>
+      )}
     </div>
   );
 }
@@ -1585,6 +1620,29 @@ const pageSubtitle = {
   fontFamily:
     "sans-serif",
   margin: 0,
+};
+
+const tabBar = {
+  display: "flex",
+  gap: "8px",
+  marginBottom: "16px",
+};
+
+const tabButton = {
+  padding: "8px 16px",
+  borderRadius: "999px",
+  border: "1px solid #eddfc8",
+  background: "#fffdf9",
+  color: "#7a4f10",
+  fontSize: "13px",
+  fontFamily: "sans-serif",
+  cursor: "pointer",
+};
+
+const tabButtonActive = {
+  background: "linear-gradient(135deg, #c97c2e, #a85e18)",
+  color: "#fff8ee",
+  borderColor: "transparent",
 };
 
 const searchBox = {

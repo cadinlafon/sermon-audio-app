@@ -6,6 +6,7 @@ import { deletePrivateAudio, uploadPrivateAudio } from "../../utils/privateAudio
 import { createTranscriptionCopy } from "../../utils/transcodeForTranscription";
 import { useModulePermissions } from "../../hooks/usePermissions";
 import { useAdminPin } from "../../context/AdminPinContext";
+import { logAdminAction } from "../../utils/adminAudit";
 
 const speakers = ["Jonathan Mcintosh", "Rusty Olps", "Jason Farley", "Mark Thiele"];
 
@@ -103,6 +104,17 @@ export default function AdminContentManager() {
       // Preserve a playable existing recording if the Firestore update fails.
       // A failed cleanup only leaves an orphaned private file; it never breaks playback.
       if (previousStorageKey) await deletePrivateAudio(previousStorageKey);
+
+      logAdminAction({
+        category: "content_edit",
+        action: "editAudio",
+        targetType: "audio",
+        targetId: editing.id,
+        targetLabel: editTitle,
+        before: { title: editing.title, speaker: editing.speaker, type: editing.type, date: editing.date },
+        after: updates,
+      });
+
       closeEdit();
       loadAudio();
     } catch (err) {
@@ -120,6 +132,17 @@ export default function AdminContentManager() {
     try {
       await deletePrivateAudio(audio.audioStorageKey);
       await deleteDoc(doc(db, "audio", audio.id));
+
+      logAdminAction({
+        category: "content_delete",
+        action: "deleteAudio",
+        targetType: "audio",
+        targetId: audio.id,
+        targetLabel: audio.title,
+        before: { title: audio.title, speaker: audio.speaker, type: audio.type, date: audio.date },
+        after: null,
+      });
+
       loadAudio();
     } catch (err) {
       console.error(err);

@@ -3,6 +3,7 @@ import { useModulePermissions } from "../../hooks/usePermissions";
 import { useAdminSecurity } from "../../hooks/useAdminSecurity";
 import { useAdminPin } from "../../context/AdminPinContext";
 import { SENSITIVE_ACTIONS, SECURITY_CHANGE_ACTION, isValidPin, isPasskeySupported } from "../../config/adminSecurity";
+import { logAdminAction } from "../../utils/adminAudit";
 
 export default function Security() {
   const perms = useModulePermissions("security");
@@ -30,7 +31,17 @@ export default function Security() {
       return;
     }
     if (!(await guardEdit())) return;
-    await security.setPinEnabled(!security.pinEnabled);
+    const next = !security.pinEnabled;
+    await security.setPinEnabled(next);
+    logAdminAction({
+      category: "settings_change",
+      action: "togglePinEnabled",
+      targetType: "adminSecurity",
+      targetId: "status",
+      targetLabel: "PIN Protection",
+      before: { pinEnabled: security.pinEnabled },
+      after: { pinEnabled: next },
+    });
   };
 
   //////////////////////////////////////////////////
@@ -43,7 +54,17 @@ export default function Security() {
     if (!(await guardEdit())) return;
     setSavingOwner(true);
     try {
+      const hadPin = security.hasOwnerPin;
       await security.setOwnerPin(newPin);
+      logAdminAction({
+        category: "settings_change",
+        action: "setOwnerPin",
+        targetType: "adminSecurity",
+        targetId: "status",
+        targetLabel: "Admin PIN",
+        before: { hasOwnerPin: hadPin },
+        after: { hasOwnerPin: true },
+      });
       setOwnerForm({ open: false, newPin: "", confirmPin: "" });
     } catch (err) {
       console.error(err);
@@ -56,6 +77,15 @@ export default function Security() {
     if (!window.confirm("Remove the admin PIN? This also turns PIN protection off.")) return;
     if (!(await guardEdit())) return;
     await security.removeOwnerPin();
+    logAdminAction({
+      category: "settings_change",
+      action: "removeOwnerPin",
+      targetType: "adminSecurity",
+      targetId: "status",
+      targetLabel: "Admin PIN",
+      before: { hasOwnerPin: true, pinEnabled: security.pinEnabled },
+      after: { hasOwnerPin: false, pinEnabled: false },
+    });
   };
 
   //////////////////////////////////////////////////
@@ -68,7 +98,17 @@ export default function Security() {
     if (!(await guardEdit())) return;
     setSavingRestricted(true);
     try {
+      const hadPin = security.hasRestrictedPin;
       await security.setRestrictedPin(newPin);
+      logAdminAction({
+        category: "settings_change",
+        action: "setRestrictedPin",
+        targetType: "adminSecurity",
+        targetId: "status",
+        targetLabel: "Restricted Admin PIN",
+        before: { hasRestrictedPin: hadPin },
+        after: { hasRestrictedPin: true },
+      });
       setRestrictedForm({ open: false, newPin: "", confirmPin: "" });
     } catch (err) {
       console.error(err);
@@ -81,6 +121,15 @@ export default function Security() {
     if (!window.confirm("Remove the restricted-admin PIN? Restricted admins won't be able to pass PIN gates until a new one is set.")) return;
     if (!(await guardEdit())) return;
     await security.removeRestrictedPin();
+    logAdminAction({
+      category: "settings_change",
+      action: "removeRestrictedPin",
+      targetType: "adminSecurity",
+      targetId: "status",
+      targetLabel: "Restricted Admin PIN",
+      before: { hasRestrictedPin: true },
+      after: { hasRestrictedPin: false },
+    });
   };
 
   //////////////////////////////////////////////////
@@ -88,10 +137,20 @@ export default function Security() {
   //////////////////////////////////////////////////
   const toggleRequirePinFor = async (key) => {
     if (!(await guardEdit())) return;
+    const before = [...security.requirePinFor];
     const next = new Set(security.requirePinFor);
     if (next.has(key)) next.delete(key);
     else next.add(key);
     await security.setRequirePinFor([...next]);
+    logAdminAction({
+      category: "settings_change",
+      action: "toggleRequirePinFor",
+      targetType: "adminSecurity",
+      targetId: "status",
+      targetLabel: key,
+      before: { requirePinFor: before },
+      after: { requirePinFor: [...next] },
+    });
   };
 
   //////////////////////////////////////////////////
@@ -104,6 +163,15 @@ export default function Security() {
     setAddingPasskey(true);
     try {
       await security.addPasskey(label);
+      logAdminAction({
+        category: "settings_change",
+        action: "addPasskey",
+        targetType: "adminSecurity",
+        targetId: "passkeys",
+        targetLabel: label,
+        before: null,
+        after: { label },
+      });
     } catch (err) {
       console.error(err);
       alert(err?.message || "Couldn't create the passkey.");
@@ -114,7 +182,17 @@ export default function Security() {
   const removePasskeyRow = async (id) => {
     if (!window.confirm("Remove this passkey?")) return;
     if (!(await guardEdit())) return;
+    const target = security.passkeys.find((p) => p.id === id);
     await security.removePasskey(id);
+    logAdminAction({
+      category: "settings_change",
+      action: "removePasskey",
+      targetType: "adminSecurity",
+      targetId: id,
+      targetLabel: target?.label || "Passkey",
+      before: { label: target?.label || null },
+      after: null,
+    });
   };
 
   if (security.loading) return <div style={loadingWrap}>Loading security settings…</div>;

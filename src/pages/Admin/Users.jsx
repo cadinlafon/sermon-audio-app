@@ -12,6 +12,7 @@ import { useModulePermissions, usePermissions } from "../../hooks/usePermissions
 import { useAuth } from "../../context/AuthContext";
 import { useAdminPin } from "../../context/AdminPinContext";
 import { disableUser, enableUser, resetNotificationSubscription, deleteUserData, exportUserData, downloadJson } from "../../utils/userAdmin";
+import { logAdminAction } from "../../utils/adminAudit";
 import UserStatsModal from "./UserStatsModal";
 
 export default function Users() {
@@ -163,9 +164,21 @@ export default function Users() {
     }
     if (!(await requirePin("roleChange"))) return;
 
+    const target = users.find((u) => u.id === id);
+
     await updateDoc(doc(db, "users", id), {
       role: "admin",
       permissions: deleteField(),
+    });
+
+    logAdminAction({
+      category: "role_change",
+      action: "makeAdmin",
+      targetType: "user",
+      targetId: id,
+      targetLabel: target?.fullName || target?.email || id,
+      before: { role: target?.role || "user", permissions: target?.permissions || null },
+      after: { role: "admin", permissions: null },
     });
 
     fetchUsers();
@@ -176,9 +189,21 @@ export default function Users() {
     if (!guardNotSelf(id)) return;
     if (!(await requirePin("roleChange"))) return;
 
+    const target = users.find((u) => u.id === id);
+
     await updateDoc(doc(db, "users", id), {
       role: "user",
       permissions: deleteField(),
+    });
+
+    logAdminAction({
+      category: "role_change",
+      action: "removeAdmin",
+      targetType: "user",
+      targetId: id,
+      targetLabel: target?.fullName || target?.email || id,
+      before: { role: target?.role || "user", permissions: target?.permissions || null },
+      after: { role: "user", permissions: null },
     });
 
     fetchUsers();
@@ -251,6 +276,17 @@ export default function Users() {
         role: "admin",
         permissions: permForm,
       });
+
+      logAdminAction({
+        category: "role_change",
+        action: "savePermissions",
+        targetType: "user",
+        targetId: permTarget.id,
+        targetLabel: permTarget.fullName || permTarget.email || permTarget.id,
+        before: { role: permTarget.role || "user", permissions: permTarget.permissions || null },
+        after: { role: "admin", permissions: permForm },
+      });
+
       closePermissions();
       fetchUsers();
     } finally {
@@ -271,7 +307,19 @@ export default function Users() {
     if (!window.confirm("Delete this user? This removes their profile, liked sermons, notes, and listening progress. This can't be undone.")) return;
     if (!(await requirePin("deleteUser"))) return;
 
+    const target = users.find((u) => u.id === id);
+
     await deleteUserData(id);
+
+    logAdminAction({
+      category: "account_delete",
+      action: "deleteUser",
+      targetType: "user",
+      targetId: id,
+      targetLabel: target?.fullName || target?.email || id,
+      before: { fullName: target?.fullName || null, email: target?.email || null, role: target?.role || "user" },
+      after: null,
+    });
 
     fetchUsers();
   };
@@ -285,14 +333,42 @@ export default function Users() {
     if (!guardNotSelf(id)) return;
     const reason = window.prompt("Reason (optional) — shown to the user when they're signed out:") || "";
     if (!(await requirePin("roleChange"))) return;
+
+    const target = users.find((u) => u.id === id);
+
     await disableUser(id, reason);
+
+    logAdminAction({
+      category: "account_disable",
+      action: "disableUser",
+      targetType: "user",
+      targetId: id,
+      targetLabel: target?.fullName || target?.email || id,
+      before: { disabled: false },
+      after: { disabled: true, reason: reason || null },
+    });
+
     fetchUsers();
   };
 
   const handleEnable = async (id) => {
     if (!perms.requireEdit()) return;
     if (!(await requirePin("roleChange"))) return;
+
+    const target = users.find((u) => u.id === id);
+
     await enableUser(id);
+
+    logAdminAction({
+      category: "account_disable",
+      action: "enableUser",
+      targetType: "user",
+      targetId: id,
+      targetLabel: target?.fullName || target?.email || id,
+      before: { disabled: true, reason: target?.disabledReason || null },
+      after: { disabled: false },
+    });
+
     fetchUsers();
   };
 

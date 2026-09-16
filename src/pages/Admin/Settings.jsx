@@ -3,6 +3,7 @@ import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "../../firebase";
 import { useModulePermissions } from "../../hooks/usePermissions";
 import { useAdminPin } from "../../context/AdminPinContext";
+import { logAdminAction } from "../../utils/adminAudit";
 
 const AUDIENCE_OPTIONS = [
   { value: "guest", label: "Guests" },
@@ -25,6 +26,7 @@ export default function Settings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [originalConfig, setOriginalConfig] = useState(null);
 
   const configRef = doc(db, "appConfig", "status");
 
@@ -41,6 +43,14 @@ export default function Settings() {
           if (data.audioAiAudiences !== undefined) setAudioAiAudiences(data.audioAiAudiences);
           if (data.registrationEnabled !== undefined) setRegistrationEnabled(data.registrationEnabled);
           if (data.maxDailyRegistrations) setMaxDailyRegistrations(String(data.maxDailyRegistrations));
+          setOriginalConfig({
+            shutdown: data.shutdown || false,
+            message: data.message || "",
+            audioAiEnabled: data.audioAiEnabled !== undefined ? data.audioAiEnabled : true,
+            audioAiAudiences: data.audioAiAudiences || ["guest", "user", "admin"],
+            registrationEnabled: data.registrationEnabled !== undefined ? data.registrationEnabled : true,
+            maxDailyRegistrations: data.maxDailyRegistrations || 0,
+          });
         }
       } catch (err) { console.error("Failed to load config:", err); }
       setLoading(false);
@@ -68,11 +78,28 @@ export default function Settings() {
     if (!perms.requireEdit()) return;
     setSaving(true);
     try {
-      await updateDoc(configRef, {
-        shutdown, message, returnDate: returnDate ? new Date(returnDate) : null,
+      const after = {
+        shutdown, message,
         audioAiEnabled, audioAiAudiences,
         registrationEnabled, maxDailyRegistrations: Number(maxDailyRegistrations) || 0,
+      };
+
+      await updateDoc(configRef, {
+        ...after,
+        returnDate: returnDate ? new Date(returnDate) : null,
       });
+
+      logAdminAction({
+        category: "settings_change",
+        action: "saveAppConfig",
+        targetType: "appConfig",
+        targetId: "status",
+        targetLabel: "App Settings",
+        before: originalConfig,
+        after,
+      });
+
+      setOriginalConfig(after);
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err) { console.error(err); alert("Error saving settings."); }
