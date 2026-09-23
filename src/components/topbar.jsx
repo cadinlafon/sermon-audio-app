@@ -20,7 +20,6 @@ import { auth, db, googleProvider } from "../firebase";
 import { logEvent } from "../utils/logEvent";
 
 import googleLogo from "../assets/auth/google-logo.png";
-import userIcon from "../assets/auth/user-icon.png";
 
 const TYPE_LABEL = { sundayschool: "Sunday School", homily: "Homily", sermon: "Sermon" };
 
@@ -220,7 +219,6 @@ export default function TopBar() {
             </div>
           ) : (
             <div style={guestCircle}>
-              <img src={userIcon} style={guestIcon} alt="Account" />
             </div>
           )}
         </div>
@@ -298,7 +296,6 @@ export default function TopBar() {
             </button>
 
             <button style={accountButton} onClick={() => navigate("/settings")}>
-              <img src={userIcon} style={accountIcon} alt="" />
               Account Page
             </button>
 
