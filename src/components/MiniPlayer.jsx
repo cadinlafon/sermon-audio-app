@@ -2,8 +2,6 @@ import { useNavigate } from "react-router-dom";
 import { useAudioPlayer } from "../context/AudioPlayerContext";
 
 import back30 from "../assets/Player/back30.png";
-import pauseIcon from "../assets/Player/pause.png";
-import playIcon from "../assets/Player/play.png";
 
 export default function MiniPlayer() {
   const { current, isPlaying, togglePlay, audioRef, duration, currentTime } = useAudioPlayer();
@@ -54,11 +52,9 @@ export default function MiniPlayer() {
             </button>
 
             <button onClick={handlePlay} style={playBtn}>
-              <img
-                src={isPlaying ? pauseIcon : playIcon}
-                style={playIconStyle}
-                alt={isPlaying ? "Pause" : "Play"}
-              />
+              <span style={playGlyph} aria-label={isPlaying ? "Pause" : "Play"}>
+                {isPlaying ? "\u23F8\uFE0E" : "\u25B6\uFE0E"}
+              </span>
             </button>
           </div>
         )}
@@ -175,7 +171,8 @@ const playBtn = {
   flexShrink: 0,
 };
 
-const playIconStyle = {
-  width: "15px",
-  filter: "brightness(0) invert(1)",
+const playGlyph = {
+  color: "#fff",
+  fontSize: "22px",
+  lineHeight: 1,
 };

@@ -3,8 +3,6 @@ import { useAudioPlayer } from "../context/AudioPlayerContext";
 
 import back30 from "../assets/Player/back30.png";
 import forward30 from "../assets/Player/forward30.png";
-import pauseIcon from "../assets/Player/pause.png";
-import playIcon from "../assets/Player/play.png";
 
 // Rendered via a portal into the floating Document Picture-in-Picture
 // window (see useDocumentPiP) — a portal keeps this inside the main
@@ -43,7 +41,7 @@ export default function DesktopMiniPlayerContent({ pipWindow }) {
           <img src={back30} style={iconImg} alt="Back 30s" />
         </button>
         <button onClick={togglePlay} style={playBtn} disabled={!current}>
-          <img src={isPlaying ? pauseIcon : playIcon} style={playIconStyle} alt={isPlaying ? "Pause" : "Play"} />
+          <span style={playGlyph} aria-label={isPlaying ? "Pause" : "Play"}>{isPlaying ? "\u23F8\uFE0E" : "\u25B6\uFE0E"}</span>
         </button>
         <button onClick={jumpForward} style={iconBtn} disabled={!current}>
           <img src={forward30} style={iconImg} alt="Forward 30s" />
@@ -95,4 +93,4 @@ const playBtn = {
   justifyContent: "center",
   cursor: "pointer",
 };
-const playIconStyle = { width: "16px", filter: "brightness(0) invert(1)" };
+const playGlyph = { color: "#fff", fontSize: "24px", lineHeight: 1 };
