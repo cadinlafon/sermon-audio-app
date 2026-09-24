@@ -177,7 +177,7 @@ Deno.test("MCP: unauthenticated request gets 401 with an OAuth discovery challen
   await seed();
   const r = await mcp(undefined, "initialize", { protocolVersion: "2025-03-26", capabilities: {}, clientInfo: { name: "t", version: "1" } });
   assert.equal(r.status, 401);
-  assert.match(r.headers.get("www-authenticate") ?? "", /resource_metadata="https:\/\/ref\.supabase\.co\/functions\/v1\/agent-api\/\.well-known\/oauth-protected-resource"/);
+  assert.match(r.headers.get("www-authenticate") ?? "", /resource_metadata="https:\/\/ref\.supabase\.co\/functions\/v1\/agent-api\/\.well-known\/oauth-protected-resource", scope="agent"/);
   assert.equal((await mcp("pfa_" + "Q".repeat(43), "tools/list")).status, 401);
 });
 
@@ -196,6 +196,11 @@ Deno.test("MCP: tools/list advertises only granted tools, with titles and correc
   const { body } = await mcp(KEY, "tools/list");
   const tools = new Map<string, { title?: string; annotations: Record<string, boolean>; inputSchema: { required?: string[] } }>(body.result.tools.map((t: { name: string }) => [t.name, t]));
   assert.deepEqual([...tools.keys()].sort(), ["delete_audio", "delete_notice", "get_analytics_overview", "get_audio", "list_audio", "list_notices", "create_notice", "update_audio", "update_notice"].sort());
+  // Per-tool OAuth security declaration (OpenAI format) — top level and _meta
+  for (const t of body.result.tools) {
+    assert.deepEqual(t.securitySchemes, [{ type: "oauth2", scopes: ["agent"] }], `${t.name} securitySchemes`);
+    assert.deepEqual(t._meta.securitySchemes, [{ type: "oauth2", scopes: ["agent"] }], `${t.name} _meta`);
+  }
   assert.equal(tools.get("list_audio")!.title, "List Audio");
   assert.equal(tools.get("list_audio")!.annotations.readOnlyHint, true);
   assert.equal(tools.get("update_notice")!.annotations.readOnlyHint, false);
@@ -318,12 +323,20 @@ Deno.test("OAuth: full authorization-code + PKCE flow yields a token that works 
     handler(req("POST", "/oauth/token", { form: { grant_type: "authorization_code", code, client_id: client.client_id, redirect_uri: CHATGPT_REDIRECT, code_verifier: verifier, ...over } }));
 
   assert.equal((await exchange({ code_verifier: "w".repeat(64) })).status, 400, "wrong PKCE verifier");
-  const tok = await exchange();
+  assert.equal((await exchange({ resource: "https://evil.example/mcp" })).status, 400, "resource must match the authorization request");
+  const tok = await exchange({ resource: `${BASE}/mcp` });
   assert.equal(tok.status, 200);
   const tokens = await tok.json();
   assert.match(tokens.access_token, /^pfo_/);
   assert.equal(tokens.token_type, "Bearer");
-  assert.equal((await exchange()).status, 400, "code is single-use");
+  assert.equal((await exchange({ resource: `${BASE}/mcp` })).status, 400, "code is single-use");
+
+  // Token is bound to the MCP resource (audience): stored on the token record and
+  // useless anywhere except /mcp — never a general-purpose credential.
+  const stored = [...store].filter(([p]) => p.startsWith("agentOAuthTokens/")).map(([, d]) => d.fields.resource?.stringValue);
+  assert.deepEqual(stored, [`${BASE}/mcp`, `${BASE}/mcp`]);
+  assert.equal((await handler(req("GET", "/tools", { key: tokens.access_token }))).status, 401, "OAuth token refused outside /mcp");
+  assert.equal((await handler(req("POST", "/tools/list_audio", { key: tokens.access_token, body: {} }))).status, 401);
 
   // Only hashes are stored, never the tokens themselves
   assert.ok(!JSON.stringify([...store]).includes(tokens.access_token));
@@ -359,4 +372,39 @@ Deno.test("Errors never leak internals", async () => {
   const r = await handler(req("POST", "/tools/get_audio", { key: KEY, body: { id: "does-not-exist" } }));
   const text = await r.text();
   assert.ok(!/stack|at file:|firestore\.googleapis|private_key|Bearer/i.test(text));
+});
+
+Deno.test("OAuth: a token minted for a different resource is refused on /mcp", async () => {
+  await seed();
+  const t = "pfo_" + "T".repeat(43);
+  put(`agentOAuthTokens/${await sha256Hex(t)}`, { kind: S("access"), agentId: S("agent1"), clientId: S("pfc_x"), resource: S("https://other.example/mcp"), expiresAt: T("2099-01-01T00:00:00Z") });
+  assert.equal((await mcp(t, "tools/list")).status, 401);
+  const ok = "pfo_" + "U".repeat(43);
+  put(`agentOAuthTokens/${await sha256Hex(ok)}`, { kind: S("access"), agentId: S("agent1"), clientId: S("pfc_x"), resource: S(`${BASE}/mcp`), expiresAt: T("2099-01-01T00:00:00Z") });
+  assert.equal((await mcp(ok, "tools/list")).status, 200);
+  const expired = "pfo_" + "E".repeat(43);
+  put(`agentOAuthTokens/${await sha256Hex(expired)}`, { kind: S("access"), agentId: S("agent1"), clientId: S("pfc_x"), resource: S(`${BASE}/mcp`), expiresAt: T("2001-01-01T00:00:00Z") });
+  assert.equal((await mcp(expired, "tools/list")).status, 401, "expired token");
+  const refreshAsAccess = "pfr_" + "R".repeat(43);
+  put(`agentOAuthTokens/${await sha256Hex(refreshAsAccess)}`, { kind: S("refresh"), agentId: S("agent1"), clientId: S("pfc_x"), resource: S(`${BASE}/mcp`), expiresAt: T("2099-01-01T00:00:00Z") });
+  assert.equal((await mcp(refreshAsAccess, "tools/list")).status, 401, "refresh token is not an access token");
+});
+
+Deno.test("OAuth: unknown resource is rejected at authorize and approve", async () => {
+  await seed();
+  const { body: client } = await registerClient();
+  const challenge = "c".repeat(43);
+  const az = await handler(req("GET", "/oauth/authorize?" + new URLSearchParams({ client_id: client.client_id, redirect_uri: CHATGPT_REDIRECT, response_type: "code", code_challenge: challenge, code_challenge_method: "S256", resource: "https://evil.example/mcp" })));
+  assert.match(az.headers.get("location") ?? "", /error=invalid_target/);
+  const ap = await handler(req("POST", "/oauth/approve", { key: await firebaseToken("admin1"), headers: { origin: APP }, body: { client_id: client.client_id, redirect_uri: CHATGPT_REDIRECT, code_challenge: challenge, agent_id: "agent1", resource: "https://evil.example/mcp" } }));
+  assert.equal(ap.status, 400);
+});
+
+Deno.test("OAuth: protected-resource metadata is also served under the MCP path; stable ChatGPT redirect URI is accepted", async () => {
+  const prm = await (await handler(req("GET", "/mcp/.well-known/oauth-protected-resource"))).json();
+  assert.equal(prm.resource, `${BASE}/mcp`);
+  assert.equal((await registerClient("https://chatgpt.com/connector_platform_oauth_redirect")).status, 201);
+  assert.equal((await registerClient("https://chatgpt.com/connector/oauth/abc-123_XYZ")).status, 201);
+  assert.equal((await registerClient("https://chatgpt.com.evil.example/connector_platform_oauth_redirect")).status, 400);
+  assert.equal((await registerClient("http://chatgpt.com/connector_platform_oauth_redirect")).status, 400);
 });

@@ -13,6 +13,7 @@
 import { jwtVerify, createRemoteJWKSet } from "npm:jose@5.10.0";
 import { createDocument, deleteDocument, getDocument, getDocumentWithVersion, projectId, writeIfUnchanged, nowTs } from "./firestore.ts";
 import { sha256Hex } from "./auth.ts";
+import { MCP_RESOURCE, publicBase } from "./http.ts";
 
 const APP_URL = () => (Deno.env.get("PF_APP_URL") ?? "").replace(/\/+$/, "");
 const jwks = createRemoteJWKSet(new URL("https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com"));
@@ -22,7 +23,6 @@ const REFRESH_TTL_S = 30 * 24 * 60 * 60; // 30 days
 const CODE_TTL_S = 5 * 60;
 export const OAUTH_SCOPE = "agent";
 
-export const publicBase = () => `${Deno.env.get("SUPABASE_URL") ?? ""}/functions/v1/agent-api`;
 
 const randomToken = (prefix: string) => `${prefix}${btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(32)))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")}`;
 const b64url = (buf: ArrayBuffer) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
@@ -70,7 +70,7 @@ async function loadClient(clientId: unknown) {
 // ---- metadata -------------------------------------------------------------
 function protectedResourceMetadata() {
   const base = publicBase();
-  return { resource: `${base}/mcp`, authorization_servers: [base], scopes_supported: [OAUTH_SCOPE], bearer_methods_supported: ["header"], resource_name: "Palouse Fellowship App" };
+  return { resource: MCP_RESOURCE(), authorization_servers: [base], scopes_supported: [OAUTH_SCOPE], bearer_methods_supported: ["header"], resource_name: "Palouse Fellowship App" };
 }
 function authorizationServerMetadata() {
   const base = publicBase();
@@ -114,7 +114,7 @@ async function authorize(url: URL) {
   if (q.get("response_type") !== "code") return fail("unsupported_response_type", "Only response_type=code is supported.");
   if (q.get("code_challenge_method") !== "S256" || !/^[A-Za-z0-9_-]{43,128}$/.test(q.get("code_challenge") ?? "")) return fail("invalid_request", "PKCE with code_challenge_method=S256 is required.");
   const resource = q.get("resource");
-  if (resource && resource !== `${publicBase()}/mcp`) return fail("invalid_target", "Unknown resource.");
+  if (resource && resource !== MCP_RESOURCE()) return fail("invalid_target", "Unknown resource.");
   if (!APP_URL()) return fail("server_error", "Authorization isn't configured on the server (PF_APP_URL).");
 
   const to = new URL(`${APP_URL()}/agent-authorize`);
@@ -145,6 +145,8 @@ async function approve(r: Request) {
   if (!client || !client.redirectUris.includes(body?.redirect_uri)) return respond({ error: "Unknown client or redirect_uri." }, 400);
   if (!/^[A-Za-z0-9_-]{43,128}$/.test(body?.code_challenge ?? "")) return respond({ error: "Missing PKCE challenge." }, 400);
   const state = typeof body?.state === "string" ? body.state : undefined;
+  // RFC 8707: the token will be bound to this resource (the MCP endpoint).
+  if (body?.resource && body.resource !== MCP_RESOURCE()) return respond({ error: "Unknown resource." }, 400);
 
   if (body.deny) return respond({ redirectTo: redirectWith(body.redirect_uri, { error: "access_denied", error_description: "The user denied the request.", state, iss: publicBase() }) });
 
@@ -153,17 +155,17 @@ async function approve(r: Request) {
 
   const code = randomToken("pfk_");
   await createDocument("agentOAuthCodes", {
-    clientId: client.id, redirectUri: body.redirect_uri, codeChallenge: body.code_challenge, agentId: body.agent_id, approvedBy: uid, used: false,
+    clientId: client.id, redirectUri: body.redirect_uri, codeChallenge: body.code_challenge, agentId: body.agent_id, approvedBy: uid, used: false, resource: MCP_RESOURCE(),
     expiresAt: { __ts: new Date(Date.now() + CODE_TTL_S * 1000).toISOString() },
   }, await sha256Hex(code));
   return respond({ redirectTo: redirectWith(body.redirect_uri, { code, state, iss: publicBase() }), agentName: agent.name });
 }
 
-async function issueTokens(agentId: string, clientId: string) {
+async function issueTokens(agentId: string, clientId: string, resource: string) {
   const access = randomToken("pfo_"); const refresh = randomToken("pfr_");
   const exp = (s: number) => ({ __ts: new Date(Date.now() + s * 1000).toISOString() });
-  await createDocument("agentOAuthTokens", { kind: "access", agentId, clientId, expiresAt: exp(ACCESS_TTL_S) }, await sha256Hex(access));
-  await createDocument("agentOAuthTokens", { kind: "refresh", agentId, clientId, expiresAt: exp(REFRESH_TTL_S) }, await sha256Hex(refresh));
+  await createDocument("agentOAuthTokens", { kind: "access", agentId, clientId, resource, expiresAt: exp(ACCESS_TTL_S) }, await sha256Hex(access));
+  await createDocument("agentOAuthTokens", { kind: "refresh", agentId, clientId, resource, expiresAt: exp(REFRESH_TTL_S) }, await sha256Hex(refresh));
   return j({ access_token: access, token_type: "Bearer", expires_in: ACCESS_TTL_S, refresh_token: refresh, scope: OAUTH_SCOPE });
 }
 
@@ -180,12 +182,13 @@ async function token(r: Request) {
     if (!found || found.doc.used) return oerr("invalid_grant", "Invalid or already-used authorization code.");
     const c = found.doc;
     if (Date.parse(c.expiresAt as string) < Date.now() || c.clientId !== client.id || c.redirectUri !== p.redirect_uri) return oerr("invalid_grant", "Authorization code is expired or doesn't match.");
+    if (p.resource && p.resource !== c.resource) return oerr("invalid_target", "resource doesn't match the authorization request.");
     if (b64url(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(p.code_verifier))) !== c.codeChallenge) return oerr("invalid_grant", "PKCE verification failed.");
     // Single use: the write only succeeds if nobody consumed the code since we read it.
     if (!(await writeIfUnchanged(path, { used: true }, found.updateTime))) return oerr("invalid_grant", "Invalid or already-used authorization code.");
     const agent = await getDocument(`agentKeys/${c.agentId}`);
     if (!agent || agent.revoked) return oerr("invalid_grant", "The authorized agent is no longer active.");
-    return issueTokens(c.agentId as string, client.id);
+    return issueTokens(c.agentId as string, client.id, c.resource as string);
   }
 
   if (p.grant_type === "refresh_token") {
@@ -194,8 +197,9 @@ async function token(r: Request) {
     if (!t || t.kind !== "refresh" || t.clientId !== client.id || Date.parse(t.expiresAt as string) < Date.now()) return oerr("invalid_grant", "Invalid or expired refresh token.");
     const agent = await getDocument(`agentKeys/${t.agentId}`);
     if (!agent || agent.revoked) return oerr("invalid_grant", "The authorized agent is no longer active.");
+    if (p.resource && p.resource !== t.resource) return oerr("invalid_target", "resource doesn't match the original grant.");
     await deleteDocument(path); // rotate: each refresh token works once
-    return issueTokens(t.agentId as string, client.id);
+    return issueTokens(t.agentId as string, client.id, t.resource as string);
   }
 
   return oerr("unsupported_grant_type", "Supported grants: authorization_code, refresh_token.");
@@ -203,14 +207,14 @@ async function token(r: Request) {
 
 // Returns a Response if this path belongs to the OAuth layer, otherwise null.
 export async function handleOAuth(r: Request, path: string): Promise<Response | null> {
-  const isWellKnown = path.startsWith("/.well-known/");
+  const isWellKnown = path.startsWith("/.well-known/") || path.startsWith("/mcp/.well-known/");
   const isOauth = path.startsWith("/oauth/");
   if (!isWellKnown && !isOauth) return null;
 
   if (r.method === "OPTIONS" && path === "/oauth/approve") return new Response("ok", { headers: corsFor(APP_URL()) });
 
-  if (r.method === "GET" && path.startsWith("/.well-known/oauth-protected-resource")) return j(protectedResourceMetadata());
-  if (r.method === "GET" && (path.startsWith("/.well-known/oauth-authorization-server") || path.startsWith("/.well-known/openid-configuration"))) return j(authorizationServerMetadata());
+  if (r.method === "GET" && (path.startsWith("/.well-known/oauth-protected-resource") || path.startsWith("/mcp/.well-known/oauth-protected-resource"))) return j(protectedResourceMetadata());
+  if (r.method === "GET" && (path.includes("/.well-known/oauth-authorization-server") || path.includes("/.well-known/openid-configuration"))) return j(authorizationServerMetadata());
   if (r.method === "POST" && path === "/oauth/register") return await register(r);
   if (r.method === "GET" && path === "/oauth/authorize") return await authorize(new URL(r.url));
   if (r.method === "POST" && path === "/oauth/token") return await token(r);

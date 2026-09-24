@@ -10,6 +10,12 @@ import { allowedTools, callTool, toolAnnotations, toolTitle } from "./tools.ts";
 import type { Agent, Tool } from "./tools.ts";
 import { cors } from "./http.ts";
 import { errorInfo } from "./errors.ts";
+import { OAUTH_SCOPE } from "./oauth.ts";
+
+// Every tool needs an authenticated caller — there is no anonymous tool.
+// ChatGPT reads this per tool (declared both in _meta and, below, at the top
+// level of each listed tool).
+export const SECURITY_SCHEMES = [{ type: "oauth2", scopes: [OAUTH_SCOPE] }];
 
 export const MCP_SERVER_NAME = "Palouse Fellowship App";
 export const MCP_SERVER_VERSION = "1.1.0";
@@ -49,6 +55,7 @@ export function buildMcpServer(agent: Agent) {
         description: tool.description,
         ...(Object.keys(shape).length ? { inputSchema: shape } : {}),
         annotations: toolAnnotations(tool),
+        _meta: { securitySchemes: SECURITY_SCHEMES },
       },
       // deno-lint-ignore no-explicit-any
       async (args: any) => {
@@ -69,8 +76,20 @@ export async function handleMcp(r: Request, agent: Agent): Promise<Response> {
   const server = buildMcpServer(agent);
   const transport = new WebStandardStreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
   await server.connect(transport);
+  const method = await r.clone().json().then((b) => b?.method).catch(() => null);
   const res = await transport.handleRequest(r);
   const headers = new Headers(res.headers);
   for (const [k, v] of Object.entries(cors(r))) headers.set(k, v);
+
+  // Mirror securitySchemes at the top level of each tool descriptor, as
+  // OpenAI's tool-security format expects (the SDK only emits _meta).
+  if (method === "tools/list" && res.status === 200 && (res.headers.get("content-type") ?? "").includes("application/json")) {
+    const payload = await res.json();
+    if (Array.isArray(payload?.result?.tools)) {
+      payload.result.tools = payload.result.tools.map((t: Record<string, unknown>) => ({ ...t, securitySchemes: SECURITY_SCHEMES }));
+    }
+    headers.delete("content-length");
+    return new Response(JSON.stringify(payload), { status: 200, headers });
+  }
   return new Response(res.body, { status: res.status, headers });
 }

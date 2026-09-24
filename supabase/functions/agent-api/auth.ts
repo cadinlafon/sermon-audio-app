@@ -1,5 +1,6 @@
 import { getDocument, nowTs, runQuery, whereField, writeDocument } from "./firestore.ts";
 import type { Agent } from "./tools.ts";
+import { MCP_RESOURCE } from "./http.ts";
 
 export async function sha256Hex(input: string) {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input));
@@ -20,7 +21,9 @@ function toAgent(doc: any): Agent {
 // Both credential types resolve to the same agent record, so scopes are always
 // read live: revoking or editing an agent in the admin takes effect immediately,
 // including for OAuth tokens already handed out.
-export async function authenticate(r: Request): Promise<Agent> {
+// `mcp` = this request is for the MCP endpoint. OAuth tokens are bound to that
+// resource (RFC 8707 audience), so they are refused everywhere else.
+export async function authenticate(r: Request, opts: { mcp?: boolean } = {}): Promise<Agent> {
   const bearer = r.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim();
   if (!bearer) throw new Error("unauthorized");
 
@@ -30,8 +33,11 @@ export async function authenticate(r: Request): Promise<Agent> {
   }
 
   if (TOKEN_RE.test(bearer)) {
+    if (!opts.mcp) throw new Error("unauthorized"); // OAuth tokens are only valid on /mcp — refuse before any DB read
     const token = await getDocument(`agentOAuthTokens/${await sha256Hex(bearer)}`);
     if (!token || token.kind !== "access" || Date.parse(token.expiresAt as string) < Date.now()) throw new Error("unauthorized");
+    // Audience check: minted for the MCP resource, and only usable on it.
+    if (!opts.mcp || token.resource !== MCP_RESOURCE()) throw new Error("unauthorized");
     return toAgent(await getDocument(`agentKeys/${token.agentId}`));
   }
 

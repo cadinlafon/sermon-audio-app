@@ -7,6 +7,8 @@ import { logAdminAction } from "../utils/adminAudit";
 import { agentApiUrl, listAgentKeys } from "../utils/agentKeys";
 import { SCOPE_LABELS, RISKY_SCOPES } from "../config/agentScopes";
 
+const APP_LABEL = "Palouse Fellowship App";
+
 // Consent screen for OAuth connectors (ChatGPT etc.). The agent-api edge
 // function sends the browser here (Supabase can't serve HTML itself). A FULL
 // admin picks which existing agent — and therefore which permissions — the
@@ -46,10 +48,11 @@ export default function AgentAuthorize() {
 }
 
 function Consent() {
+  const { user } = useAuth();
   const { search } = useLocation();
   const pinCtx = useAdminPin();
   const p = new URLSearchParams(search);
-  const params = { client_id: p.get("client_id"), redirect_uri: p.get("redirect_uri"), state: p.get("state") || undefined, code_challenge: p.get("code_challenge") };
+  const params = { client_id: p.get("client_id"), redirect_uri: p.get("redirect_uri"), state: p.get("state") || undefined, code_challenge: p.get("code_challenge"), resource: p.get("resource") || undefined };
 
   const [clientName, setClientName] = useState("");
   const [agents, setAgents] = useState(null);
@@ -57,6 +60,8 @@ function Consent() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
+  let redirectHost = "";
+  try { redirectHost = new URL(params.redirect_uri).host; } catch { /* shown as invalid below */ }
   const invalid = !params.client_id || !params.redirect_uri || !params.code_challenge;
 
   useEffect(() => {
@@ -122,8 +127,8 @@ function Consent() {
   return (
     <Shell>
       <div style={{ fontSize: "30px" }}>🤖</div>
-      <h1 style={title}>{clientName || "An AI app"} wants to connect</h1>
-      <p style={muted}>Choose which agent it acts as. It will be able to do only what that agent is allowed to — nothing more — and every change it makes is logged.</p>
+      <h1 style={title}>{clientName || "An AI app"} wants to connect to the {APP_LABEL}</h1>
+      <p style={muted}>Signed in as <strong>{user.email}</strong>. Requesting app: <strong>{clientName || "unknown"}</strong> (returns to {redirectHost}). Choose which agent it acts as. It can do only what that agent is allowed to — nothing more, and it never gets administrator access — and every change it makes is logged.</p>
 
       {agents === null ? <p style={muted}>Loading agents…</p> : agents.length === 0 ? (
         <p style={warn}>You have no active agents. Create one in Admin → AI Agents (choose its permissions there), then connect again.</p>
@@ -143,6 +148,9 @@ function Consent() {
         </div>
       )}
 
+      {chosen && (
+        <p style={muted}>You are granting <strong>{chosen.name}</strong> these permissions: {(chosen.scopes || []).map((s) => SCOPE_LABELS[s] || s).join(", ") || "none"}.</p>
+      )}
       {risky && <p style={warn}>⚠ This agent can change or delete your content.</p>}
       {error && <p style={warn} role="alert">{error}</p>}
 

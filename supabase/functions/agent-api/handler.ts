@@ -6,10 +6,10 @@
 import { allowedTools, callTool, TOOLS } from "./tools.ts";
 import type { Agent, Tool } from "./tools.ts";
 import { authenticate } from "./auth.ts";
-import { cors, json } from "./http.ts";
+import { cors, json, publicBase } from "./http.ts";
 import { errorInfo } from "./errors.ts";
 import { handleMcp } from "./mcp.ts";
-import { handleOAuth, publicBase } from "./oauth.ts";
+import { handleOAuth, OAUTH_SCOPE } from "./oauth.ts";
 
 const inputSchema = (t: Tool) => ({ type: "object", properties: t.input, ...(t.required?.length ? { required: t.required } : {}) });
 
@@ -48,10 +48,10 @@ export async function handler(r: Request): Promise<Response> {
     if (path === "/mcp") {
       let agent: Agent;
       try {
-        agent = await authenticate(r);
+        agent = await authenticate(r, { mcp: true });
       } catch (e) {
         const { status, message } = errorInfo(e);
-        return json(r, { error: message }, status, { "WWW-Authenticate": `Bearer resource_metadata="${publicBase()}/.well-known/oauth-protected-resource"` });
+        return json(r, { error: message }, status, { "WWW-Authenticate": `Bearer resource_metadata="${publicBase()}/.well-known/oauth-protected-resource", scope="${OAUTH_SCOPE}"` });
       }
       return await handleMcp(r, agent);
     }

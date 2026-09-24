@@ -35,6 +35,18 @@ Every request is authorized server-side against an **agent** created in *Admin �
 
 An OAuth connection can never do more than its agent's permissions. Tokens, keys, the service account, and Supabase keys are never returned by any endpoint or written to logs.
 
+## ChatGPT/OAuth compliance notes
+
+Checked against OpenAI's MCP auth requirements:
+
+- **Redirect URIs allowlisted for ChatGPT** (exactly these, https only): `https://chatgpt.com/connector_platform_oauth_redirect` (used because the server advertises RFC 9207 issuer identification and returns `iss`) and `https://chatgpt.com/connector/oauth/{callback_id}` (fallback). Anything else is rejected at registration. Loopback (`localhost`/`127.0.0.1`) and Claude's `https://claude.ai|claude.com/api/mcp/auth_callback` are also allowed.
+- **Discovery:** `/mcp` answers `401` with `WWW-Authenticate: Bearer resource_metadata="…/.well-known/oauth-protected-resource", scope="agent"`. Metadata is served at `…/agent-api/.well-known/oauth-protected-resource`, `…/agent-api/mcp/.well-known/oauth-protected-resource`, `…/agent-api/.well-known/oauth-authorization-server`, and `…/agent-api/.well-known/openid-configuration`. Supabase only routes paths under `/functions/v1/agent-api`, so the root-of-host `/.well-known/…` locations can't be served; the `WWW-Authenticate` header is the documented fallback.
+- **Resource / audience:** the `resource` parameter is validated at `/authorize`, `/approve` and `/token`, stored with the code and both tokens, and every `/mcp` request checks the token's resource equals `…/agent-api/mcp`. OAuth tokens are rejected on every other path (REST, JSON-RPC).
+- **Per request:** token hash lookup → kind is `access` → not expired → audience matches → agent exists, not revoked, key not expired → that agent's live scopes decide which tools exist/run. Tokens are opaque (no JWT), so "issuer" is implicit: only this function mints and accepts them. A token never grants admin access — it only resolves to an agent record.
+- **Per-tool security:** every tool is listed with `securitySchemes: [{"type":"oauth2","scopes":["agent"]}]` (top level and `_meta`); there are no anonymous tools. Read-only/destructive hints are in `annotations`.
+- **Storage/logging:** authorization codes, access tokens and refresh tokens are stored only as SHA-256 hashes (tests assert plaintext never appears); the function contains no logging calls.
+- **Known limitation:** the Admin PIN/passkey is enforced by the web app (as everywhere in this app), not by the server. The server does require a valid Firebase session of a *full* admin plus a matching `Origin`, but a full admin could call `/oauth/approve` directly and skip the PIN prompt.
+
 ## Tools
 
 Exposed only if the agent has the matching permission (`src/config/agentScopes.js` lists them; keep it in sync with `tools.ts`).
