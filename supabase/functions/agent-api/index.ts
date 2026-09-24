@@ -537,7 +537,8 @@ function errorInfo(e: unknown) {
 }
 
 function openApi(r: Request, agent: Agent) {
-  const base = new URL(r.url); const root = `${base.origin}${base.pathname.replace(/\/(openapi\.json|tools\/.*)$/, "")}`;
+  // Inside Supabase the request URL is an internal http:// path, so build the public one.
+  const root = `${Deno.env.get("SUPABASE_URL") ?? new URL(r.url).origin}/functions/v1/agent-api`;
   const paths: Record<string, unknown> = {};
   for (const t of allowedTools(agent)) {
     paths[`/tools/${t.name}`] = { post: { operationId: t.name, summary: t.description.slice(0, 120), description: t.description, requestBody: { required: !!t.required?.length, content: { "application/json": { schema: inputSchema(t) } } }, responses: { "200": { description: "Result", content: { "application/json": { schema: { type: "object" } } } } } } };
@@ -551,9 +552,16 @@ Deno.serve(async (r) => {
   const path = url.pathname.replace(/^\/functions\/v1\/agent-api/, "").replace(/^\/agent-api/, "") || "/";
 
   try {
+    // The schema only describes tool names/parameters (no data), and ChatGPT's
+    // "Import from URL" fetches it without credentials — so serve the full spec
+    // publicly. Calls are still authenticated and scope-checked per key.
+    if (r.method === "GET" && path === "/openapi.json") {
+      const agent = await authenticate(r).catch(() => null);
+      return json(r, openApi(r, agent ?? { id: "public", name: "Your agent", provider: "other", scopes: TOOLS.map((t) => t.scope) }));
+    }
+
     const agent = await authenticate(r);
 
-    if (r.method === "GET" && path === "/openapi.json") return json(r, openApi(r, agent));
     if (r.method === "GET" && (path === "/" || path === "/tools")) return json(r, { agent: { name: agent.name, provider: agent.provider, scopes: agent.scopes }, tools: allowedTools(agent).map((t) => ({ name: t.name, description: t.description, inputSchema: inputSchema(t) })) });
 
     if (r.method === "POST" && path.startsWith("/tools/")) {

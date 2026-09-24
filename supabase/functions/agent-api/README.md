@@ -7,7 +7,7 @@ Protocols on one URL (`/functions/v1/agent-api`):
 | Use | Request |
 |---|---|
 | MCP (Claude etc.) | `POST /` JSON-RPC: `initialize`, `tools/list`, `tools/call` |
-| ChatGPT Actions | `GET /openapi.json`, then `POST /tools/{name}` |
+| ChatGPT Actions | `GET /openapi.json` (public, lists all tools), then `POST /tools/{name}` with the key |
 | Plain HTTP | `POST /tools/{name}` with JSON body |
 | Discovery | `GET /` (lists the tools this key may use) |
 

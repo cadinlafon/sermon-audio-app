@@ -200,7 +200,7 @@ export default function Agents() {
             <pre style={pre}>{`claude mcp add --transport http church-app ${apiUrl} \\\n  --header "Authorization: Bearer YOUR_AGENT_KEY"`}</pre>
             <p style={helpP}>Or in an MCP client's JSON config:</p>
             <pre style={pre}>{mcpConfig}</pre>
-            <p style={helpP}><strong>ChatGPT (Custom GPT → Actions):</strong> import the schema from <code style={codeInline}>{apiUrl}/openapi.json</code> (send your key as a Bearer token to fetch it), then set Authentication → API Key → Bearer and paste the key.</p>
+            <p style={helpP}><strong>ChatGPT (Custom GPT → Actions):</strong> use Import from URL with <code style={codeInline}>{apiUrl}/openapi.json</code> (no key in the URL), then set Authentication → API Key → Auth Type: Bearer and paste the key there. The imported schema lists every tool; ones your key lacks permission for will be refused.</p>
             <p style={helpP}><strong>Anything else:</strong> plain HTTP works too — <code style={codeInline}>POST {apiUrl}/tools/&lt;tool_name&gt;</code> with a JSON body and <code style={codeInline}>Authorization: Bearer KEY</code>.</p>
             <p style={helpMuted}>An agent only ever sees the tools its key allows, and every change it makes appears in Logs → Admin Actions under "Agent Actions". Note: claude.ai's built-in custom connectors may require OAuth rather than a static key; Claude Code, Claude Desktop config, and API-based agents accept the header above.</p>
           </div>
