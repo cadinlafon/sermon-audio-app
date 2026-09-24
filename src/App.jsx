@@ -68,6 +68,7 @@ import PageManager from "./pages/Admin/PageManager";
 import ResourceManager from "./pages/Admin/ResourceManager";
 import Security from "./pages/Admin/Security";
 import Agents from "./pages/Admin/Agents";
+import AgentAuthorize from "./pages/AgentAuthorize";
 
 
 //////////////////////////////////////////////////
@@ -96,8 +97,11 @@ function RequireAuth({ user, children }) {
  * /login or /signup, send them home instead.
  */
 function RequireLoggedOut({ user, children }) {
+  const location = useLocation();
   if (user) {
-    return <Navigate to="/" replace />;
+    // A sign-in that started from the AI-connector consent screen goes back to it.
+    const next = new URLSearchParams(location.search).get("next");
+    return <Navigate to={next && next.startsWith("/agent-authorize?") ? next : "/"} replace />;
   }
 
   return children;
@@ -447,6 +451,8 @@ function App() {
               </RequireLoggedOut>
             }
           />
+
+          <Route path="/agent-authorize" element={<AgentAuthorize />} />
 
           <Route
             path="/signup"

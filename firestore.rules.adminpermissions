@@ -92,3 +92,12 @@ match /agentKeys/{keyId} {
     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' &&
     !('permissions' in get(/databases/$(database)/documents/users/$(request.auth.uid)).data);
 }
+
+// ── Block 4: OAuth connector state ─────────────────────────────────
+// agentOAuthClients / agentOAuthCodes / agentOAuthTokens are written and
+// read ONLY by the agent-api edge function (service account, which
+// bypasses rules). Nothing in the browser should ever touch them.
+
+match /agentOAuthClients/{id} { allow read, write: if false; }
+match /agentOAuthCodes/{id}   { allow read, write: if false; }
+match /agentOAuthTokens/{id}  { allow read, write: if false; }

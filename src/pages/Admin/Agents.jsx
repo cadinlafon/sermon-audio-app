@@ -167,9 +167,7 @@ export default function Agents() {
     return { label: "Active", ...activePill };
   };
 
-  const mcpConfig = JSON.stringify({ mcpServers: { "church-app": { type: "http", url: apiUrl, headers: { Authorization: "Bearer YOUR_AGENT_KEY" } } } }, null, 2);
-
-  //////////////////////////////////////////////////
+    //////////////////////////////////////////////////
   // RENDER
   //////////////////////////////////////////////////
 
@@ -196,13 +194,18 @@ export default function Agents() {
         <button style={linkBtn} onClick={() => setShowHelp((v) => !v)}>{showHelp ? "Hide" : "How to connect"} ▾</button>
         {showHelp && (
           <div style={helpBox}>
-            <p style={helpP}><strong>Claude (MCP):</strong> add this as a remote MCP server that sends the key as a Bearer header — for example in Claude Code:</p>
-            <pre style={pre}>{`claude mcp add --transport http church-app ${apiUrl} \\\n  --header "Authorization: Bearer YOUR_AGENT_KEY"`}</pre>
-            <p style={helpP}>Or in an MCP client's JSON config:</p>
-            <pre style={pre}>{mcpConfig}</pre>
-            <p style={helpP}><strong>ChatGPT (Custom GPT → Actions):</strong> use Import from URL with <code style={codeInline}>{apiUrl}/openapi.json</code> (no key in the URL), then set Authentication → API Key → Auth Type: Bearer and paste the key there. The imported schema lists every tool; ones your key lacks permission for will be refused.</p>
-            <p style={helpP}><strong>Anything else:</strong> plain HTTP works too — <code style={codeInline}>POST {apiUrl}/tools/&lt;tool_name&gt;</code> with a JSON body and <code style={codeInline}>Authorization: Bearer KEY</code>.</p>
-            <p style={helpMuted}>An agent only ever sees the tools its key allows, and every change it makes appears in Logs → Admin Actions under "Agent Actions". Note: claude.ai's built-in custom connectors may require OAuth rather than a static key; Claude Code, Claude Desktop config, and API-based agents accept the header above.</p>
+            <p style={helpP}><strong>ChatGPT (Connectors / MCP):</strong> add a custom connector with the server URL below and choose <em>OAuth</em>. ChatGPT opens a screen in this app where you pick which agent (and so which permissions) it gets, and confirm with your Admin PIN. ChatGPT can't use a pasted key here.</p>
+            <div style={infoRow}>
+              <code style={codeInline}>{apiUrl}/mcp</code>
+              <button style={smallBtn} onClick={() => copy(`${apiUrl}/mcp`, "mcp")}>{copied === "mcp" ? "✓ Copied" : "Copy"}</button>
+            </div>
+            <p style={helpP}><strong>Codex:</strong> store the agent key in an environment variable and reference it in <code style={codeInline}>~/.codex/config.toml</code>:</p>
+            <pre style={pre}>{`[mcp_servers.palouse]\nurl = "${apiUrl}/mcp"\nbearer_token_env_var = "PALOUSE_AGENT_KEY"`}</pre>
+            <p style={helpP}><strong>Claude Code / other MCP clients (static key):</strong></p>
+            <pre style={pre}>{`claude mcp add --transport http church-app ${apiUrl}/mcp \\\n  --header "Authorization: Bearer YOUR_AGENT_KEY"`}</pre>
+            <p style={helpP}><strong>ChatGPT Custom GPT → Actions:</strong> use Import from URL with <code style={codeInline}>{apiUrl}/openapi.json</code> (no key in the URL), then Authentication → API Key → Auth Type: Bearer and paste the key. The schema lists every tool; ones your key lacks permission for are refused.</p>
+            <p style={helpP}><strong>Anything else:</strong> <code style={codeInline}>POST {apiUrl}/tools/&lt;tool_name&gt;</code> with a JSON body and <code style={codeInline}>Authorization: Bearer KEY</code>.</p>
+            <p style={helpMuted}>An agent only ever sees the tools it's allowed to use, and every change it makes appears in Logs → Admin Actions under "Agent Actions". Revoking an agent immediately cuts off its keys and any connector you authorized.</p>
           </div>
         )}
       </div>

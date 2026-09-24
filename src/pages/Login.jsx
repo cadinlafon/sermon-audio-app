@@ -13,6 +13,13 @@ import { logEvent } from "../utils/logEvent";
 import { checkRegistrationAllowed, recordRegistration } from "../utils/registrationGate";
 import googleLogo from "../assets/auth/google-logo.png";
 
+// After signing in, return to the connector-authorization screen if that's
+// where the visit started (only that one internal path is allowed).
+const afterLoginPath = () => {
+  const next = new URLSearchParams(window.location.search).get("next");
+  return next && next.startsWith("/agent-authorize?") ? next : "/";
+};
+
 export default function Login() {
   const navigate = useNavigate();
 
@@ -26,7 +33,7 @@ export default function Login() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        navigate("/", { replace: true });
+        navigate(afterLoginPath(), { replace: true });
       }
     });
 
@@ -61,7 +68,7 @@ export default function Login() {
       setEmail("");
       setPassword("");
 
-      navigate("/", { replace: true });
+      navigate(afterLoginPath(), { replace: true });
     } catch (err) {
       console.error("Login failed:", err);
 
@@ -127,7 +134,7 @@ export default function Login() {
         uid: result.user.uid,
       });
 
-      navigate("/", { replace: true });
+      navigate(afterLoginPath(), { replace: true });
     } catch (err) {
       console.error("Google login failed:", err);
 
