@@ -12,6 +12,8 @@ const CATEGORY_COLORS = {
   content_edit: { bg: "#e8f0fe", color: "#2a5ab5" },
   content_delete: { bg: "#fee2e2", color: "#991b1b" },
   settings_change: { bg: "#dcfce7", color: "#166534" },
+  agent_key: { bg: "#e0f2fe", color: "#075985" },
+  agent_action: { bg: "#ede9fe", color: "#5b21b6" },
 };
 
 const categoryStyle = (category) => CATEGORY_COLORS[category] || { bg: "#f0e4d0", color: "#5c3a1e" };

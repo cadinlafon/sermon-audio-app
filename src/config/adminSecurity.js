@@ -29,6 +29,7 @@ export const SENSITIVE_ACTIONS = [
   { key: "uploadAudio", label: "Uploading Audio", icon: "🎙️" },
   { key: "deleteAudio", label: "Deleting Audio", icon: "🗑️" },
   { key: "appShutdown", label: "Enabling / Disabling the App", icon: "⛔" },
+  { key: "agentKey", label: "Creating / Rotating Agent Keys", icon: "🤖" },
 ];
 
 export const DEFAULT_REQUIRE_PIN_FOR = SENSITIVE_ACTIONS.map((a) => a.key);

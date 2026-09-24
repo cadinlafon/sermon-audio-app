@@ -22,6 +22,7 @@ export const ADMIN_MODULES = [
   { key: "referrals", path: "referrals", label: "Referrals", icon: "📣", actions: ["view", "edit", "delete"] },
   { key: "settings", path: "settings", label: "Advanced", icon: "⚙️", actions: ["view", "edit"] },
   { key: "security", path: "security", label: "Security", icon: "🔒", actions: ["view", "edit"] },
+  { key: "agents", path: "agents", label: "AI Agents", icon: "🤖", actions: ["view", "edit", "delete"] },
 ];
 
 export const ADMIN_MODULE_MAP = Object.fromEntries(ADMIN_MODULES.map((m) => [m.key, m]));

@@ -10,3 +10,7 @@ verify_jwt = false
 [functions.audio-download-url]
 # Same as above: authenticates the Firebase ID token itself.
 verify_jwt = false
+
+[functions.agent-api]
+# Authenticates its own scoped agent API keys (see Admin -> Agents), not Supabase JWTs.
+verify_jwt = false

@@ -67,6 +67,7 @@ import DoctrineAdmin from "./pages/Admin/DoctrineAdmin";
 import PageManager from "./pages/Admin/PageManager";
 import ResourceManager from "./pages/Admin/ResourceManager";
 import Security from "./pages/Admin/Security";
+import Agents from "./pages/Admin/Agents";
 
 
 //////////////////////////////////////////////////
@@ -598,6 +599,11 @@ function App() {
               <Route
                 path="security"
                 element={<ModuleGate moduleKey="security"><Security /></ModuleGate>}
+              />
+
+              <Route
+                path="agents"
+                element={<ModuleGate moduleKey="agents"><Agents /></ModuleGate>}
               />
 
               <Route

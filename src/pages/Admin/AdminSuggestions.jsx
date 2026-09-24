@@ -61,6 +61,17 @@ export default function AdminSuggestions() {
               </div>
             </div>
 
+            {Array.isArray(s.adminComments) && s.adminComments.length > 0 && (
+              <div style={commentsBox}>
+                {s.adminComments.map((c, i) => (
+                  <div key={i} style={commentRow}>
+                    <span style={commentBy}>{c.agent ? "🤖 " : ""}{c.by || "Admin"}</span>
+                    <span style={commentText}>{c.text}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <div style={statusRow}>
               {perms.canEdit && (
                 <>
@@ -111,3 +122,7 @@ const statusRowLabel = { fontSize: "11px", fontFamily: "sans-serif", color: "#9b
 const statusBtn = { padding: "5px 10px", borderRadius: "8px", border: "1px solid", fontSize: "12px", fontFamily: "sans-serif", cursor: "pointer" };
 const deleteBtn = { marginLeft: "auto", padding: "5px 12px", borderRadius: "8px", border: "1px solid #fca5a5", background: "transparent", color: "#dc2626", fontSize: "12px", fontFamily: "sans-serif", cursor: "pointer" };
 const empty = { textAlign: "center", color: "#b08050", fontFamily: "sans-serif", fontStyle: "italic", padding: "40px 0" };
+const commentsBox = { display: "flex", flexDirection: "column", gap: "6px", borderTop: "1px solid #f0e4d0", paddingTop: "10px", marginBottom: "10px" };
+const commentRow = { display: "flex", flexDirection: "column", gap: "2px", background: "#fdf8f3", borderRadius: "8px", padding: "8px 10px" };
+const commentBy = { fontSize: "11px", fontFamily: "sans-serif", color: "#9b7040" };
+const commentText = { fontSize: "13px", fontFamily: "sans-serif", color: "#3d2200", whiteSpace: "pre-wrap" };

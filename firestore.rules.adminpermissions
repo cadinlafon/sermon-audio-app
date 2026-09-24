@@ -77,3 +77,18 @@ match /notices/{noticeId} {
 // Each `get()` inside actor() is a billed read — call actor() once per
 // request (as above) rather than once per moduleAllows() call if you
 // add more than one match block that needs it.
+
+// ── Block 3: agent API keys ─────────────────────────────────────────
+// agentKeys/{id} holds SHA-256 hashes of AI-agent API keys plus the
+// permissions each key grants (see Admin → AI Agents). The agent-api
+// edge function reads it with a service account, which bypasses rules,
+// so client access can be locked down hard: only FULL admins (role ==
+// admin and no `permissions` map) may read or write it from the app.
+// Without this, any signed-in user could read key hashes or grant
+// themselves an agent key with delete-everything scopes.
+
+match /agentKeys/{keyId} {
+  allow read, write: if request.auth != null &&
+    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' &&
+    !('permissions' in get(/databases/$(database)/documents/users/$(request.auth.uid)).data);
+}

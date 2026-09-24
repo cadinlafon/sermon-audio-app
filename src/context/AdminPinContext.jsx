@@ -65,8 +65,20 @@ export function AdminPinProvider({ children }) {
   const ownerPasskeyAvailable = !isRestricted && isPasskeySupported() && security.passkeys.length > 0;
 
   const requirePin = useMemo(
-    () => (actionKey) =>
+    () => (actionKey, options = {}) =>
       new Promise((resolve) => {
+        // strict: always ask, even if PIN protection is off or this session
+        // is already unlocked — and refuse outright if no PIN/passkey exists.
+        // Used for actions that mint credentials (agent API keys).
+        if (options.strict) {
+          if (!activePinAvailable && !ownerPasskeyAvailable) {
+            alert("Set an Admin PIN (or passkey) in Security first — this action always requires it.");
+            return resolve(false);
+          }
+          setError("");
+          setRequest({ actionKey, resolve, strict: true });
+          return undefined;
+        }
         if (!security.pinEnabled) return resolve(true);
         // securityChange isn't a toggle — always required once a PIN
         // exists, so security:edit access alone can't turn the PIN off.
@@ -75,7 +87,7 @@ export function AdminPinProvider({ children }) {
         setError("");
         setRequest({ actionKey, resolve });
       }),
-    [security.pinEnabled, security.requirePinFor, unlocked]
+    [security.pinEnabled, security.requirePinFor, unlocked, activePinAvailable, ownerPasskeyAvailable]
   );
 
   const lockNow = () => setUnlocked(false);
@@ -228,7 +240,7 @@ export function AdminPinProvider({ children }) {
             ) : (
               <PinEntry
                 title="Confirm With PIN"
-                subtitle="This action requires your admin PIN."
+                subtitle={request.strict ? "Authorize this with your admin PIN or passkey. It is required every time." : "This action requires your admin PIN."}
                 onSubmitPin={submitPin}
                 onSubmitPassword={usePassword}
                 onUsePasskey={usePasskey}

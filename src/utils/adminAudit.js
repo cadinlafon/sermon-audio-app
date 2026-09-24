@@ -23,6 +23,8 @@ export const ADMIN_ACTION_CATEGORIES = {
   content_edit: "Content Edit",
   content_delete: "Content Delete",
   settings_change: "Settings Change",
+  agent_key: "Agent Keys",
+  agent_action: "Agent Actions",
 };
 
 function describeDevice() {
