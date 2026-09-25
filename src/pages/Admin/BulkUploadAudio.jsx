@@ -1,3 +1,4 @@
+import UploadProgress from "../../components/UploadProgress";
 import { useRef, useState } from "react";
 import { db } from "../../firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
@@ -287,8 +288,8 @@ export default function BulkUploadAudio({ speakers }) {
                 <div style={rowFileName}>{item.fileName}</div>
 
                 {item.status === "uploading" && (
-                  <div style={rowProgressTrack}>
-                    <div style={{ ...rowProgressFill, width: `${item.progress ?? 0}%` }} />
+                  <div style={{ marginTop: "8px" }}>
+                    <UploadProgress percent={item.progress} totalBytes={item.file?.size} compact label={item.fileName} />
                   </div>
                 )}
 

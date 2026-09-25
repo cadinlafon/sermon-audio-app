@@ -5,6 +5,7 @@ import { uploadPrivateAudio } from "../../utils/privateAudioUpload";
 import { getNextAudioOrder } from "../../utils/audioOrder";
 import { createTranscriptionCopy } from "../../utils/transcodeForTranscription";
 import BulkUploadAudio from "./BulkUploadAudio";
+import UploadProgress from "../../components/UploadProgress";
 import { useModulePermissions } from "../../hooks/usePermissions";
 import { useAdminPin } from "../../context/AdminPinContext";
 
@@ -188,22 +189,11 @@ export default function UploadAudio() {
         {/* UPLOADING STATE */}
         {uploading && (
           <div style={fieldGroup}>
-            <div style={progressTrack}>
-              {progress === null ? (
-                <div style={progressFillIndeterminate} />
-              ) : (
-                <div style={{ ...progressFillDeterminate, width: `${progress}%` }} />
-              )}
-            </div>
-            <p style={progressLabel}>
-              {transcodeStatus
-                ? transcodeStatus
-                : progress === null
-                ? "Preparing upload…"
-                : progress < 100
-                ? `Uploading… ${progress}%`
-                : "Finishing up…"}
-            </p>
+            <UploadProgress
+              percent={transcodeStatus ? null : progress}
+              totalBytes={file?.size}
+              label={transcodeStatus ? transcodeStatus : progress === null ? "Preparing upload…" : progress < 100 ? `Uploading… ${progress}%` : "Finishing up…"}
+            />
           </div>
         )}
 

@@ -11,18 +11,18 @@ import useAudioList from "../hooks/useAudioList";
 import useOnlineStatus from "../hooks/useOnlineStatus";
 import AudioCard from "../components/AudioCard";
 import PlayAllBar from "../components/PlayAllBar";
+import useAudioFilters from "../hooks/useAudioFilters";
+import AudioFilterBar, { NoResults } from "../components/AudioFilterBar";
+import SkeletonList from "../components/Skeleton";
 
 export default function SundaySchool() {
   const [notices, setNotices] = useState([]);
 
-  const [search, setSearch] = useState("");
-  const [sortOrder, setSortOrder] = useState("desc");
-  const [speakerFilter, setSpeakerFilter] = useState("all");
 
   const { playSermon } = useAudioPlayer();
 
   const isOnline = useOnlineStatus();
-  const [lessons, setLessons] = useAudioList(
+  const [lessons, setLessons, loading] = useAudioList(
     async () => {
       const q = query(collection(db, "audio"), where("type", "==", "sundayschool"));
       const snapshot = await getDocs(q);
@@ -46,29 +46,15 @@ export default function SundaySchool() {
     setLessons((items) => items.map((item) => item.id === id ? { ...item, aiSummary } : item));
   };
 
-  const speakers = [...new Set(lessons.map((l) => l.speaker).filter(Boolean))];
-
-  const filtered = lessons.filter((item) =>
-    item.title?.toLowerCase().includes(search.toLowerCase()) &&
-    (speakerFilter === "all" || item.speaker === speakerFilter)
-  );
-
-  const displayList = sortOrder === "desc" ? filtered : [...filtered].reverse();
+  // Sunday School has always listed lessons in order (oldest first).
+  const f = useAudioFilters(lessons, "sundayschool", { defaultSort: "oldest" });
+  const displayList = f.result;
 
   return (
     <div style={page}>
       <h1 style={pageTitle}>Sunday School</h1>
 
-      <div style={controls}>
-        <button onClick={() => setSortOrder(sortOrder === "desc" ? "asc" : "desc")} style={pillButton}>
-          {sortOrder === "desc" ? "Oldest first" : "Newest first"}
-        </button>
-        <input placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} style={inputStyle} />
-        <select value={speakerFilter} onChange={(e) => setSpeakerFilter(e.target.value)} style={inputStyle}>
-          <option value="all">All speakers</option>
-          {speakers.map((s) => <option key={s}>{s}</option>)}
-        </select>
-      </div>
+      <AudioFilterBar f={f} loading={loading} />
 
       {notices.filter((n) => n.position === "top").map((n) => (
         <div key={n.id} style={noticeBox}>
@@ -77,9 +63,10 @@ export default function SundaySchool() {
         </div>
       ))}
 
-      {displayList.length === 0 && <p style={emptyText}>{!isOnline && lessons.length === 0 ? "You're offline and nothing has been downloaded yet. Download audio while online to listen without a connection." : "Nothing found — try adjusting your filters."}</p>}
+      {loading && lessons.length === 0 && <SkeletonList />}
+      {!loading && displayList.length === 0 && <NoResults f={f} offlineNothing={!isOnline && lessons.length === 0} />}
 
-      <PlayAllBar items={displayList} filtered={!!(search || speakerFilter !== "all")} />
+      <PlayAllBar items={displayList} filtered={f.chips.length > 0} />
       {displayList.map((item) => (
         <AudioCard key={item.id} audio={item} onPlay={playSermon} onSummarySaved={saveSummaryLocally} />
       ))}

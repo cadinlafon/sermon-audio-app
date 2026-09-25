@@ -11,19 +11,18 @@ import useAudioList from "../hooks/useAudioList";
 import useOnlineStatus from "../hooks/useOnlineStatus";
 import AudioCard from "../components/AudioCard";
 import PlayAllBar from "../components/PlayAllBar";
+import useAudioFilters from "../hooks/useAudioFilters";
+import AudioFilterBar, { NoResults } from "../components/AudioFilterBar";
+import SkeletonList from "../components/Skeleton";
 
 export default function Sermons() {
   const [notices, setNotices] = useState([]);
 
-  const [search, setSearch] = useState("");
-  const [sortOrder, setSortOrder] = useState("desc");
-  const [speakerFilter, setSpeakerFilter] = useState("all");
-  const [typeFilter, setTypeFilter] = useState("all");
 
   const { playSermon } = useAudioPlayer();
 
   const isOnline = useOnlineStatus();
-  const [sermons, setSermons] = useAudioList(
+  const [sermons, setSermons, loading] = useAudioList(
     async () => {
       const q = query(collection(db, "audio"), where("type", "in", ["sermon", "homily"]));
       const snapshot = await getDocs(q);
@@ -43,39 +42,19 @@ export default function Sermons() {
     fetchNotices();
   }, []);
 
-  const speakers = [...new Set(sermons.map((s) => s.speaker).filter(Boolean))];
+  const f = useAudioFilters(sermons, "sermons");
 
   const saveSummaryLocally = (id, aiSummary) => {
     setSermons((items) => items.map((item) => item.id === id ? { ...item, aiSummary } : item));
   };
 
-  const filtered = sermons.filter((sermon) =>
-    sermon.title?.toLowerCase().includes(search.toLowerCase()) &&
-    (speakerFilter === "all" || sermon.speaker === speakerFilter) &&
-    (typeFilter === "all" || sermon.type === typeFilter)
-  );
-
-  const displayList = sortOrder === "desc" ? [...filtered].reverse() : filtered;
+  const displayList = f.result;
 
   return (
     <div style={page}>
       <h1 style={pageTitle}>Sermons &amp; Homilies</h1>
 
-      <div style={controls}>
-        <button onClick={() => setSortOrder(sortOrder === "desc" ? "asc" : "desc")} style={pillButton}>
-          {sortOrder === "desc" ? "Newest first" : "Oldest first"}
-        </button>
-        <input placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} style={inputStyle} />
-        <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} style={inputStyle}>
-          <option value="all">All types</option>
-          <option value="sermon">Sermons</option>
-          <option value="homily">Homilies</option>
-        </select>
-        <select value={speakerFilter} onChange={(e) => setSpeakerFilter(e.target.value)} style={inputStyle}>
-          <option value="all">All speakers</option>
-          {speakers.map((s) => <option key={s}>{s}</option>)}
-        </select>
-      </div>
+      <AudioFilterBar f={f} showType loading={loading} />
 
       {notices.filter((n) => n.position === "top").map((n) => (
         <div key={n.id} style={noticeBox}>
@@ -84,9 +63,10 @@ export default function Sermons() {
         </div>
       ))}
 
-      {displayList.length === 0 && <p style={emptyText}>{!isOnline && sermons.length === 0 ? "You're offline and nothing has been downloaded yet. Download audio while online to listen without a connection." : "Nothing found — try adjusting your filters."}</p>}
+      {loading && sermons.length === 0 && <SkeletonList />}
+      {!loading && displayList.length === 0 && <NoResults f={f} offlineNothing={!isOnline && sermons.length === 0} />}
 
-      <PlayAllBar items={displayList} filtered={!!(search || speakerFilter !== "all" || typeFilter !== "all")} />
+      <PlayAllBar items={displayList} filtered={f.chips.length > 0} />
       {displayList.map((sermon) => (
         <AudioCard key={sermon.id} audio={sermon} onPlay={playSermon} onSummarySaved={saveSummaryLocally} />
       ))}

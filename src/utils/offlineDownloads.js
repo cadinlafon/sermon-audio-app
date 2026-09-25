@@ -4,6 +4,9 @@ import { supabase } from "../supabase";
 
 export const MAX_DOWNLOADS = 5;
 
+// Lets lists, filters and the Downloads page refresh when a download is added or removed.
+export const notifyDownloadsChanged = () => window.dispatchEvent(new Event("downloads-changed"));
+
 // The actual audio bytes live in IndexedDB — per-device, never synced.
 // users/{uid}.downloads in Firestore is the cross-device source of truth
 // for the 5-download cap, so switching devices doesn't reset it, even
@@ -153,6 +156,7 @@ export async function downloadForOffline(user, audio) {
     { audioId: audio.id, title: audio.title || "", downloadedAt: Date.now() },
   ];
   await updateDoc(userRef, { downloads: next });
+  notifyDownloadsChanged();
 }
 
 export async function removeOfflineDownload(user, audioId) {
@@ -164,4 +168,5 @@ export async function removeOfflineDownload(user, audioId) {
   const existing = snap.exists() && Array.isArray(snap.data().downloads) ? snap.data().downloads : [];
   const next = existing.filter((d) => d.audioId !== audioId);
   await updateDoc(userRef, { downloads: next });
+  notifyDownloadsChanged();
 }

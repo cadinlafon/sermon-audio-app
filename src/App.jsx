@@ -9,6 +9,7 @@ import PopupNotification from "./components/PopupNotification";
 import NetworkStatus from "./components/NetworkStatus";
 import AccountDisabledBanner from "./components/AccountDisabledBanner";
 import BackToTop from "./components/BackToTop";
+import KeyboardShortcuts from "./components/KeyboardShortcuts";
 import NotificationPopup from "./components/NotificationPopup";
 import IosInstallPopup from "./components/IosInstallPopup";
 import TopBar from "./components/topbar";
@@ -317,7 +318,11 @@ function App() {
   return (
     <AppGuard user={isAdmin ? { role: "admin" } : null}>
 
+      <a className="pf-skip-link" href="#main-content">Skip to content</a>
+
       <NetworkStatus />
+
+      <KeyboardShortcuts />
 
       <AccountDisabledBanner />
 
@@ -332,7 +337,7 @@ function App() {
       <IosInstallPopup />
 
 
-      <div style={{ paddingBottom: "80px" }}>
+      <div id="main-content" tabIndex={-1} className="pf-page-fade" key={location.pathname.split("/")[1] || "home"} style={{ paddingBottom: "80px", outline: "none" }}>
 
         <Routes>
 

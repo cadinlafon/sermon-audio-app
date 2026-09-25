@@ -78,6 +78,27 @@
   </title>
 
   <style>
+    /* Keyboard focus: a clear ring on everything interactive */
+    :focus-visible { outline: 2px solid #c97c2e; outline-offset: 2px; border-radius: 4px; }
+    button:focus:not(:focus-visible), a:focus:not(:focus-visible) { outline: none; }
+    .pf-skip-link { position: absolute; left: -9999px; top: 8px; background: #3d2200; color: #fff; padding: 8px 14px; border-radius: 8px; z-index: 9000; font-family: sans-serif; font-size: 13px; }
+    .pf-skip-link:focus { left: 8px; }
+
+    /* Page transition + loading shimmer */
+    @keyframes pf-page-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+    .pf-page-fade { animation: pf-page-in 0.22s ease-out; }
+    @keyframes pf-shimmer { 0% { opacity: 1; } 50% { opacity: 0.45; } 100% { opacity: 1; } }
+    .pf-skel { animation: pf-shimmer 1.4s ease-in-out infinite; }
+    @keyframes pf-stripes { from { background-position: 0 0; } to { background-position: 28px 0; } }
+    .pf-upload-stripes { background-image: repeating-linear-gradient(45deg, rgba(255,255,255,0.28) 0 10px, rgba(255,255,255,0) 10px 20px) !important; background-size: 28px 28px; animation: pf-stripes 0.8s linear infinite; }
+    @keyframes pf-toast-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+    .pf-toast { animation: pf-toast-in 0.2s ease-out; }
+
+    /* Reduced motion everywhere */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+    }
+
     @keyframes uploadSlide {
       0% { transform: translateX(-100%); }
       100% { transform: translateX(250%); }

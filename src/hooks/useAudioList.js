@@ -5,14 +5,16 @@ import { loadAudioList } from "../utils/audioListCache";
 // connection changes so the list fills in as soon as you're back online.
 export default function useAudioList(fetchFn, matchesType) {
   const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [tick, setTick] = useState(0);
   const latest = useRef({ fetchFn, matchesType });
   latest.current = { fetchFn, matchesType };
 
   useEffect(() => {
     let cancelled = false;
+    setLoading(true);
     loadAudioList(() => latest.current.fetchFn(), (a) => latest.current.matchesType(a)).then((data) => {
-      if (!cancelled) setItems(data);
+      if (!cancelled) { setItems(data); setLoading(false); }
     });
     return () => { cancelled = true; };
   }, [tick]);
@@ -27,5 +29,5 @@ export default function useAudioList(fetchFn, matchesType) {
     };
   }, []);
 
-  return [items, setItems];
+  return [items, setItems, loading];
 }

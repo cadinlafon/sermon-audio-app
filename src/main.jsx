@@ -7,6 +7,7 @@ import { AudioPlayerProvider } from "./context/AudioPlayerContext";
 import { AuthProvider } from "./context/AuthContext";
 import { PagesProvider } from "./context/PagesContext";
 import { registerSW } from "virtual:pwa-register";
+import { ToastProvider } from "./context/ToastContext";
 
 //////////////////////////////////////////////////
 // SERVICE WORKER (PWA)
@@ -29,7 +30,9 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         <PagesProvider>
           <ShutdownProvider>
             <AudioPlayerProvider>
-              <App />
+              <ToastProvider>
+                <App />
+              </ToastProvider>
             </AudioPlayerProvider>
           </ShutdownProvider>
         </PagesProvider>
