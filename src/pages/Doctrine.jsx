@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { db } from "../firebase";
 import { doc, getDoc } from "firebase/firestore";
@@ -9,8 +9,10 @@ export default function Doctrine() {
   const navigate = useNavigate();
   const { current, isPlaying, playSermon, togglePlay, playError, playNext } = useAudioPlayer();
   const [content, setContent] = useState(null);
+  const [topics, setTopics] = useState({ weeks: [], defaultWeekId: "" });
   const [loading, setLoading] = useState(true);
   const [openSections, setOpenSections] = useState({
+    weekly: true,
     schedule: false,
     questions: false,
     audio: false,
@@ -24,6 +26,17 @@ export default function Doctrine() {
   ////////////////////////////////////////////////
   useEffect(() => {
     async function fetchContent() {
+      // Weekly topics are optional — a failure here must never hide the page.
+      try {
+        const topicsSnap = await getDoc(doc(db, "doctrineWeeks", "topics"));
+        if (topicsSnap.exists()) {
+          const t = topicsSnap.data();
+          setTopics({ weeks: Array.isArray(t.weeks) ? t.weeks.filter((w) => w.published !== false) : [], defaultWeekId: t.defaultWeekId || "" });
+        }
+      } catch (error) {
+        console.warn("Couldn't load weekly topics", error);
+      }
+
       const snap = await getDoc(doc(db, "doctrineWeeks", "current"));
       if (!snap.exists()) {
         setContent(null);
@@ -65,12 +78,29 @@ export default function Doctrine() {
     );
   }
 
-  if (!content) {
+  const hasWeeks = topics.weeks.length > 0;
+
+  if (!content && !hasWeeks) {
     return (
       <div style={page}>
         <h1 style={pageTitle}>Doctrine Campaign</h1>
         <p style={empty}>Nothing has been added yet. Check back soon.</p>
         <AdminEditLink onClick={() => navigate("/admin/doctrine")} standalone />
+      </div>
+    );
+  }
+
+  // Only weekly topics exist so far — show them on their own.
+  if (!content) {
+    return (
+      <div style={page}>
+        <h1 style={pageTitle}>Doctrine Campaign</h1>
+        <div style={card}>
+          <Dropdown label="Weekly Topic" open={openSections.weekly} onToggle={() => toggle("weekly")}>
+            <WeeklyTopic weeks={topics.weeks} defaultWeekId={topics.defaultWeekId} />
+          </Dropdown>
+          <AdminEditLink onClick={() => navigate("/admin/doctrine")} standalone />
+        </div>
       </div>
     );
   }
@@ -88,6 +118,16 @@ export default function Doctrine() {
         {content.speaker && <p style={speaker}>Speaker: {content.speaker}</p>}
 
         {content.details && <p style={details}>{content.details}</p>}
+
+        {hasWeeks && (
+          <Dropdown
+            label="Weekly Topic"
+            open={openSections.weekly}
+            onToggle={() => toggle("weekly")}
+          >
+            <WeeklyTopic weeks={topics.weeks} defaultWeekId={topics.defaultWeekId} />
+          </Dropdown>
+        )}
 
         <Dropdown
           label="Schedule"
@@ -218,6 +258,70 @@ export default function Doctrine() {
 
         <AdminEditLink onClick={() => navigate("/admin/doctrine")} standalone />
       </div>
+    </div>
+  );
+}
+
+////////////////////////////////////////////////
+// WEEKLY TOPIC — "‹ Week 2 ›" slider. Opens on the admin-chosen default
+// week; arrows, dots, or a swipe move between weeks.
+////////////////////////////////////////////////
+
+function WeeklyTopic({ weeks, defaultWeekId }) {
+  const start = Math.max(0, weeks.findIndex((w) => w.id === defaultWeekId));
+  const [index, setIndex] = useState(start);
+  const touchX = useRef(null);
+  const week = weeks[Math.min(index, weeks.length - 1)];
+  const isDefault = week.id === defaultWeekId;
+
+  const go = (delta) => setIndex((i) => Math.min(weeks.length - 1, Math.max(0, i + delta)));
+
+  const onTouchEnd = (e) => {
+    if (touchX.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchX.current;
+    touchX.current = null;
+    if (Math.abs(dx) > 50) go(dx < 0 ? 1 : -1);
+  };
+
+  const hasBody = week.topic || week.dateRange || week.memoryText || week.details;
+
+  return (
+    <div
+      onTouchStart={(e) => { touchX.current = e.touches[0].clientX; }}
+      onTouchEnd={onTouchEnd}
+    >
+      <div style={sliderBar}>
+        <button style={arrowButton(index === 0)} onClick={() => go(-1)} disabled={index === 0} aria-label="Previous week">‹</button>
+        <div style={sliderCenter} aria-live="polite">
+          <div style={sliderLabel}>{week.label}</div>
+          <div style={sliderCount}>{index + 1} of {weeks.length}{isDefault ? " · Current" : ""}</div>
+        </div>
+        <button style={arrowButton(index === weeks.length - 1)} onClick={() => go(1)} disabled={index === weeks.length - 1} aria-label="Next week">›</button>
+      </div>
+
+      {weeks.length > 1 && (
+        <div style={dotRow}>
+          {weeks.map((w, i) => (
+            <button key={w.id} style={dot(i === index)} onClick={() => setIndex(i)} aria-label={`Go to ${w.label}`} />
+          ))}
+        </div>
+      )}
+
+      {hasBody ? (
+        <div style={weekBody}>
+          {week.topic && <h3 style={weekTopic}>{week.topic}</h3>}
+          {week.dateRange && <p style={weekDates}>{week.dateRange}</p>}
+          {week.memoryText && (
+            <div style={memoryBox}>
+              <span style={memoryLabel}>Memory text</span>
+              <span style={memoryValue}>{week.memoryText}</span>
+            </div>
+          )}
+          {week.details && <p style={sectionText}>{week.details}</p>}
+        </div>
+      ) : (
+        <p style={emptySection}>Nothing added for this week yet.</p>
+      )}
     </div>
   );
 }
@@ -551,3 +655,21 @@ const adminLinkStandalone = {
   paddingTop: "16px",
   borderTop: "1px solid #f0e4d0",
 };
+
+const sliderBar = { display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px" };
+const sliderCenter = { textAlign: "center", flex: 1, minWidth: 0 };
+const sliderLabel = { fontSize: "20px", fontFamily: "'Georgia', serif", color: "#3d2200" };
+const sliderCount = { fontSize: "11px", fontFamily: "sans-serif", color: "#9b7040", marginTop: "2px", letterSpacing: "0.04em" };
+const arrowButton = (disabled) => ({
+  width: "44px", height: "44px", borderRadius: "50%", border: "1px solid #eddfc8", background: disabled ? "#f6efe6" : "#fdf1de",
+  color: disabled ? "#cdb99a" : "#a85e18", fontSize: "26px", lineHeight: 1, cursor: disabled ? "default" : "pointer", flexShrink: 0,
+  display: "flex", alignItems: "center", justifyContent: "center", paddingBottom: "3px",
+});
+const dotRow = { display: "flex", justifyContent: "center", gap: "7px", flexWrap: "wrap", margin: "12px 0 4px" };
+const dot = (active) => ({ width: active ? "18px" : "8px", height: "8px", borderRadius: "999px", border: "none", padding: 0, cursor: "pointer", background: active ? "#c97c2e" : "#e4d3b8", transition: "width 0.15s" });
+const weekBody = { marginTop: "14px", paddingTop: "14px", borderTop: "1px solid #f0e4d0", display: "flex", flexDirection: "column", gap: "10px" };
+const weekTopic = { margin: 0, fontSize: "17px", fontWeight: "normal", color: "#3d2200", fontFamily: "'Georgia', serif" };
+const weekDates = { margin: 0, fontSize: "12px", color: "#9b7040", fontFamily: "sans-serif", letterSpacing: "0.03em" };
+const memoryBox = { display: "flex", flexDirection: "column", gap: "3px", background: "#fdf1de", borderRadius: "10px", padding: "10px 12px" };
+const memoryLabel = { fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.06em", color: "#9b7040", fontFamily: "sans-serif" };
+const memoryValue = { fontSize: "14px", color: "#5c3a1e", fontFamily: "'Georgia', serif" };

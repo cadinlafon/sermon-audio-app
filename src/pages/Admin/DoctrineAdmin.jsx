@@ -4,6 +4,7 @@ import { doc, getDoc, setDoc, serverTimestamp, deleteField } from "firebase/fire
 import { uploadPrivateAudio, deletePrivateAudio } from "../../utils/privateAudioUpload";
 import { uploadPublicImage, deletePublicImage } from "../../utils/imageUpload";
 import { useModulePermissions } from "../../hooks/usePermissions";
+import WeeklyTopicsAdmin from "./WeeklyTopicsAdmin";
 
 const DOC_ID = "current";
 
@@ -429,6 +430,8 @@ export default function DoctrineAdmin() {
           </button>
         )}
       </div>
+
+      <WeeklyTopicsAdmin />
 
       {toast && (
         <div style={toast.isError ? { ...toastBox, ...toastError } : toastBox}>{toast.message}</div>
