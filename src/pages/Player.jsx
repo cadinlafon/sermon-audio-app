@@ -8,6 +8,7 @@ import NotesSheet from "../components/NotesSheet";
 import { categoryOf } from "../utils/notes";
 import PlayerSettings from "../components/PlayerSettings";
 import CarMode from "../components/CarMode";
+import PlayOnTv from "../components/PlayOnTv";
 import QueueSheet from "../components/QueueSheet";
 import DesktopMiniPlayerContent from "../components/DesktopMiniPlayerContent";
 import RelatedAudio from "../components/RelatedAudio";
@@ -52,6 +53,7 @@ export default function Player() {
   const [isDragging, setIsDragging] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showDrive, setShowDrive] = useState(false);
+  const [showTv, setShowTv] = useState(false);
   const [flashMsg, setFlashMsg] = useState("");
   const [timeCopied, setTimeCopied] = useState(false);
   const [showQueue, setShowQueue] = useState(false);
@@ -347,6 +349,9 @@ export default function Player() {
           ← Back
         </button>
         <div style={{ display: "flex", gap: "8px" }}>
+          <button style={gearBtn} onClick={() => setShowTv(true)} aria-label="Play on TV" title="Play on TV">
+            📺
+          </button>
           <button style={gearBtn} onClick={() => setShowDrive(true)} aria-label="Driving mode" title="Driving mode">
             🚗
           </button>
@@ -585,6 +590,7 @@ export default function Player() {
       )}
 
       {/* PLAYER SETTINGS */}
+      {showTv && <PlayOnTv onClose={() => setShowTv(false)} />}
       {showDrive && <CarMode onClose={() => setShowDrive(false)} />}
       {showSettings && <PlayerSettings onClose={() => setShowSettings(false)} />}
 

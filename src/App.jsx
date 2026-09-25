@@ -17,6 +17,7 @@ import Notes from "./pages/Notes";
 import Search from "./pages/Search";
 import Transcript from "./pages/Transcript";
 import Goals from "./pages/Goals";
+import TV from "./pages/TV";
 import YearInReview from "./pages/YearInReview";
 import GoalWatcher from "./components/GoalWatcher";
 import Bookmarks from "./pages/Bookmarks";
@@ -447,6 +448,8 @@ function App() {
             element={<ResourceDetail />}
           />
 
+          <Route path="/tv" element={<TV />} />
+
           <Route
             path="/player"
             element={<Player />}
@@ -730,7 +733,7 @@ function App() {
           ========================================== */}
 
       <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 1000, display: "flex", flexDirection: "column" }}>
-        {location.pathname !== "/player" && <MiniPlayer />}
+        {location.pathname !== "/player" && location.pathname !== "/tv" && <MiniPlayer />}
         <BottomBar />
       </div>
 

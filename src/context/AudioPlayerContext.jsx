@@ -7,6 +7,7 @@ import { saveListenProgress } from "../utils/listenProgress";
 import { getLocalBlobUrl } from "../utils/offlineDownloads";
 import { loadPlayerSettings, savePlayerSettings, loadQueue, saveQueue, loadHistory, saveHistory, slimTrack } from "../utils/playerSettings";
 import { supabase } from "../supabase";
+import useCastSync from "../hooks/useCastSync";
 
 const AudioPlayerContext = createContext();
 
@@ -37,6 +38,12 @@ export function AudioPlayerProvider({ children }) {
   // remembered per device, see utils/playerSettings.js.
   const [settings, setSettings] = useState(loadPlayerSettings);
   const settingsRef = useRef(settings);
+  const cast = useCastSync({
+    audioRef,
+    current,
+    audioUrl,
+    getRemoteUrl: async (sermon) => requestDownloadUrl(sermon, auth.currentUser ? await auth.currentUser.getIdToken() : null),
+  });
   const updateSettings = useCallback((patch) => {
     setSettings((prev) => {
       const next = { ...prev, ...(typeof patch === "function" ? patch(prev) : patch) };
@@ -87,11 +94,13 @@ export function AudioPlayerProvider({ children }) {
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
-    audio.defaultPlaybackRate = settings.speed;
-    audio.playbackRate = settings.speed;
+    // While casting, this element keeps time silently at 1× and the TV plays.
+    const rate = cast.casting ? 1 : settings.speed;
+    audio.defaultPlaybackRate = rate;
+    audio.playbackRate = rate;
     audio.volume = settings.volume;
-    audio.muted = settings.muted;
-  }, [settings.speed, settings.volume, settings.muted, audioUrl]);
+    audio.muted = settings.muted || cast.casting;
+  }, [settings.speed, settings.volume, settings.muted, audioUrl, cast.casting]);
 
   // Loading indicator + playback errors from the element itself.
   useEffect(() => {
@@ -306,6 +315,7 @@ export function AudioPlayerProvider({ children }) {
 
     const shouldAutoplay = pendingAutoplayRef.current;
     pendingAutoplayRef.current = true; // reset to the default for next time
+    if (cast.isCastingRef.current) cast.castLoad(resumeAt || 0, shouldAutoplay);
     if (shouldAutoplay) audio.play().catch(() => setIsPlaying(false));
   }, [current, audioUrl]);
 
@@ -812,6 +822,7 @@ export function AudioPlayerProvider({ children }) {
         setSleepTimer,
         outputDeviceSupported,
         chooseOutputDevice,
+        cast,
       }}
     >
       <audio ref={audioRef} src={audioUrl || undefined} preload="metadata" />
