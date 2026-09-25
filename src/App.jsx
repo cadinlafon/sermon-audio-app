@@ -16,6 +16,9 @@ import Playlists from "./pages/Playlists";
 import Notes from "./pages/Notes";
 import Search from "./pages/Search";
 import Transcript from "./pages/Transcript";
+import Goals from "./pages/Goals";
+import YearInReview from "./pages/YearInReview";
+import GoalWatcher from "./components/GoalWatcher";
 import Bookmarks from "./pages/Bookmarks";
 import PlaylistDetail from "./pages/PlaylistDetail";
 import NotificationPopup from "./components/NotificationPopup";
@@ -334,6 +337,8 @@ function App() {
 
       <DownloadScheduler />
 
+      <GoalWatcher />
+
       <AccountDisabledBanner />
 
       <PopupNotification />
@@ -516,6 +521,9 @@ function App() {
           {/* Public unified search */}
           <Route path="/search" element={<Search />} />
           <Route path="/transcripts/:id" element={<Transcript />} />
+
+          <Route path="/goals" element={<PageGate id="goals"><Goals /></PageGate>} />
+          <Route path="/year-in-review" element={<PageGate id="year-in-review"><YearInReview /></PageGate>} />
 
           <Route path="/notes" element={<PageGate id="notes"><Notes /></PageGate>} />
           <Route path="/bookmarks" element={<PageGate id="bookmarks"><Bookmarks /></PageGate>} />

@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "../firebase";
-import { trackListenTime, trackPlay, recordListen } from "../utils/listenTracker";
+import { trackListenTime, trackPlay, recordListen, noteSession } from "../utils/listenTracker";
 import { saveListenProgress } from "../utils/listenProgress";
 import { getLocalBlobUrl } from "../utils/offlineDownloads";
 import { loadPlayerSettings, savePlayerSettings, loadQueue, saveQueue, loadHistory, saveHistory, slimTrack } from "../utils/playerSettings";
@@ -18,6 +18,7 @@ export function AudioPlayerProvider({ children }) {
   const userRef = useRef(null);
   const lastTimeRef = useRef(null);
   const pendingSecondsRef = useRef(0);
+  const sessionRef = useRef({ seconds: 0, lastAt: 0 });
   const playedCurrentRef = useRef(null);
   const pendingResumeRef = useRef(null);
   const pendingAutoplayRef = useRef(true);
@@ -160,7 +161,16 @@ export function AudioPlayerProvider({ children }) {
       title: sermon.title,
       speaker: sermon.speaker,
       seconds,
+      type: sermon.type,
+      isDoctrine: sermon.collection === "doctrineWeeks",
     });
+
+    // A session is continuous listening with no gap over 10 minutes.
+    const now = Date.now();
+    if (now - sessionRef.current.lastAt > 10 * 60 * 1000) sessionRef.current.seconds = 0;
+    sessionRef.current.seconds += seconds;
+    sessionRef.current.lastAt = now;
+    void noteSession(user.uid, sessionRef.current.seconds);
   }, []);
 
   // Powers the "Completed" / "Resume" / "Not Started" state shown on

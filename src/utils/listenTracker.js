@@ -1,6 +1,7 @@
 import { db } from "../firebase";
 import {
   doc,
+  getDoc,
   setDoc,
   addDoc,
   collection,
@@ -54,12 +55,21 @@ export const trackPlay = async ({ userId, sermonId, title, speaker }) => {
   }
 };
 
+// Local calendar day, e.g. "2026-09-25" — listening is bucketed per day so
+// weekly/monthly/yearly goals, streaks, and Year in Review can be computed.
+export const dayKey = (date = new Date()) => {
+  const p = (n) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${p(date.getMonth() + 1)}-${p(date.getDate())}`;
+};
+
 export const trackListenTime = async ({
   userId,
   sermonId,
   title,
   speaker,
   seconds,
+  type,
+  isDoctrine,
 }) => {
   const listenedSeconds = Number(seconds);
   if (!userId || !sermonId || !Number.isFinite(listenedSeconds) || listenedSeconds <= 0) return;
@@ -76,6 +86,15 @@ export const trackListenTime = async ({
             speaker: speaker || "Unknown",
             seconds: increment(listenedSeconds),
             lastPlayedAt: serverTimestamp(),
+            ...(type ? { type } : {}),
+            ...(isDoctrine ? { doctrine: true } : {}),
+          },
+        },
+
+        daily: {
+          [dayKey()]: {
+            seconds: increment(listenedSeconds),
+            ...(isDoctrine ? { doctrineSeconds: increment(listenedSeconds) } : {}),
           },
         },
 
@@ -85,5 +104,24 @@ export const trackListenTime = async ({
     );
   } catch (err) {
     console.error("Tracking error:", err);
+  }
+};
+
+// Longest unbroken listening session — kept as the best seen so far. Firestore
+// has no "max" write, so the current best is read once and cached.
+const bestSession = new Map();
+export const noteSession = async (userId, seconds) => {
+  if (!userId || !(seconds > 0)) return;
+  try {
+    if (!bestSession.has(userId)) {
+      const snap = await getDoc(statsRef(userId));
+      bestSession.set(userId, snap.exists() ? Number(snap.data().longestSessionSeconds) || 0 : 0);
+    }
+    if (seconds > bestSession.get(userId)) {
+      bestSession.set(userId, seconds);
+      await setDoc(statsRef(userId), { longestSessionSeconds: Math.round(seconds) }, { merge: true });
+    }
+  } catch (err) {
+    console.error("Unable to record session length:", err);
   }
 };
