@@ -3,7 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { auth } from "../firebase";
 import { useAudioPlayer } from "../context/AudioPlayerContext";
 import { useDocumentPiP } from "../hooks/useDocumentPiP";
-import { fetchNote, saveNote, fetchBookmarks, saveBookmarks } from "../utils/notes";
+import useNoteDoc from "../hooks/useNoteDoc";
+import NotesSheet from "../components/NotesSheet";
+import { categoryOf } from "../utils/notes";
 import PlayerSettings from "../components/PlayerSettings";
 import QueueSheet from "../components/QueueSheet";
 import DesktopMiniPlayerContent from "../components/DesktopMiniPlayerContent";
@@ -48,7 +50,6 @@ export default function Player() {
   const setShowRemaining = (v) => updateSettings({ showRemaining: v });
   const [isDragging, setIsDragging] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [bookmarks, setBookmarks] = useState([]);
   const [flashMsg, setFlashMsg] = useState("");
   const [timeCopied, setTimeCopied] = useState(false);
   const [showQueue, setShowQueue] = useState(false);
@@ -57,9 +58,8 @@ export default function Player() {
   const [selectedSleepPreset, setSelectedSleepPreset] = useState(null);
   const [linkCopied, setLinkCopied] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
-  const [noteText, setNoteText] = useState("");
-  const [noteStatus, setNoteStatus] = useState("");
-  const noteSaveTimer = useRef(null);
+  const notes = useNoteDoc(current);
+  const bookmarks = notes.bookmarks;
 
   //////////////////////////////////////////////////
   // AUDIO EVENTS
@@ -78,59 +78,15 @@ export default function Player() {
   //////////////////////////////////////////////////
   // NOTES
   //////////////////////////////////////////////////
-  useEffect(() => {
-    const user = auth.currentUser;
-    if (!user || !current?.id) {
-      setNoteText("");
-      return;
-    }
-    let cancelled = false;
-    fetchNote(user.uid, current.id).then((text) => {
-      if (!cancelled) setNoteText(text);
-    });
-    return () => { cancelled = true; };
-  }, [current?.id]);
-
-  const handleNoteChange = (e) => {
-    const text = e.target.value;
-    setNoteText(text);
-    setNoteStatus("");
-    clearTimeout(noteSaveTimer.current);
-    noteSaveTimer.current = setTimeout(async () => {
-      const user = auth.currentUser;
-      if (!user || !current?.id) return;
-      await saveNote(user.uid, current.id, text);
-      setNoteStatus("Saved");
-      setTimeout(() => setNoteStatus(""), 1500);
-    }, 800);
-  };
-
   //////////////////////////////////////////////////
   // BOOKMARKS + TIMESTAMPS
   //////////////////////////////////////////////////
-  useEffect(() => {
-    const user = auth.currentUser;
-    if (!user || !current?.id) {
-      setBookmarks([]);
-      return undefined;
-    }
-    let cancelled = false;
-    fetchBookmarks(user.uid, current.id).then((list) => {
-      if (!cancelled) setBookmarks(list);
-    });
-    return () => { cancelled = true; };
-  }, [current?.id]);
-
   const flash = (text) => {
     setFlashMsg(text);
     setTimeout(() => setFlashMsg(""), 2200);
   };
 
-  const persistBookmarks = (next) => {
-    setBookmarks(next);
-    const user = auth.currentUser;
-    if (user && current?.id) saveBookmarks(user.uid, current.id, next);
-  };
+  const persistBookmarks = (next) => notes.setBookmarks(next);
 
   const addBookmark = () => {
     if (!auth.currentUser) { flash("Sign in to save bookmarks."); return; }
@@ -253,6 +209,12 @@ export default function Player() {
   };
 
   const progressPercent = duration ? (progress / duration) * 100 : 0;
+
+  // Your notes and bookmarks that fall at (or just before) the current moment.
+  const activeNotes = [
+    ...notes.entries.map((e) => ({ id: `e${e.id}`, t: e.t, text: e.text, tag: categoryOf(e.category).label, color: categoryOf(e.category).color, tagText: categoryOf(e.category).text })),
+    ...notes.bookmarks.map((b) => ({ id: `b${b.id}`, t: b.t, text: b.label || "Bookmark", tag: "🔖", color: "#fde8b8", tagText: "#7a4f10" })),
+  ].filter((n) => progress >= n.t && progress < n.t + 12).slice(0, 2);
   const remaining = duration ? duration - progress : 0;
 
   //////////////////////////////////////////////////
@@ -411,6 +373,19 @@ export default function Player() {
           </div>
         )}
 
+        {/* NOTES NEAR THIS MOMENT */}
+        {settings.showNotesWhilePlaying && activeNotes.length > 0 && (
+          <div style={notePeek} aria-live="polite">
+            {activeNotes.map((n) => (
+              <div key={n.id} style={notePeekRow}>
+                <span style={{ ...notePeekTag, background: n.color, color: n.tagText }}>{n.tag}</span>
+                <span style={notePeekTime}>{format(n.t)}</span>
+                <span style={notePeekText}>{n.text}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* SEEK BAR */}
         <div style={seekWrapper}>
           <div style={seekTrackOuter}>
@@ -549,7 +524,7 @@ export default function Player() {
 
           {auth.currentUser && (
             <button style={extraBtn} onClick={() => setShowNotes(true)}>
-              📝 {noteText ? "Notes" : "Take Notes"}
+              📝 {notes.text || notes.entries.length ? "Notes" : "Take Notes"}
             </button>
           )}
         </div>
@@ -634,23 +609,16 @@ export default function Player() {
 
       {/* NOTES SHEET */}
       {showNotes && (
-        <>
-          <div style={backdrop} onClick={() => setShowNotes(false)} />
-          <div style={sheet}>
-            <div style={sheetHeader}>
-              <h3 style={sheetTitle}>Notes</h3>
-              {noteStatus && <span style={noteStatusText}>{noteStatus}</span>}
-            </div>
-            <textarea
-              autoFocus
-              value={noteText}
-              onChange={handleNoteChange}
-              placeholder="Jot down anything that stands out while you listen…"
-              style={noteTextarea}
-            />
-            <button style={sheetCloseBtn} onClick={() => setShowNotes(false)}>Close</button>
-          </div>
-        </>
+        <NotesSheet
+          audio={current}
+          notes={notes}
+          getTime={() => audioRef.current?.currentTime || 0}
+          onSeek={jumpToBookmark}
+          onClose={() => setShowNotes(false)}
+          showWhilePlaying={settings.showNotesWhilePlaying}
+          onToggleShow={(v) => updateSettings({ showNotesWhilePlaying: v })}
+          styles={{ backdrop, sheet, sheetHeader, sheetTitle, sheetCloseBtn }}
+        />
       )}
 
       <DesktopMiniPlayerContent pipWindow={pip.pipWindow} />
@@ -1171,3 +1139,9 @@ const bookmarkRow = { display: "flex", alignItems: "center", gap: "8px" };
 const bookmarkTime = { padding: "8px 12px", borderRadius: "999px", border: "none", background: "#fde8b8", color: "#7a4f10", fontSize: "13px", fontWeight: "600", fontFamily: "sans-serif", cursor: "pointer", flexShrink: 0 };
 const bookmarkInput = { flex: 1, minWidth: 0, padding: "8px 10px", borderRadius: "8px", border: "1px solid #eddfc8", background: "#fdf8f3", fontSize: "13px", fontFamily: "sans-serif", color: "#3d2200" };
 const recentRow = { display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "2px", textAlign: "left", background: "#fdf8f3", border: "1px solid #f1e4cc", borderRadius: "10px", padding: "10px 12px", cursor: "pointer" };
+
+const notePeek = { width: "100%", boxSizing: "border-box", background: "#fdf1de", border: "1px solid #eddfc8", borderRadius: "12px", padding: "10px 12px", marginBottom: "12px", display: "flex", flexDirection: "column", gap: "6px" };
+const notePeekRow = { display: "flex", alignItems: "baseline", gap: "8px", flexWrap: "wrap", fontFamily: "sans-serif" };
+const notePeekTag = { fontSize: "10px", fontWeight: "600", padding: "2px 8px", borderRadius: "999px" };
+const notePeekTime = { fontSize: "11px", color: "#9b7040" };
+const notePeekText = { fontSize: "13px", color: "#3d2200", flex: 1, minWidth: 0 };

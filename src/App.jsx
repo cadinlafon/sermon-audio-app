@@ -13,6 +13,8 @@ import KeyboardShortcuts from "./components/KeyboardShortcuts";
 import DownloadScheduler from "./components/DownloadScheduler";
 import Downloads from "./pages/Downloads";
 import Playlists from "./pages/Playlists";
+import Notes from "./pages/Notes";
+import Bookmarks from "./pages/Bookmarks";
 import PlaylistDetail from "./pages/PlaylistDetail";
 import NotificationPopup from "./components/NotificationPopup";
 import IosInstallPopup from "./components/IosInstallPopup";
@@ -508,6 +510,9 @@ function App() {
 
           {/* Public: shared playlists open without signing in */}
           <Route path="/playlists/:id" element={<PlaylistDetail />} />
+
+          <Route path="/notes" element={<PageGate id="notes"><Notes /></PageGate>} />
+          <Route path="/bookmarks" element={<PageGate id="bookmarks"><Bookmarks /></PageGate>} />
 
           <Route
             path="/downloads"

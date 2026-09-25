@@ -16,6 +16,7 @@ export const DEFAULT_SETTINGS = {
   // Which collapsible sections on the player page are open, and small UI prefs.
   sections: { recent: true, bookmarks: true, related: true },
   showRemaining: false,
+  showNotesWhilePlaying: true,
 };
 
 const KEY = "playerSettings:v1";
@@ -32,6 +33,7 @@ function sanitize(raw) {
   s.shuffle = !!s.shuffle;
   s.sections = { ...DEFAULT_SETTINGS.sections, ...(s.sections || {}) };
   s.showRemaining = !!s.showRemaining;
+  s.showNotesWhilePlaying = s.showNotesWhilePlaying !== false;
   return s;
 }
 

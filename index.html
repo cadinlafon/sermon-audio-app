@@ -91,6 +91,12 @@
     .pf-skel { animation: pf-shimmer 1.4s ease-in-out infinite; }
     @keyframes pf-stripes { from { background-position: 0 0; } to { background-position: 28px 0; } }
     .pf-upload-stripes { background-image: repeating-linear-gradient(45deg, rgba(255,255,255,0.28) 0 10px, rgba(255,255,255,0) 10px 20px) !important; background-size: 28px 28px; animation: pf-stripes 0.8s linear infinite; }
+    @media print {
+      body * { visibility: hidden !important; }
+      .pf-print-area, .pf-print-area * { visibility: visible !important; }
+      .pf-print-area { position: absolute !important; left: 0; top: 0; width: 100% !important; max-height: none !important; overflow: visible !important; box-shadow: none !important; border: none !important; }
+      .pf-no-print { display: none !important; }
+    }
     @keyframes pf-toast-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
     .pf-toast { animation: pf-toast-in 0.2s ease-out; }
 
