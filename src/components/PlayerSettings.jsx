@@ -24,6 +24,7 @@ export default function PlayerSettings({ onClose }) {
   const reset = () => updateSettings({
     skipBack: DEFAULT_SETTINGS.skipBack, skipForward: DEFAULT_SETTINGS.skipForward, speed: DEFAULT_SETTINGS.speed,
     volume: DEFAULT_SETTINGS.volume, muted: DEFAULT_SETTINGS.muted, repeat: DEFAULT_SETTINGS.repeat, shuffle: DEFAULT_SETTINGS.shuffle,
+    autoResumeOnReconnect: DEFAULT_SETTINGS.autoResumeOnReconnect,
   });
 
   const Chips = ({ options, value, onPick, format = (o) => o }) => (
@@ -92,6 +93,16 @@ export default function PlayerSettings({ onClose }) {
               <span style={hint}>Play the queue in random order.</span>
             </span>
             <input type="checkbox" checked={settings.shuffle} onChange={(e) => updateSettings({ shuffle: e.target.checked })} style={{ width: "20px", height: "20px" }} />
+          </label>
+        </section>
+
+        <section style={section}>
+          <label style={toggleRow}>
+            <span>
+              <span style={sectionTitle}>Auto-resume on reconnect</span>
+              <span style={hint}>If a Bluetooth or wired device drops and comes back (like starting the car), pick up where playback paused.</span>
+            </span>
+            <input type="checkbox" checked={settings.autoResumeOnReconnect} onChange={(e) => updateSettings({ autoResumeOnReconnect: e.target.checked })} style={{ width: "20px", height: "20px" }} />
           </label>
         </section>
 

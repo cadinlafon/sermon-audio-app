@@ -17,6 +17,9 @@ export const DEFAULT_SETTINGS = {
   sections: { recent: true, bookmarks: true, related: true },
   showRemaining: false,
   showNotesWhilePlaying: true,
+  // Resume by itself when a Bluetooth / wired audio device reconnects after
+  // the browser paused playback because it disconnected (car, headphones).
+  autoResumeOnReconnect: true,
 };
 
 const KEY = "playerSettings:v1";
@@ -34,6 +37,7 @@ function sanitize(raw) {
   s.sections = { ...DEFAULT_SETTINGS.sections, ...(s.sections || {}) };
   s.showRemaining = !!s.showRemaining;
   s.showNotesWhilePlaying = s.showNotesWhilePlaying !== false;
+  s.autoResumeOnReconnect = s.autoResumeOnReconnect !== false;
   return s;
 }
 

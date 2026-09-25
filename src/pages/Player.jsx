@@ -7,6 +7,7 @@ import useNoteDoc from "../hooks/useNoteDoc";
 import NotesSheet from "../components/NotesSheet";
 import { categoryOf } from "../utils/notes";
 import PlayerSettings from "../components/PlayerSettings";
+import CarMode from "../components/CarMode";
 import QueueSheet from "../components/QueueSheet";
 import DesktopMiniPlayerContent from "../components/DesktopMiniPlayerContent";
 import RelatedAudio from "../components/RelatedAudio";
@@ -50,6 +51,7 @@ export default function Player() {
   const setShowRemaining = (v) => updateSettings({ showRemaining: v });
   const [isDragging, setIsDragging] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showDrive, setShowDrive] = useState(false);
   const [flashMsg, setFlashMsg] = useState("");
   const [timeCopied, setTimeCopied] = useState(false);
   const [showQueue, setShowQueue] = useState(false);
@@ -344,9 +346,14 @@ export default function Player() {
         <button className="pf-back-btn" style={backBtn} onClick={() => navigate(-1)}>
           ← Back
         </button>
-        <button style={gearBtn} onClick={() => setShowSettings(true)} aria-label="Player settings" title="Player settings">
-          ⚙
-        </button>
+        <div style={{ display: "flex", gap: "8px" }}>
+          <button style={gearBtn} onClick={() => setShowDrive(true)} aria-label="Driving mode" title="Driving mode">
+            🚗
+          </button>
+          <button style={gearBtn} onClick={() => setShowSettings(true)} aria-label="Player settings" title="Player settings">
+            ⚙
+          </button>
+        </div>
       </div>
 
       <div style={card}>
@@ -578,6 +585,7 @@ export default function Player() {
       )}
 
       {/* PLAYER SETTINGS */}
+      {showDrive && <CarMode onClose={() => setShowDrive(false)} />}
       {showSettings && <PlayerSettings onClose={() => setShowSettings(false)} />}
 
       {/* SLEEP TIMER SHEET */}

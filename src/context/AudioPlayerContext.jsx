@@ -10,6 +10,7 @@ import { supabase } from "../supabase";
 
 const AudioPlayerContext = createContext();
 
+const TYPE_LABELS = { sermon: "Sermon", homily: "Homily", sundayschool: "Sunday School" };
 const SUMMARIZABLE_TYPES = new Set(["sermon", "homily", "sundayschool"]);
 
 export function AudioPlayerProvider({ children }) {
@@ -652,6 +653,59 @@ export function AudioPlayerProvider({ children }) {
   };
 
   //////////////////////////////////////////////////
+  // BLUETOOTH / WIRED DEVICE RECONNECT
+  // Browsers pause audio when the output device disappears (car turned
+  // off). A pause that lands right after a device change is treated as
+  // "paused by the device", and the next device change resumes it —
+  // unless the listener pressed play/pause themselves in between.
+  //////////////////////////////////////////////////
+  useEffect(() => {
+    const audio = audioRef.current;
+    const md = typeof navigator !== "undefined" ? navigator.mediaDevices : null;
+    if (!audio || !md?.addEventListener) return undefined;
+
+    let lastChange = 0;
+    let wasPlaying = false;
+    let deviceStopped = false;
+    let userTouched = false;
+
+    const onDeviceChange = async () => {
+      const now = Date.now();
+      lastChange = now;
+      if (!settingsRef.current.autoResumeOnReconnect) return;
+      if (deviceStopped && !userTouched && audio.paused && audio.getAttribute("src") && now - deviceStopped < 30 * 60 * 1000) {
+        try {
+          const devices = await md.enumerateDevices();
+          if (!devices.some((d) => d.kind === "audiooutput")) return;
+          await audio.play();
+          deviceStopped = false;
+        } catch {
+          // Autoplay policy can refuse without a recent gesture; the
+          // lock-screen / car play button still works.
+        }
+      }
+    };
+    const onPlaying = () => { wasPlaying = true; deviceStopped = false; userTouched = false; };
+    const onPause = () => {
+      if (audio.ended) { wasPlaying = false; return; }
+      if (wasPlaying && Date.now() - lastChange < 2000) deviceStopped = Date.now();
+      wasPlaying = false;
+    };
+    const markUser = () => { userTouched = true; };
+
+    md.addEventListener("devicechange", onDeviceChange);
+    audio.addEventListener("playing", onPlaying);
+    audio.addEventListener("pause", onPause);
+    window.addEventListener("pointerdown", markUser, true);
+    return () => {
+      md.removeEventListener("devicechange", onDeviceChange);
+      audio.removeEventListener("playing", onPlaying);
+      audio.removeEventListener("pause", onPause);
+      window.removeEventListener("pointerdown", markUser, true);
+    };
+  }, []);
+
+  //////////////////////////////////////////////////
   // MEDIA SESSION — lock-screen / OS media controls
   //////////////////////////////////////////////////
   useEffect(() => {
@@ -660,11 +714,31 @@ export function AudioPlayerProvider({ children }) {
       ? new MediaMetadata({
           title: current.title || "Sermon",
           artist: current.speaker || "Palouse Fellowship",
-          album: "Palouse Fellowship",
-          artwork: [{ src: "/icons/icon-512.png", sizes: "512x512", type: "image/png" }],
+          // Car displays show the album line under the artist — use the
+          // category and date so it's useful at a glance.
+          album: [TYPE_LABELS[current.type] || "Palouse Fellowship", current.date].filter(Boolean).join(" · "),
+          artwork: [
+            { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+            { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+          ],
         })
       : null;
   }, [current]);
+
+  // Lets the lock screen / car show and scrub the real progress bar.
+  useEffect(() => {
+    if (!("mediaSession" in navigator) || !navigator.mediaSession.setPositionState) return;
+    if (!duration || !Number.isFinite(duration)) return;
+    try {
+      navigator.mediaSession.setPositionState({
+        duration,
+        playbackRate: settings.speed || 1,
+        position: Math.min(Math.max(0, Math.floor(currentTime)), duration),
+      });
+    } catch {
+      // Some browsers throw on out-of-range values while a track is loading.
+    }
+  }, [Math.floor(currentTime / 5), duration, settings.speed, isPlaying]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!("mediaSession" in navigator)) return;
@@ -683,6 +757,12 @@ export function AudioPlayerProvider({ children }) {
     navigator.mediaSession.setActionHandler("seekforward", (d) => {
       if (audio) audio.currentTime = Math.min(audio.duration || Infinity, audio.currentTime + (d?.seekOffset || settings.skipForward));
     });
+    const trySet = (action, handler) => { try { navigator.mediaSession.setActionHandler(action, handler); } catch { /* action unsupported */ } };
+    trySet("seekto", (d) => {
+      if (!audio || d?.seekTime == null) return;
+      audio.currentTime = Math.max(0, Math.min(d.seekTime, audio.duration || d.seekTime));
+    });
+    trySet("stop", () => audio?.pause());
     navigator.mediaSession.setActionHandler("previoustrack", () => playPrevious());
     navigator.mediaSession.setActionHandler("nexttrack", queue.length > 0 || settings.repeat === "queue" ? () => advance(false) : null);
 
@@ -693,6 +773,8 @@ export function AudioPlayerProvider({ children }) {
       navigator.mediaSession.setActionHandler("seekforward", null);
       navigator.mediaSession.setActionHandler("previoustrack", null);
       navigator.mediaSession.setActionHandler("nexttrack", null);
+      trySet("seekto", null);
+      trySet("stop", null);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queue, settings.skipBack, settings.skipForward, settings.repeat]);
