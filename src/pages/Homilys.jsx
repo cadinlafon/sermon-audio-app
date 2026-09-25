@@ -9,6 +9,7 @@ import {
 import { useAudioPlayer } from "../context/AudioPlayerContext";
 import useAudioList from "../hooks/useAudioList";
 import AudioCard from "../components/AudioCard";
+import PlayAllBar from "../components/PlayAllBar";
 
 export default function Homilies() {
   const [notices, setNotices] = useState([]);
@@ -135,6 +136,7 @@ export default function Homilies() {
         ))}
 
       {/* LIST */}
+      <PlayAllBar items={displayList} filtered={!!(search || speakerFilter !== "all")} />
       {displayList.map((item) => (
         <AudioCard key={item.id} audio={item} onPlay={playSermon} onSummarySaved={saveSummaryLocally} />
       ))}

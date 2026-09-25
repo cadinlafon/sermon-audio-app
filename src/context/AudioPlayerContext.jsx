@@ -5,6 +5,7 @@ import { auth, db } from "../firebase";
 import { trackListenTime, trackPlay, recordListen } from "../utils/listenTracker";
 import { saveListenProgress } from "../utils/listenProgress";
 import { getLocalBlobUrl } from "../utils/offlineDownloads";
+import { loadPlayerSettings, savePlayerSettings, loadQueue, saveQueue, loadHistory, saveHistory, slimTrack } from "../utils/playerSettings";
 import { supabase } from "../supabase";
 
 const AudioPlayerContext = createContext();
@@ -27,6 +28,29 @@ export function AudioPlayerProvider({ children }) {
   const [audioUrl, setAudioUrl] = useState("");
   const [isPlaying, setIsPlaying] = useState(false);
   const [playError, setPlayError] = useState("");
+  // True while a track is being prepared or the audio element is buffering.
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Player preferences (skip intervals, speed, volume, repeat, shuffle...) —
+  // remembered per device, see utils/playerSettings.js.
+  const [settings, setSettings] = useState(loadPlayerSettings);
+  const settingsRef = useRef(settings);
+  const updateSettings = useCallback((patch) => {
+    setSettings((prev) => {
+      const next = { ...prev, ...(typeof patch === "function" ? patch(prev) : patch) };
+      savePlayerSettings(next);
+      return next;
+    });
+  }, []);
+
+  // Recently played, most recent first (persisted).
+  const [history, setHistory] = useState(loadHistory);
+  const historyRef = useRef(history);
+  // Tracks already played out of the queue this session — what "repeat
+  // queue" loops back through when the queue runs dry.
+  const queuePastRef = useRef([]);
+  // What to retry if playback failed before/while loading.
+  const lastRequestRef = useRef(null);
 
   // Shared progress so any consumer (mini player, desktop mini player,
   // the full player page) can show a scrubber without each attaching
@@ -37,7 +61,8 @@ export function AudioPlayerProvider({ children }) {
   // "Play Next" queue — a plain array of sermon objects. Newest
   // "Play Next" goes to the front, ahead of whatever was queued
   // before it (same convention as Spotify/Apple Music).
-  const [queue, setQueue] = useState([]);
+  const [queue, setQueue] = useState(loadQueue);
+  const queueRef = useRef(queue);
 
   // Sleep timer: null (off), "duration" (counting down to a pause),
   // or "endOfTrack" (pause when the current track ends instead of
@@ -49,6 +74,47 @@ export function AudioPlayerProvider({ children }) {
   useEffect(() => {
     currentRef.current = current;
   }, [current]);
+
+  useEffect(() => { settingsRef.current = settings; }, [settings]);
+  useEffect(() => { historyRef.current = history; saveHistory(history); }, [history]);
+  // The queue survives reloads.
+  useEffect(() => { queueRef.current = queue; saveQueue(queue); }, [queue]);
+
+  // Apply speed / volume / mute to the audio element. defaultPlaybackRate is
+  // what a freshly loaded track starts at, so the chosen speed sticks.
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.defaultPlaybackRate = settings.speed;
+    audio.playbackRate = settings.speed;
+    audio.volume = settings.volume;
+    audio.muted = settings.muted;
+  }, [settings.speed, settings.volume, settings.muted, audioUrl]);
+
+  // Loading indicator + playback errors from the element itself.
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return undefined;
+    const busy = () => setIsLoading(true);
+    const ready = () => setIsLoading(false);
+    const failed = () => {
+      setIsLoading(false);
+      if (!audio.getAttribute("src")) return;
+      setPlayError(navigator.onLine ? "This audio couldn't be loaded." : "You're offline and this audio isn't available. Tap to retry once you're back online.");
+    };
+    audio.addEventListener("loadstart", busy);
+    audio.addEventListener("waiting", busy);
+    audio.addEventListener("canplay", ready);
+    audio.addEventListener("playing", ready);
+    audio.addEventListener("error", failed);
+    return () => {
+      audio.removeEventListener("loadstart", busy);
+      audio.removeEventListener("waiting", busy);
+      audio.removeEventListener("canplay", ready);
+      audio.removeEventListener("playing", ready);
+      audio.removeEventListener("error", failed);
+    };
+  }, []);
 
   // Picks back up a signed-in listener's last in-progress track on app
   // open — loaded and seeked to the right spot, but not auto-played
@@ -301,7 +367,9 @@ export function AudioPlayerProvider({ children }) {
   const playSermon = async (sermon, options = {}) => {
     flushListenTime();
     const user = auth.currentUser;
+    lastRequestRef.current = { sermon, options: { ...options, fromHistory: false } };
     setPlayError("");
+    setIsLoading(true);
     try {
       let url;
 
@@ -310,7 +378,8 @@ export function AudioPlayerProvider({ children }) {
         // there's nothing to fall back to fetch a signed URL from.
         url = user ? await getLocalBlobUrl(user.uid, sermon.id) : null;
         if (!url) {
-          setPlayError("You're offline and this hasn't been downloaded for offline listening.");
+          setPlayError("You're offline and this hasn't been downloaded for offline listening. Tap to retry once you're back online.");
+          setIsLoading(false);
           return;
         }
       } else {
@@ -332,11 +401,24 @@ export function AudioPlayerProvider({ children }) {
       pendingAutoplayRef.current = options.autoplay !== false;
       setAudioUrl(url);
       setCurrent(sermon);
+      if (!options.fromHistory) {
+        setHistory((h) => [slimTrack(sermon), ...h.filter((x) => x.id !== sermon.id)].slice(0, 30));
+      }
       if (navigator.onLine) triggerAutoSummary(sermon, url);
     } catch (error) {
       console.error("Unable to prepare private audio", error);
-      setPlayError(error.message || "Audio is unavailable.");
+      setIsLoading(false);
+      setPlayError(navigator.onLine ? error.message || "Audio is unavailable." : "You're offline. Tap to retry once you're back online.");
     }
+  };
+
+  // Re-attempts whatever last failed (or reloads the current track at its
+  // current position).
+  const retryPlayback = () => {
+    const req = lastRequestRef.current;
+    if (!req) return;
+    const resumeAt = currentRef.current?.id === req.sermon.id ? audioRef.current?.currentTime || req.options.resumeAt : req.options.resumeAt;
+    playSermon(req.sermon, { ...req.options, resumeAt, autoplay: true });
   };
 
   const togglePlay = () => {
@@ -358,39 +440,143 @@ export function AudioPlayerProvider({ children }) {
   // PLAY NEXT QUEUE
   //////////////////////////////////////////////////
 
+  const playSermonRef = useRef(null);
+  playSermonRef.current = playSermon;
+  const sleepModeRef = useRef(null);
+  sleepModeRef.current = sleepTimerMode;
+
   const playNext = (sermon) => {
-    setQueue((q) => [sermon, ...q.filter((s) => s.id !== sermon.id)]);
+    setQueue((q) => [slimTrack(sermon), ...q.filter((s) => s.id !== sermon.id)]);
   };
 
   const removeFromQueue = (index) => {
     setQueue((q) => q.filter((_, i) => i !== index));
   };
 
-  const clearQueue = () => setQueue([]);
+  const clearQueue = () => {
+    queuePastRef.current = [];
+    setQueue([]);
+  };
 
-  // Auto-advance to the head of the queue when a track ends — unless
-  // the sleep timer is set to stop at the end of the current track,
-  // in which case playback just stops there.
+  // Drag-and-drop / arrow reordering in the queue sheet.
+  const moveQueueItem = (from, to) => {
+    setQueue((q) => {
+      if (from === to || from < 0 || to < 0 || from >= q.length || to >= q.length) return q;
+      const next = [...q];
+      const [item] = next.splice(from, 1);
+      next.splice(to, 0, item);
+      return next;
+    });
+  };
+
+  const shuffleQueueNow = () => {
+    setQueue((q) => {
+      const next = [...q];
+      for (let i = next.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [next[i], next[j]] = [next[j], next[i]];
+      }
+      return next;
+    });
+  };
+
+  // "Play all" / "Add all to queue" / "Add remaining" from any list.
+  const playAll = (list) => {
+    const items = (list || []).filter((t) => t && t.id);
+    if (items.length === 0) return;
+    queuePastRef.current = [];
+    setQueue(items.slice(1).map(slimTrack));
+    playSermon(items[0]);
+  };
+
+  const addAllToQueue = (list) => {
+    setQueue((q) => {
+      const have = new Set(q.map((s) => s.id));
+      if (currentRef.current) have.add(currentRef.current.id);
+      return [...q, ...(list || []).filter((t) => t && t.id && !have.has(t.id)).map(slimTrack)];
+    });
+  };
+
+  // Everything after the playing track in the list you're looking at (or the
+  // whole list if the current track isn't in it).
+  const addRemainingToQueue = (list) => {
+    const items = list || [];
+    const cur = currentRef.current;
+    const i = cur ? items.findIndex((t) => t.id === cur.id) : -1;
+    addAllToQueue(i >= 0 ? items.slice(i + 1) : items);
+  };
+
+  // Advance to the next track. `auto` = the track ended on its own, which is
+  // when "repeat queue" loops back around; a manual Next never loops.
+  const advance = (auto = false) => {
+    const q = queueRef.current;
+    const cur = currentRef.current;
+    const audio = audioRef.current;
+
+    if (q.length === 0) {
+      if (auto && settingsRef.current.repeat === "queue" && cur) {
+        const all = [...queuePastRef.current, cur];
+        queuePastRef.current = [];
+        if (all.length > 1) {
+          setQueue(all.slice(1).map(slimTrack));
+          playSermonRef.current(all[0]);
+        } else if (audio) {
+          audio.currentTime = 0;
+          audio.play().catch(() => {});
+        }
+      }
+      return;
+    }
+
+    const index = settingsRef.current.shuffle ? Math.floor(Math.random() * q.length) : 0;
+    const next = q[index];
+    if (cur) queuePastRef.current.push(cur);
+    setQueue(q.filter((_, i) => i !== index));
+    playSermonRef.current(next);
+  };
+
+  // Previous: restart the track if you're a few seconds in, otherwise go back
+  // to what played before (the current track returns to the front of the queue).
+  const playPrevious = () => {
+    const audio = audioRef.current;
+    if (audio && audio.currentTime > 3) {
+      audio.currentTime = 0;
+      return;
+    }
+    const prev = historyRef.current[1];
+    if (!prev) {
+      if (audio) audio.currentTime = 0;
+      return;
+    }
+    const cur = currentRef.current;
+    if (cur) setQueue((q) => [slimTrack(cur), ...q.filter((s) => s.id !== cur.id)]);
+    setHistory((h) => h.slice(1));
+    playSermonRef.current(prev, { fromHistory: true });
+  };
+
+  // Auto-advance when a track ends — unless the sleep timer is set to stop
+  // at the end of the current track. Repeat-track loops the same recording.
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return undefined;
 
     const onEnded = () => {
-      if (sleepTimerMode === "endOfTrack") {
+      if (sleepModeRef.current === "endOfTrack") {
         setSleepTimerMode(null);
         return;
       }
-      setQueue((q) => {
-        if (q.length === 0) return q;
-        const [next, ...rest] = q;
-        playSermon(next);
-        return rest;
-      });
+      if (settingsRef.current.repeat === "track") {
+        audio.currentTime = 0;
+        audio.play().catch(() => {});
+        return;
+      }
+      advance(true);
     };
 
     audio.addEventListener("ended", onEnded);
     return () => audio.removeEventListener("ended", onEnded);
-  }, [sleepTimerMode]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   //////////////////////////////////////////////////
   // SLEEP TIMER
@@ -481,34 +667,25 @@ export function AudioPlayerProvider({ children }) {
 
     navigator.mediaSession.setActionHandler("play", () => audio?.play().catch(() => {}));
     navigator.mediaSession.setActionHandler("pause", () => audio?.pause());
-    navigator.mediaSession.setActionHandler("seekbackward", () => {
-      if (audio) audio.currentTime = Math.max(0, audio.currentTime - 30);
+    navigator.mediaSession.setActionHandler("seekbackward", (d) => {
+      if (audio) audio.currentTime = Math.max(0, audio.currentTime - (d?.seekOffset || settings.skipBack));
     });
-    navigator.mediaSession.setActionHandler("seekforward", () => {
-      if (audio) audio.currentTime = Math.min(audio.duration || Infinity, audio.currentTime + 30);
+    navigator.mediaSession.setActionHandler("seekforward", (d) => {
+      if (audio) audio.currentTime = Math.min(audio.duration || Infinity, audio.currentTime + (d?.seekOffset || settings.skipForward));
     });
-    navigator.mediaSession.setActionHandler(
-      "nexttrack",
-      queue.length > 0
-        ? () => {
-            setQueue((q) => {
-              if (q.length === 0) return q;
-              const [next, ...rest] = q;
-              playSermon(next);
-              return rest;
-            });
-          }
-        : null
-    );
+    navigator.mediaSession.setActionHandler("previoustrack", () => playPrevious());
+    navigator.mediaSession.setActionHandler("nexttrack", queue.length > 0 || settings.repeat === "queue" ? () => advance(false) : null);
 
     return () => {
       navigator.mediaSession.setActionHandler("play", null);
       navigator.mediaSession.setActionHandler("pause", null);
       navigator.mediaSession.setActionHandler("seekbackward", null);
       navigator.mediaSession.setActionHandler("seekforward", null);
+      navigator.mediaSession.setActionHandler("previoustrack", null);
       navigator.mediaSession.setActionHandler("nexttrack", null);
     };
-  }, [queue]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queue, settings.skipBack, settings.skipForward, settings.repeat]);
 
   return (
     <AudioPlayerContext.Provider
@@ -526,6 +703,18 @@ export function AudioPlayerProvider({ children }) {
         playNext,
         removeFromQueue,
         clearQueue,
+        moveQueueItem,
+        shuffleQueueNow,
+        playAll,
+        addAllToQueue,
+        addRemainingToQueue,
+        advance,
+        playPrevious,
+        history,
+        retryPlayback,
+        isLoading,
+        settings,
+        updateSettings,
         sleepTimerMode,
         sleepTimerRemaining,
         setSleepTimer,

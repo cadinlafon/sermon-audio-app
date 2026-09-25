@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { useAudioPlayer } from "../context/AudioPlayerContext";
@@ -10,6 +10,7 @@ import { useAudioPlayer } from "../context/AudioPlayerContext";
 export default function ListenDeepLink() {
   const { audioId } = useParams();
   const navigate = useNavigate();
+  const { search } = useLocation();
   const { playSermon } = useAudioPlayer();
   const [error, setError] = useState("");
 
@@ -24,7 +25,9 @@ export default function ListenDeepLink() {
           return;
         }
         const sermon = { id: snap.id, ...snap.data() };
-        await playSermon(sermon);
+        // /listen/:id?t=2058 starts at 34:18
+        const t = Number(new URLSearchParams(search).get("t"));
+        await playSermon(sermon, Number.isFinite(t) && t > 0 ? { resumeAt: t } : {});
         if (!cancelled) navigate("/player", { replace: true });
       } catch (err) {
         console.error("Unable to load shared sermon", err);

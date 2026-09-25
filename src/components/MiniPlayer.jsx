@@ -4,7 +4,7 @@ import { useAudioPlayer } from "../context/AudioPlayerContext";
 import back30 from "../assets/Player/back30.png";
 
 export default function MiniPlayer() {
-  const { current, isPlaying, togglePlay, audioRef, duration, currentTime } = useAudioPlayer();
+  const { current, isPlaying, togglePlay, audioRef, duration, currentTime, settings, playError, retryPlayback, isLoading } = useAudioPlayer();
   const navigate = useNavigate();
 
   const hasAudio = !!current;
@@ -14,7 +14,7 @@ export default function MiniPlayer() {
     e.stopPropagation();
     const audio = audioRef.current;
     if (!audio) return;
-    audio.currentTime = Math.max(0, audio.currentTime - 30);
+    audio.currentTime = Math.max(0, audio.currentTime - settings.skipBack);
   };
 
   const handlePlay = (e) => {
@@ -38,17 +38,23 @@ export default function MiniPlayer() {
           {hasAudio ? (
             <>
               <div style={title}>{current.title}</div>
-              <div style={speaker}>{current.speaker}</div>
+              {playError ? (
+                <button style={retryLink} onClick={(e) => { e.stopPropagation(); retryPlayback(); }}>⚠ Couldn't play — tap to retry</button>
+              ) : (
+                <div style={speaker}>{isLoading ? "Loading…" : current.speaker}</div>
+              )}
             </>
+          ) : playError ? (
+            <button style={retryLink} onClick={(e) => { e.stopPropagation(); retryPlayback(); }}>⚠ {playError}</button>
           ) : (
-            <div style={emptyTitle}>No audio playing</div>
+            <div style={emptyTitle}>{isLoading ? "Loading…" : "No audio playing"}</div>
           )}
         </div>
 
         {hasAudio && (
           <div style={controls}>
-            <button onClick={jumpBack} style={iconBtn} title="Back 30s">
-              <img src={back30} style={iconImg} alt="Back 30 seconds" />
+            <button onClick={jumpBack} style={iconBtn} title={`Back ${settings.skipBack}s`}>
+              <img src={back30} style={iconImg} alt={`Back ${settings.skipBack} seconds`} />
             </button>
 
             <button onClick={handlePlay} style={playBtn}>
@@ -176,3 +182,5 @@ const playGlyph = {
   fontSize: "22px",
   lineHeight: 1,
 };
+
+const retryLink = { background: "none", border: "none", padding: 0, textAlign: "left", color: "#b3432c", fontSize: "11px", fontFamily: "sans-serif", cursor: "pointer", textDecoration: "underline" };

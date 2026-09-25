@@ -10,6 +10,7 @@ import { useAudioPlayer } from "../context/AudioPlayerContext";
 import useAudioList from "../hooks/useAudioList";
 import useOnlineStatus from "../hooks/useOnlineStatus";
 import AudioCard from "../components/AudioCard";
+import PlayAllBar from "../components/PlayAllBar";
 
 export default function Sermons() {
   const [notices, setNotices] = useState([]);
@@ -85,6 +86,7 @@ export default function Sermons() {
 
       {displayList.length === 0 && <p style={emptyText}>{!isOnline && sermons.length === 0 ? "You're offline and nothing has been downloaded yet. Download audio while online to listen without a connection." : "Nothing found — try adjusting your filters."}</p>}
 
+      <PlayAllBar items={displayList} filtered={!!(search || speakerFilter !== "all" || typeFilter !== "all")} />
       {displayList.map((sermon) => (
         <AudioCard key={sermon.id} audio={sermon} onPlay={playSermon} onSummarySaved={saveSummaryLocally} />
       ))}

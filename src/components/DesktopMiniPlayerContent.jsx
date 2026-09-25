@@ -9,7 +9,7 @@ import forward30 from "../assets/Player/forward30.png";
 // React tree, so useAudioPlayer() still works normally even though
 // the DOM it's attached to lives in a separate browser window.
 export default function DesktopMiniPlayerContent({ pipWindow }) {
-  const { current, isPlaying, togglePlay, audioRef, duration, currentTime } = useAudioPlayer();
+  const { current, isPlaying, togglePlay, audioRef, duration, currentTime, settings } = useAudioPlayer();
 
   if (!pipWindow) return null;
 
@@ -17,12 +17,12 @@ export default function DesktopMiniPlayerContent({ pipWindow }) {
 
   const jumpBack = () => {
     const audio = audioRef.current;
-    if (audio) audio.currentTime = Math.max(0, audio.currentTime - 30);
+    if (audio) audio.currentTime = Math.max(0, audio.currentTime - settings.skipBack);
   };
 
   const jumpForward = () => {
     const audio = audioRef.current;
-    if (audio) audio.currentTime = Math.min(duration || Infinity, audio.currentTime + 30);
+    if (audio) audio.currentTime = Math.min(duration || Infinity, audio.currentTime + settings.skipForward);
   };
 
   return createPortal(

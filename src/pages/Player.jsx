@@ -3,7 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { auth } from "../firebase";
 import { useAudioPlayer } from "../context/AudioPlayerContext";
 import { useDocumentPiP } from "../hooks/useDocumentPiP";
-import { fetchNote, saveNote } from "../utils/notes";
+import { fetchNote, saveNote, fetchBookmarks, saveBookmarks } from "../utils/notes";
+import PlayerSettings from "../components/PlayerSettings";
+import QueueSheet from "../components/QueueSheet";
 import DesktopMiniPlayerContent from "../components/DesktopMiniPlayerContent";
 import RelatedAudio from "../components/RelatedAudio";
 
@@ -23,8 +25,14 @@ export default function Player() {
     currentTime,
     seekTo,
     queue,
-    removeFromQueue,
-    clearQueue,
+    playPrevious,
+    advance,
+    history,
+    settings,
+    updateSettings,
+    isLoading,
+    playError,
+    retryPlayback,
     sleepTimerMode,
     sleepTimerRemaining,
     setSleepTimer,
@@ -35,9 +43,14 @@ export default function Player() {
   const pip = useDocumentPiP();
 
   const [progress, setProgress] = useState(currentTime);
-  const [speed, setSpeed] = useState(1);
+  const speed = settings.speed;
+  const showRemaining = settings.showRemaining;
+  const setShowRemaining = (v) => updateSettings({ showRemaining: v });
   const [isDragging, setIsDragging] = useState(false);
-  const [showRemaining, setShowRemaining] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [bookmarks, setBookmarks] = useState([]);
+  const [flashMsg, setFlashMsg] = useState("");
+  const [timeCopied, setTimeCopied] = useState(false);
   const [showQueue, setShowQueue] = useState(false);
   const [showSleepMenu, setShowSleepMenu] = useState(false);
   const [deviceStatus, setDeviceStatus] = useState("");
@@ -93,6 +106,81 @@ export default function Player() {
   };
 
   //////////////////////////////////////////////////
+  // BOOKMARKS + TIMESTAMPS
+  //////////////////////////////////////////////////
+  useEffect(() => {
+    const user = auth.currentUser;
+    if (!user || !current?.id) {
+      setBookmarks([]);
+      return undefined;
+    }
+    let cancelled = false;
+    fetchBookmarks(user.uid, current.id).then((list) => {
+      if (!cancelled) setBookmarks(list);
+    });
+    return () => { cancelled = true; };
+  }, [current?.id]);
+
+  const flash = (text) => {
+    setFlashMsg(text);
+    setTimeout(() => setFlashMsg(""), 2200);
+  };
+
+  const persistBookmarks = (next) => {
+    setBookmarks(next);
+    const user = auth.currentUser;
+    if (user && current?.id) saveBookmarks(user.uid, current.id, next);
+  };
+
+  const addBookmark = () => {
+    if (!auth.currentUser) { flash("Sign in to save bookmarks."); return; }
+    const t = Math.floor(audioRef.current?.currentTime || 0);
+    const next = [...bookmarks, { id: Math.random().toString(36).slice(2, 10), t, label: "", createdAt: Date.now() }].sort((a, b) => a.t - b.t);
+    persistBookmarks(next);
+    flash(`Bookmarked ${format(t)}`);
+  };
+
+  const relabelBookmark = (id, label) => persistBookmarks(bookmarks.map((b) => (b.id === id ? { ...b, label: label.slice(0, 80) } : b)));
+  const removeBookmark = (id) => persistBookmarks(bookmarks.filter((b) => b.id !== id));
+  const jumpToBookmark = (t) => {
+    seekTo(t);
+    if (audioRef.current?.paused) audioRef.current.play().catch(() => {});
+  };
+
+  const timestampLink = () => `${deepLink}?t=${Math.floor(audioRef.current?.currentTime || progress || 0)}`;
+
+  const copyTimestamp = async () => {
+    try {
+      await navigator.clipboard.writeText(format(audioRef.current?.currentTime || progress));
+      setTimeCopied(true);
+      setTimeout(() => setTimeCopied(false), 1500);
+    } catch (error) {
+      console.error("Couldn't copy timestamp", error);
+    }
+  };
+
+  const shareTimestamp = async () => {
+    const url = timestampLink();
+    const at = format(audioRef.current?.currentTime || progress);
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: `${current?.title} (${at})`, text: current?.speaker, url });
+      } catch (error) {
+        if (error?.name !== "AbortError") console.error("Share failed", error);
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(url);
+        flash(`Link to ${at} copied`);
+      } catch (error) {
+        console.error("Couldn't copy link", error);
+      }
+    }
+  };
+
+  const toggleSection = (key) => updateSettings((prev) => ({ sections: { ...prev.sections, [key]: !prev.sections[key] } }));
+
+  //////////////////////////////////////////////////
   // SEEK
   //////////////////////////////////////////////////
   const handleSeek = (e) => {
@@ -110,23 +198,19 @@ export default function Player() {
   //////////////////////////////////////////////////
   // SPEED
   //////////////////////////////////////////////////
-  const changeSpeed = (val) => {
-    const audio = audioRef.current;
-    audio.playbackRate = val;
-    setSpeed(val);
-  };
+  const changeSpeed = (val) => updateSettings({ speed: val });
 
   //////////////////////////////////////////////////
   // SKIP
   //////////////////////////////////////////////////
   const jumpBack = () => {
     const audio = audioRef.current;
-    audio.currentTime = Math.max(0, audio.currentTime - 30);
+    audio.currentTime = Math.max(0, audio.currentTime - settings.skipBack);
   };
 
   const jumpForward = () => {
     const audio = audioRef.current;
-    audio.currentTime = Math.min(duration, audio.currentTime + 30);
+    audio.currentTime = Math.min(duration || Infinity, audio.currentTime + settings.skipForward);
   };
 
   const startFromBeginning = () => {
@@ -174,11 +258,6 @@ export default function Player() {
   //////////////////////////////////////////////////
   // PLAY NEXT QUEUE
   //////////////////////////////////////////////////
-  const handlePlayFromQueue = (sermon, index) => {
-    removeFromQueue(index);
-    playSermon(sermon);
-  };
-
   //////////////////////////////////////////////////
   // SLEEP TIMER
   //////////////////////////////////////////////////
@@ -288,12 +367,25 @@ export default function Player() {
         .pf-player .pf-back-btn:hover {
           color: #c97c2e;
         }
+        @keyframes pf-spin { to { transform: rotate(360deg); } }
+        .pf-spinner {
+          display: inline-block; width: 14px; height: 14px; border-radius: 50%;
+          border: 2px solid #eddfc8; border-top-color: #c97c2e; animation: pf-spin 0.8s linear infinite; vertical-align: -2px; margin-right: 6px;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .pf-spinner, .pf-player * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+        }
       `}</style>
 
-      {/* BACK BUTTON */}
-      <button className="pf-back-btn" style={backBtn} onClick={() => navigate(-1)}>
-        ← Back
-      </button>
+      {/* HEADER: BACK + SETTINGS */}
+      <div style={headerRow}>
+        <button className="pf-back-btn" style={backBtn} onClick={() => navigate(-1)}>
+          ← Back
+        </button>
+        <button style={gearBtn} onClick={() => setShowSettings(true)} aria-label="Player settings" title="Player settings">
+          ⚙
+        </button>
+      </div>
 
       <div style={card}>
         {/* ARTWORK / LOGO */}
@@ -305,10 +397,19 @@ export default function Player() {
 
         {/* TITLE BLOCK */}
         <div style={titleBlock}>
-          <p style={nowPlayingLabel}>{isPlaying ? "Now Playing" : "Paused"}</p>
+          <p style={nowPlayingLabel}>
+            {isLoading ? <><span className="pf-spinner" aria-hidden="true" />Loading…</> : isPlaying ? "Now Playing" : "Paused"}
+          </p>
           <h2 style={title}>{current.title}</h2>
           <p style={speaker}>{current.speaker}</p>
         </div>
+
+        {playError && (
+          <div style={errorBanner} role="alert">
+            <span>⚠ {playError}</span>
+            <button style={retryBtn} onClick={retryPlayback}>Tap to retry</button>
+          </div>
+        )}
 
         {/* SEEK BAR */}
         <div style={seekWrapper}>
@@ -343,19 +444,41 @@ export default function Player() {
 
         {/* MAIN CONTROLS */}
         <div style={controls}>
-          <button className="pf-skip-btn" onClick={jumpBack} style={skipBtn} title="Back 30s">
-            <img src={back30} style={skipIcon} alt="Back 30 seconds" />
-            <span style={skipLabel}>30</span>
+          <button style={trackBtn} onClick={playPrevious} title="Previous track (restarts if you're a few seconds in)" aria-label="Previous track">
+            ⏮
           </button>
 
-          <button className="pf-play-btn" onClick={togglePlay} style={playBtn}>
-            <span style={playSymbol}>{isPlaying ? "❚❚" : "▶"}</span>
+          <button className="pf-skip-btn" onClick={jumpBack} style={skipBtn} title={`Back ${settings.skipBack}s`}>
+            <img src={back30} style={skipIcon} alt={`Back ${settings.skipBack} seconds`} />
+            <span style={skipLabel}>{settings.skipBack}</span>
           </button>
 
-          <button className="pf-skip-btn" onClick={jumpForward} style={skipBtn} title="Forward 30s">
-            <img src={forward30} style={skipIcon} alt="Forward 30 seconds" />
-            <span style={skipLabel}>30</span>
+          <button className="pf-play-btn" onClick={togglePlay} style={playBtn} aria-label={isPlaying ? "Pause" : "Play"}>
+            {isLoading && !isPlaying ? <span className="pf-spinner" style={{ width: "22px", height: "22px", margin: 0 }} aria-hidden="true" /> : <span style={playSymbol}>{isPlaying ? "❚❚" : "▶"}</span>}
           </button>
+
+          <button className="pf-skip-btn" onClick={jumpForward} style={skipBtn} title={`Forward ${settings.skipForward}s`}>
+            <img src={forward30} style={skipIcon} alt={`Forward ${settings.skipForward} seconds`} />
+            <span style={skipLabel}>{settings.skipForward}</span>
+          </button>
+
+          <button style={{ ...trackBtn, opacity: queue.length > 0 || settings.repeat === "queue" ? 1 : 0.35 }} onClick={() => advance(false)} disabled={queue.length === 0 && settings.repeat !== "queue"} title="Next in queue" aria-label="Next track">
+            ⏭
+          </button>
+        </div>
+
+        {/* VOLUME */}
+        <div style={volumeRow}>
+          <button style={muteBtn} onClick={() => updateSettings({ muted: !settings.muted })} aria-pressed={settings.muted} aria-label={settings.muted ? "Unmute" : "Mute"} title={settings.muted ? "Unmute" : "Mute"}>
+            {settings.muted || settings.volume === 0 ? "🔇" : settings.volume < 0.5 ? "🔉" : "🔊"}
+          </button>
+          <input
+            type="range" min="0" max="1" step="0.01"
+            value={settings.muted ? 0 : settings.volume}
+            onChange={(e) => updateSettings({ volume: Number(e.target.value), muted: false })}
+            style={{ flex: 1 }}
+            aria-label="Volume"
+          />
         </div>
 
         {/* SPEED + SHARE */}
@@ -385,6 +508,14 @@ export default function Player() {
             )}
           </div>
         </div>
+
+        {/* TIMESTAMP TOOLS */}
+        <div style={stampRow}>
+          <button style={extraBtn} onClick={addBookmark}>🔖 Bookmark {format(progress)}</button>
+          <button style={extraBtn} onClick={copyTimestamp}>{timeCopied ? "✓ Copied" : `⧉ Copy ${format(progress)}`}</button>
+          <button style={extraBtn} onClick={shareTimestamp}>↑ Share at {format(progress)}</button>
+        </div>
+        {flashMsg && <p style={flashText} role="status">{flashMsg}</p>}
 
         {/* EXTRAS: QUEUE / SLEEP TIMER / OUTPUT / MINI PLAYER */}
         <div style={extrasRow}>
@@ -426,40 +557,49 @@ export default function Player() {
         {deviceStatus && <p style={deviceStatusText}>{deviceStatus}</p>}
       </div>
 
-      <RelatedAudio current={current} />
+      <div style={sectionsWrap}>
+        <Collapsible title={`🔖 Bookmarks${bookmarks.length ? ` (${bookmarks.length})` : ""}`} open={settings.sections.bookmarks} onToggle={() => toggleSection("bookmarks")}>
+          {bookmarks.length === 0 ? (
+            <p style={mutedText}>{auth.currentUser ? "No bookmarks yet — tap Bookmark while listening." : "Sign in to save bookmarks."}</p>
+          ) : (
+            bookmarks.map((b) => (
+              <div key={b.id} style={bookmarkRow}>
+                <button style={bookmarkTime} onClick={() => jumpToBookmark(b.t)} title="Jump to this moment">{format(b.t)}</button>
+                <input style={bookmarkInput} defaultValue={b.label} placeholder="Add a label" onBlur={(e) => e.target.value !== b.label && relabelBookmark(b.id, e.target.value)} aria-label={`Label for bookmark at ${format(b.t)}`} />
+                <button style={queueRemoveBtn} onClick={() => removeBookmark(b.id)} aria-label="Delete bookmark">✕</button>
+              </div>
+            ))
+          )}
+        </Collapsible>
+
+        <Collapsible title="🕘 Recently Played" open={settings.sections.recent} onToggle={() => toggleSection("recent")}>
+          {history.filter((h) => h.id !== current.id).length === 0 ? (
+            <p style={mutedText}>Nothing else yet.</p>
+          ) : (
+            history.filter((h) => h.id !== current.id).slice(0, 6).map((h) => (
+              <button key={h.id} style={recentRow} onClick={() => playSermon(h, { fromHistory: false })}>
+                <span style={queueItemTitle}>{h.title}</span>
+                <span style={queueItemSpeaker}>{h.speaker}</span>
+              </button>
+            ))
+          )}
+        </Collapsible>
+
+        <Collapsible title="✨ Related" open={settings.sections.related} onToggle={() => toggleSection("related")}>
+          <RelatedAudio current={current} />
+        </Collapsible>
+      </div>
 
       {/* PLAYING NEXT SHEET */}
       {showQueue && (
-        <>
-          <div style={backdrop} onClick={() => setShowQueue(false)} />
-          <div style={sheet}>
-            <div style={sheetHeader}>
-              <h3 style={sheetTitle}>Playing Next</h3>
-              {queue.length > 0 && (
-                <button style={sheetLinkBtn} onClick={clearQueue}>Clear All</button>
-              )}
-            </div>
-
-            {queue.length === 0 ? (
-              <p style={sheetEmptyText}>Nothing queued yet — use "Play Next" on any sermon.</p>
-            ) : (
-              <div style={queueList}>
-                {queue.map((sermon, i) => (
-                  <div key={`${sermon.id}-${i}`} style={queueRow}>
-                    <button style={queueItemBtn} onClick={() => handlePlayFromQueue(sermon, i)}>
-                      <div style={queueItemTitle}>{sermon.title}</div>
-                      <div style={queueItemSpeaker}>{sermon.speaker}</div>
-                    </button>
-                    <button style={queueRemoveBtn} onClick={() => removeFromQueue(i)} title="Remove">✕</button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <button style={sheetCloseBtn} onClick={() => setShowQueue(false)}>Close</button>
-          </div>
-        </>
+        <QueueSheet
+          onClose={() => setShowQueue(false)}
+          styles={{ backdrop, sheet, sheetHeader, sheetTitle, sheetLinkBtn, sheetEmptyText, sheetCloseBtn, queueList, queueRow, queueItemBtn, queueItemTitle, queueItemSpeaker, queueRemoveBtn }}
+        />
       )}
+
+      {/* PLAYER SETTINGS */}
+      {showSettings && <PlayerSettings onClose={() => setShowSettings(false)} />}
 
       {/* SLEEP TIMER SHEET */}
       {showSleepMenu && (
@@ -514,6 +654,18 @@ export default function Player() {
       )}
 
       <DesktopMiniPlayerContent pipWindow={pip.pipWindow} />
+    </div>
+  );
+}
+
+function Collapsible({ title, open, onToggle, children }) {
+  return (
+    <div style={collapsible}>
+      <button style={collapsibleHead} onClick={onToggle} aria-expanded={open}>
+        <span>{title}</span>
+        <span style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}>▾</span>
+      </button>
+      {open && <div style={collapsibleBody}>{children}</div>}
     </div>
   );
 }
@@ -1000,3 +1152,22 @@ const sleepBtnActive = {
   color: "#fff8ee",
   borderColor: "transparent",
 };
+
+const headerRow = { width: "100%", maxWidth: "480px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" };
+const gearBtn = { width: "44px", height: "44px", borderRadius: "50%", border: "1px solid #eddfc8", background: "#fffdf9", color: "#7a4f10", fontSize: "22px", lineHeight: 1, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", paddingBottom: "2px" };
+const trackBtn = { width: "44px", height: "44px", borderRadius: "50%", border: "none", background: "transparent", color: "#7a4f10", fontSize: "20px", cursor: "pointer", flexShrink: 0 };
+const volumeRow = { display: "flex", alignItems: "center", gap: "10px", width: "100%", margin: "4px 0 10px" };
+const muteBtn = { width: "40px", height: "40px", borderRadius: "50%", border: "1px solid #eddfc8", background: "#fdf8f3", fontSize: "18px", cursor: "pointer", flexShrink: 0 };
+const stampRow = { display: "flex", flexWrap: "wrap", gap: "8px", justifyContent: "center", width: "100%", marginBottom: "8px" };
+const flashText = { margin: "0 0 8px", fontSize: "12px", color: "#166534", fontFamily: "sans-serif", textAlign: "center" };
+const errorBanner = { width: "100%", boxSizing: "border-box", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px", flexWrap: "wrap", background: "#fff5f2", border: "1px solid #f3c8ba", color: "#a33622", borderRadius: "12px", padding: "10px 12px", fontSize: "13px", fontFamily: "sans-serif", marginBottom: "12px" };
+const retryBtn = { padding: "8px 14px", borderRadius: "999px", border: "none", background: "#b3432c", color: "#fff", fontSize: "12px", fontFamily: "sans-serif", cursor: "pointer", fontWeight: "600" };
+const sectionsWrap = { width: "100%", maxWidth: "480px", marginTop: "16px", display: "flex", flexDirection: "column", gap: "10px" };
+const collapsible = { background: "#fffdf9", border: "1px solid #f1e4cc", borderRadius: "16px", overflow: "hidden" };
+const collapsibleHead = { width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 16px", background: "transparent", border: "none", fontSize: "14px", fontWeight: "600", color: "#5c3a1e", fontFamily: "sans-serif", cursor: "pointer" };
+const collapsibleBody = { padding: "0 14px 14px", display: "flex", flexDirection: "column", gap: "8px" };
+const mutedText = { margin: 0, fontSize: "13px", color: "#b08050", fontFamily: "sans-serif", fontStyle: "italic" };
+const bookmarkRow = { display: "flex", alignItems: "center", gap: "8px" };
+const bookmarkTime = { padding: "8px 12px", borderRadius: "999px", border: "none", background: "#fde8b8", color: "#7a4f10", fontSize: "13px", fontWeight: "600", fontFamily: "sans-serif", cursor: "pointer", flexShrink: 0 };
+const bookmarkInput = { flex: 1, minWidth: 0, padding: "8px 10px", borderRadius: "8px", border: "1px solid #eddfc8", background: "#fdf8f3", fontSize: "13px", fontFamily: "sans-serif", color: "#3d2200" };
+const recentRow = { display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "2px", textAlign: "left", background: "#fdf8f3", border: "1px solid #f1e4cc", borderRadius: "10px", padding: "10px 12px", cursor: "pointer" };

@@ -10,6 +10,7 @@ import { useAudioPlayer } from "../context/AudioPlayerContext";
 import useAudioList from "../hooks/useAudioList";
 import useOnlineStatus from "../hooks/useOnlineStatus";
 import AudioCard from "../components/AudioCard";
+import PlayAllBar from "../components/PlayAllBar";
 
 export default function SundaySchool() {
   const [notices, setNotices] = useState([]);
@@ -78,6 +79,7 @@ export default function SundaySchool() {
 
       {displayList.length === 0 && <p style={emptyText}>{!isOnline && lessons.length === 0 ? "You're offline and nothing has been downloaded yet. Download audio while online to listen without a connection." : "Nothing found — try adjusting your filters."}</p>}
 
+      <PlayAllBar items={displayList} filtered={!!(search || speakerFilter !== "all")} />
       {displayList.map((item) => (
         <AudioCard key={item.id} audio={item} onPlay={playSermon} onSummarySaved={saveSummaryLocally} />
       ))}
