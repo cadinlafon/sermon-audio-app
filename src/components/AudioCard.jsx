@@ -10,6 +10,7 @@ import { useToast } from "../context/ToastContext";
 import useOnlineStatus from "../hooks/useOnlineStatus";
 import { useAudioPlayer } from "../context/AudioPlayerContext";
 import AiSummary from "./AiSummary";
+import AddToPlaylistModal from "./AddToPlaylistModal";
 
 const NEW_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -36,6 +37,7 @@ export default function AudioCard({ audio, onPlay, onSummarySaved, onSaveChange 
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState("");
   const isOnline = useOnlineStatus();
+  const [showPlaylist, setShowPlaylist] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -270,6 +272,7 @@ export default function AudioCard({ audio, onPlay, onSummarySaved, onSaveChange 
             ↗
           </button>
         )}
+        <button onClick={() => setShowPlaylist(true)} style={iconOnlyButton} title="Add to playlist" aria-label="Add to playlist">☰＋</button>
         {user && (
           <button
             onClick={handleToggleDownload}
@@ -288,6 +291,7 @@ export default function AudioCard({ audio, onPlay, onSummarySaved, onSaveChange 
       {statusError && <p style={saveErrorStyle} role="alert">{statusError}</p>}
       {downloadError && <p style={saveErrorStyle} role="alert">{downloadError}</p>}
       <AiSummary audio={audio} onSummarySaved={onSummarySaved} />
+      {showPlaylist && <AddToPlaylistModal audio={audio} onClose={() => setShowPlaylist(false)} />}
     </div>
   );
 }

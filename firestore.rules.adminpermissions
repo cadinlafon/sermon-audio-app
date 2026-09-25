@@ -101,3 +101,15 @@ match /agentKeys/{keyId} {
 match /agentOAuthClients/{id} { allow read, write: if false; }
 match /agentOAuthCodes/{id}   { allow read, write: if false; }
 match /agentOAuthTokens/{id}  { allow read, write: if false; }
+
+// ── Block 5: shared playlists ───────────────────────────────────────
+// Private playlists live on the user's own doc (users/{uid}.playlists) and
+// need no rule. Turning a playlist "Public" writes a copy to playlists/{id}
+// so it can be opened by link; without this block, sharing shows an error.
+
+match /playlists/{playlistId} {
+  allow read: if resource.data.public == true ||
+    (request.auth != null && request.auth.uid == resource.data.ownerId);
+  allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid;
+  allow update, delete: if request.auth != null && request.auth.uid == resource.data.ownerId;
+}

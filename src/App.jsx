@@ -12,6 +12,8 @@ import BackToTop from "./components/BackToTop";
 import KeyboardShortcuts from "./components/KeyboardShortcuts";
 import DownloadScheduler from "./components/DownloadScheduler";
 import Downloads from "./pages/Downloads";
+import Playlists from "./pages/Playlists";
+import PlaylistDetail from "./pages/PlaylistDetail";
 import NotificationPopup from "./components/NotificationPopup";
 import IosInstallPopup from "./components/IosInstallPopup";
 import TopBar from "./components/topbar";
@@ -494,6 +496,18 @@ function App() {
               </PageGate>
             }
           />
+
+          <Route
+            path="/playlists"
+            element={
+              <PageGate id="playlists">
+                <Playlists />
+              </PageGate>
+            }
+          />
+
+          {/* Public: shared playlists open without signing in */}
+          <Route path="/playlists/:id" element={<PlaylistDetail />} />
 
           <Route
             path="/downloads"
