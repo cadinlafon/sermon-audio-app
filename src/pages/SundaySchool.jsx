@@ -7,10 +7,11 @@ import {
   where,
 } from "firebase/firestore";
 import { useAudioPlayer } from "../context/AudioPlayerContext";
+import useAudioList from "../hooks/useAudioList";
+import useOnlineStatus from "../hooks/useOnlineStatus";
 import AudioCard from "../components/AudioCard";
 
 export default function SundaySchool() {
-  const [lessons, setLessons] = useState([]);
   const [notices, setNotices] = useState([]);
 
   const [search, setSearch] = useState("");
@@ -19,16 +20,17 @@ export default function SundaySchool() {
 
   const { playSermon } = useAudioPlayer();
 
-  useEffect(() => {
-    async function fetchLessons() {
+  const isOnline = useOnlineStatus();
+  const [lessons, setLessons] = useAudioList(
+    async () => {
       const q = query(collection(db, "audio"), where("type", "==", "sundayschool"));
       const snapshot = await getDocs(q);
       const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
       data.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-      setLessons(data);
-    }
-    fetchLessons();
-  }, []);
+      return data;
+    },
+    (a) => a.type === "sundayschool"
+  );
 
   useEffect(() => {
     async function fetchNotices() {
@@ -74,7 +76,7 @@ export default function SundaySchool() {
         </div>
       ))}
 
-      {displayList.length === 0 && <p style={emptyText}>Nothing found — try adjusting your filters.</p>}
+      {displayList.length === 0 && <p style={emptyText}>{!isOnline && lessons.length === 0 ? "You're offline and nothing has been downloaded yet. Download audio while online to listen without a connection." : "Nothing found — try adjusting your filters."}</p>}
 
       {displayList.map((item) => (
         <AudioCard key={item.id} audio={item} onPlay={playSermon} onSummarySaved={saveSummaryLocally} />

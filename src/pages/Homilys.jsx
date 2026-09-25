@@ -7,10 +7,10 @@ import {
   where,
 } from "firebase/firestore";
 import { useAudioPlayer } from "../context/AudioPlayerContext";
+import useAudioList from "../hooks/useAudioList";
 import AudioCard from "../components/AudioCard";
 
 export default function Homilies() {
-  const [homilies, setHomilies] = useState([]);
   const [notices, setNotices] = useState([]);
 
   const [search, setSearch] = useState("");
@@ -22,8 +22,8 @@ export default function Homilies() {
   ////////////////////////////////////////////////
   // FETCH AUDIO
   ////////////////////////////////////////////////
-  useEffect(() => {
-    async function fetchHomilies() {
+  const [homilies, setHomilies] = useAudioList(
+    async () => {
       const q = query(
         collection(db, "audio"),
         where("type", "==", "homily")
@@ -37,11 +37,10 @@ export default function Homilies() {
       }));
 
       data.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-      setHomilies(data);
-    }
-
-    fetchHomilies();
-  }, []);
+      return data;
+    },
+    (a) => a.type === "homily"
+  );
 
   ////////////////////////////////////////////////
   // FETCH NOTICES

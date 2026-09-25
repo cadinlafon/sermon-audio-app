@@ -7,10 +7,11 @@ import {
   where,
 } from "firebase/firestore";
 import { useAudioPlayer } from "../context/AudioPlayerContext";
+import useAudioList from "../hooks/useAudioList";
+import useOnlineStatus from "../hooks/useOnlineStatus";
 import AudioCard from "../components/AudioCard";
 
 export default function Sermons() {
-  const [sermons, setSermons] = useState([]);
   const [notices, setNotices] = useState([]);
 
   const [search, setSearch] = useState("");
@@ -20,16 +21,17 @@ export default function Sermons() {
 
   const { playSermon } = useAudioPlayer();
 
-  useEffect(() => {
-    async function fetchAudio() {
+  const isOnline = useOnlineStatus();
+  const [sermons, setSermons] = useAudioList(
+    async () => {
       const q = query(collection(db, "audio"), where("type", "in", ["sermon", "homily"]));
       const snapshot = await getDocs(q);
       const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
       data.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-      setSermons(data);
-    }
-    fetchAudio();
-  }, []);
+      return data;
+    },
+    (a) => a.type === "sermon" || a.type === "homily"
+  );
 
   useEffect(() => {
     async function fetchNotices() {
@@ -81,7 +83,7 @@ export default function Sermons() {
         </div>
       ))}
 
-      {displayList.length === 0 && <p style={emptyText}>Nothing found — try adjusting your filters.</p>}
+      {displayList.length === 0 && <p style={emptyText}>{!isOnline && sermons.length === 0 ? "You're offline and nothing has been downloaded yet. Download audio while online to listen without a connection." : "Nothing found — try adjusting your filters."}</p>}
 
       {displayList.map((sermon) => (
         <AudioCard key={sermon.id} audio={sermon} onPlay={playSermon} onSummarySaved={saveSummaryLocally} />

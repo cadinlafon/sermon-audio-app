@@ -74,6 +74,29 @@ export async function getLocalBlobUrl(userId, audioId) {
   return URL.createObjectURL(record.blob);
 }
 
+// Metadata for everything this user has downloaded on this device — lets the
+// lists render downloaded audio while offline even without a cached list.
+export async function getDownloadedMeta(userId) {
+  if (!userId) return [];
+  const database = await openDatabase();
+  const prefix = `${userId}_`;
+  return new Promise((resolve, reject) => {
+    const out = [];
+    const request = database.transaction(STORE_NAME, "readonly").objectStore(STORE_NAME).openCursor();
+    request.onsuccess = () => {
+      const cursor = request.result;
+      if (!cursor) return resolve(out);
+      const r = cursor.value;
+      if (String(r.key).startsWith(prefix)) {
+        // Downloads made before metadata was stored fall back to what was saved.
+        out.push(r.meta?.id ? r.meta : { id: r.audioId, title: r.title, speaker: r.speaker, type: r.type });
+      }
+      cursor.continue();
+    };
+    request.onerror = () => reject(request.error);
+  });
+}
+
 async function fetchAudioBlob(audio, token) {
   const body = audio.audioStorageKey
     ? { storageKey: audio.audioStorageKey }
@@ -116,6 +139,8 @@ export async function downloadForOffline(user, audio) {
     title: audio.title || "",
     speaker: audio.speaker || "",
     type: audio.type || "",
+    // Full doc copy so the audio lists can still show this item offline.
+    meta: JSON.parse(JSON.stringify(audio)),
     blob,
     downloadedAt: Date.now(),
   });
