@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "../firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { toggleSaveSermon } from "../utils/saveSermon";
 import { fetchListenProgress, setListenStatus } from "../utils/listenProgress";
-import { isDownloadedLocally, downloadForOffline, removeOfflineDownload } from "../utils/offlineDownloads";
+import { isDownloadedLocally, downloadForOffline, removeOfflineDownload, downloadForLater } from "../utils/offlineDownloads";
+import { useToast } from "../context/ToastContext";
 import useOnlineStatus from "../hooks/useOnlineStatus";
 import { useAudioPlayer } from "../context/AudioPlayerContext";
 import AiSummary from "./AiSummary";
@@ -34,6 +36,8 @@ export default function AudioCard({ audio, onPlay, onSummarySaved, onSaveChange 
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState("");
   const isOnline = useOnlineStatus();
+  const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => onAuthStateChanged(auth, setUser), []);
 
@@ -151,7 +155,13 @@ export default function AudioCard({ audio, onPlay, onSummarySaved, onSaveChange 
       }
     } catch (error) {
       console.error("Couldn't update offline download", error);
-      setDownloadError(error.message || "Couldn't update this download.");
+      const message = error.message || "Couldn't update this download.";
+      if (/limit/i.test(message)) {
+        toast(message, { type: "error", action: { label: "Manage", onClick: () => navigate("/downloads") } });
+      } else {
+        // Offline or a hiccup: offer to fetch it automatically once possible.
+        toast(message, { type: "error", action: { label: "Download later", onClick: () => { downloadForLater(user, audio); toast("Queued — it'll download when you're online.", { type: "success" }); } } });
+      }
     } finally {
       setDownloading(false);
     }

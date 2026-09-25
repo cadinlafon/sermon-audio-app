@@ -10,6 +10,8 @@ import NetworkStatus from "./components/NetworkStatus";
 import AccountDisabledBanner from "./components/AccountDisabledBanner";
 import BackToTop from "./components/BackToTop";
 import KeyboardShortcuts from "./components/KeyboardShortcuts";
+import DownloadScheduler from "./components/DownloadScheduler";
+import Downloads from "./pages/Downloads";
 import NotificationPopup from "./components/NotificationPopup";
 import IosInstallPopup from "./components/IosInstallPopup";
 import TopBar from "./components/topbar";
@@ -324,6 +326,8 @@ function App() {
 
       <KeyboardShortcuts />
 
+      <DownloadScheduler />
+
       <AccountDisabledBanner />
 
       <PopupNotification />
@@ -487,6 +491,15 @@ function App() {
             element={
               <PageGate id="saved">
                 <Saved />
+              </PageGate>
+            }
+          />
+
+          <Route
+            path="/downloads"
+            element={
+              <PageGate id="downloads">
+                <Downloads />
               </PageGate>
             }
           />

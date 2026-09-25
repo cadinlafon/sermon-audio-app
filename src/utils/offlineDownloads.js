@@ -125,11 +125,18 @@ export async function getRemoteDownloadCount(userId) {
   return Array.isArray(downloads) ? downloads.length : 0;
 }
 
+// The account is charged for downloads on every device, but this device's own
+// copies always count too, so the cap holds even if the account record lags.
+export async function getDownloadCount(userId) {
+  const [remote, local] = await Promise.all([getRemoteDownloadCount(userId).catch(() => 0), getDownloadedMeta(userId).then((l) => l.length).catch(() => 0)]);
+  return Math.max(remote, local);
+}
+
 export async function downloadForOffline(user, audio) {
   if (!user) throw new Error("Sign in to download audio for offline listening.");
 
-  const count = await getRemoteDownloadCount(user.uid);
-  if (count >= MAX_DOWNLOADS) {
+  const count = await getDownloadCount(user.uid);
+  if (count >= MAX_DOWNLOADS && !(await isDownloadedLocally(user.uid, audio.id))) {
     throw new Error(`You've reached the limit of ${MAX_DOWNLOADS} downloads. Remove one before adding another.`);
   }
 
@@ -169,4 +176,106 @@ export async function removeOfflineDownload(user, audioId) {
   const next = existing.filter((d) => d.audioId !== audioId);
   await updateDoc(userRef, { downloads: next });
   notifyDownloadsChanged();
+}
+
+////////////////////////////////////////////////////////////////
+// DOWNLOADS PAGE HELPERS
+////////////////////////////////////////////////////////////////
+
+// Everything downloaded on this device for this user, with size and date.
+export async function listDownloads(userId) {
+  if (!userId) return [];
+  const database = await openDatabase();
+  const prefix = `${userId}_`;
+  return new Promise((resolve, reject) => {
+    const out = [];
+    const request = database.transaction(STORE_NAME, "readonly").objectStore(STORE_NAME).openCursor();
+    request.onsuccess = () => {
+      const cursor = request.result;
+      if (!cursor) return resolve(out);
+      const r = cursor.value;
+      if (String(r.key).startsWith(prefix)) {
+        out.push({
+          audioId: r.audioId,
+          meta: r.meta?.id ? r.meta : { id: r.audioId, title: r.title, speaker: r.speaker, type: r.type },
+          size: r.blob?.size || 0,
+          downloadedAt: r.downloadedAt || 0,
+        });
+      }
+      cursor.continue();
+    };
+    request.onerror = () => reject(request.error);
+  });
+}
+
+// Entries the account is charged for (across all devices) — includes ones
+// whose audio isn't on this device, so they can be released.
+export async function getRemoteDownloads(userId) {
+  if (!userId) return [];
+  const snap = await getDoc(doc(db, "users", userId));
+  const list = snap.exists() ? snap.data().downloads : null;
+  return Array.isArray(list) ? list : [];
+}
+
+// Undo support: hand back exactly what was stored so it can be restored.
+export async function getDownloadRecord(userId, audioId) {
+  return getRecord(localKey(userId, audioId));
+}
+
+export async function restoreDownloadRecord(user, record) {
+  await putRecord(record);
+  const userRef = doc(db, "users", user.uid);
+  const snap = await getDoc(userRef);
+  const existing = snap.exists() && Array.isArray(snap.data().downloads) ? snap.data().downloads : [];
+  await updateDoc(userRef, { downloads: [...existing.filter((d) => d.audioId !== record.audioId), { audioId: record.audioId, title: record.title || "", downloadedAt: record.downloadedAt || Date.now() }] });
+  notifyDownloadsChanged();
+}
+
+// Downloads as many as fit in the remaining slots, newest first. Returns counts.
+export async function downloadMany(user, audios, onProgress) {
+  const used = await getDownloadCount(user.uid);
+  const have = new Set((await listDownloads(user.uid)).map((d) => d.audioId));
+  const todo = audios.filter((a) => !have.has(a.id));
+  const room = Math.max(0, MAX_DOWNLOADS - used);
+  const batch = todo.slice(0, room);
+  let done = 0;
+  for (const audio of batch) {
+    onProgress?.(done, batch.length, audio);
+    await downloadForOffline(user, audio);
+    done++;
+  }
+  return { done, skippedForLimit: todo.length - batch.length, alreadyHad: audios.length - todo.length };
+}
+
+// "Download for later": remembered on this device and fetched automatically
+// once you're online with a free slot.
+const PENDING_KEY = "pendingDownloads:v1";
+const readPending = () => { try { return JSON.parse(localStorage.getItem(PENDING_KEY) || "[]"); } catch { return []; } };
+const writePending = (list) => { try { localStorage.setItem(PENDING_KEY, JSON.stringify(list)); } catch { /* ignore */ } window.dispatchEvent(new Event("pending-downloads-changed")); };
+
+export const getPendingDownloads = (userId) => readPending().filter((p) => p.userId === userId).map((p) => p.audio);
+export function downloadForLater(user, audio) {
+  const list = readPending().filter((p) => !(p.userId === user.uid && p.audio.id === audio.id));
+  list.push({ userId: user.uid, audio: JSON.parse(JSON.stringify(audio)) });
+  writePending(list);
+}
+export function cancelPendingDownload(user, audioId) {
+  writePending(readPending().filter((p) => !(p.userId === user.uid && p.audio.id === audioId)));
+}
+
+// Fetches queued downloads (oldest first) until the queue empties or slots run out.
+export async function processPendingDownloads(user) {
+  if (!user || !navigator.onLine) return { done: 0 };
+  let done = 0;
+  for (const item of readPending().filter((p) => p.userId === user.uid)) {
+    try {
+      await downloadForOffline(user, item.audio);
+      cancelPendingDownload(user, item.audio.id);
+      done++;
+    } catch (error) {
+      if (/limit/i.test(error.message)) break; // no free slots — keep the rest queued
+      console.warn("Queued download failed, will retry later", error);
+    }
+  }
+  return { done };
 }

@@ -108,6 +108,16 @@ export const PAGE_REGISTRY = [
     defaultRequireLogin: true,
   },
   {
+    id: "downloads",
+    route: "/downloads",
+    defaultName: "Downloads",
+    defaultIcon: "⬇️",
+    defaultDescription: "Audio saved on this device for offline listening.",
+    navSlot: "account",
+    defaultOrder: 2,
+    defaultRequireLogin: true,
+  },
+  {
     id: "stats",
     route: "/stats",
     defaultName: "Stats",
