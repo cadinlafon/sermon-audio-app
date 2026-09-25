@@ -172,6 +172,102 @@ async function releaseSummaryPending(firebaseToken: string, audioId: string) {
   }).catch((error) => console.warn("Couldn't release summary lock", error));
 }
 
+////////////////////////////////////////////////////////////////
+// TRANSCRIPTS (transcripts/{audioId}) — timestamped segments, plus AI
+// sections/topics. Saved with the caller's own Firebase token, like summaries.
+////////////////////////////////////////////////////////////////
+type Segment = { start: number; end: number; text: string };
+type Transcription = { text: string; segments: Segment[]; language: string; duration: number };
+
+const transcriptUrl = (audioId: string) =>
+  new URL(`https://firestore.googleapis.com/v1/projects/${firebaseProjectId}/databases/(default)/documents/transcripts/${audioId}`);
+
+const segmentValue = (seg: Segment) => ({ mapValue: { fields: { start: { doubleValue: seg.start }, end: { doubleValue: seg.end }, text: { stringValue: seg.text } } } });
+
+async function readTranscript(firebaseToken: string, audioId: string): Promise<{ segments: Segment[] } | null> {
+  try {
+    const response = await fetchWithRetry(transcriptUrl(audioId), { headers: { Authorization: `Bearer ${firebaseToken}` } });
+    if (!response.ok) return null;
+    const data = await response.json();
+    // deno-lint-ignore no-explicit-any
+    const values = (data.fields?.segments?.arrayValue?.values ?? []) as any[];
+    const segments = values.map((v) => ({ start: Number(v.mapValue?.fields?.start?.doubleValue ?? v.mapValue?.fields?.start?.integerValue ?? 0), end: Number(v.mapValue?.fields?.end?.doubleValue ?? v.mapValue?.fields?.end?.integerValue ?? 0), text: String(v.mapValue?.fields?.text?.stringValue ?? "") }));
+    return { segments };
+  } catch {
+    return null;
+  }
+}
+
+async function saveTranscript(firebaseToken: string, audioId: string, t: Transcription) {
+  const url = transcriptUrl(audioId);
+  for (const f of ["segments", "language", "duration", "createdAt"]) url.searchParams.append("updateMask.fieldPaths", f);
+  const response = await fetchWithRetry(url, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${firebaseToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      fields: {
+        segments: { arrayValue: { values: t.segments.map(segmentValue) } },
+        language: { stringValue: t.language },
+        duration: { doubleValue: t.duration },
+        createdAt: { timestampValue: new Date().toISOString() },
+      },
+    }),
+  });
+  if (!response.ok) {
+    console.error("Transcript save failed", response.status, await response.text());
+    throw userMessage(500, "transcript_save_failed", "The transcript was created but couldn't be saved. Check that the app is allowed to store transcripts.");
+  }
+}
+
+async function saveSections(firebaseToken: string, audioId: string, sections: Array<{ title: string; start: number }>, topics: string[]) {
+  const url = transcriptUrl(audioId);
+  for (const f of ["sections", "topics"]) url.searchParams.append("updateMask.fieldPaths", f);
+  await fetchWithRetry(url, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${firebaseToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      fields: {
+        sections: { arrayValue: { values: sections.map((x) => ({ mapValue: { fields: { title: { stringValue: x.title }, start: { doubleValue: x.start } } } })) } },
+        topics: { arrayValue: { values: topics.map((x) => ({ stringValue: x })) } },
+      },
+    }),
+  }).catch((error) => console.warn("Couldn't save sections", error));
+}
+
+const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+
+// Asks the model to split the talk into titled sections with start times.
+async function generateSections(segments: Segment[], title: string) {
+  // Merge into ~30-second lines so the prompt stays compact.
+  const lines: string[] = [];
+  let bucketStart = 0; let bucket = "";
+  for (const seg of segments) {
+    if (!bucket) bucketStart = seg.start;
+    bucket += ` ${seg.text}`;
+    if (seg.end - bucketStart >= 30) { lines.push(`[${clock(bucketStart)}|${Math.floor(bucketStart)}] ${bucket.trim()}`); bucket = ""; }
+  }
+  if (bucket) lines.push(`[${clock(bucketStart)}|${Math.floor(bucketStart)}] ${bucket.trim()}`);
+  const transcript = lines.join("\n").slice(0, MAX_TRANSCRIPT_CHARS);
+
+  const prompt = `Divide this recording titled "${title}" into 4 to 12 logical sections for a table of contents. Reply with ONLY JSON in this shape: {"sections":[{"title":"short descriptive title","start":SECONDS}],"topics":["up to 8 important topics or themes"]}. Each start must be the second value shown after the | in a bracketed timestamp. Do not invent content.\n\nTranscript:\n${transcript}`;
+  const response = await fetch(`${GROQ_API_URL}/chat/completions`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${groqApiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ model: "openai/gpt-oss-120b", temperature: 0.1, max_completion_tokens: 1200, messages: [{ role: "system", content: "You return strict JSON only." }, { role: "user", content: prompt }] }),
+  });
+  if (!response.ok) throw new Error(`sections ${response.status}`);
+  const data = await response.json();
+  const content = String(data.choices?.[0]?.message?.content ?? "");
+  const parsed = JSON.parse(content.slice(content.indexOf("{"), content.lastIndexOf("}") + 1));
+  const sections = (Array.isArray(parsed.sections) ? parsed.sections : [])
+    .map((x: { title?: string; start?: number }) => ({ title: String(x.title ?? "").slice(0, 120), start: Math.max(0, Number(x.start) || 0) }))
+    .filter((x: { title: string }) => x.title)
+    .sort((a: { start: number }, b: { start: number }) => a.start - b.start)
+    .slice(0, 16);
+  const topics = (Array.isArray(parsed.topics) ? parsed.topics : []).map((x: unknown) => String(x).slice(0, 60)).filter(Boolean).slice(0, 10);
+  return { sections, topics };
+}
+
 function validateAudioUrl(value: unknown) {
   if (typeof value !== "string" || value.length > 2_048) {
     throw userMessage(400, "invalid_audio", "This audio file cannot be summarized.");
@@ -230,7 +326,12 @@ async function parseTranscriptionText(response: Response) {
   if (!data.text || typeof data.text !== "string") {
     throw userMessage(502, "transcription_empty", "We couldn't find speech to summarize in this audio.");
   }
-  return data.text;
+  // Timestamped segments power the transcript viewer (click a line to jump).
+  const rawSegments = Array.isArray(data.segments) ? (data.segments as Array<Record<string, unknown>>) : [];
+  const segments = rawSegments
+    .map((seg) => ({ start: Number(seg.start) || 0, end: Number(seg.end) || 0, text: String(seg.text ?? "").trim() }))
+    .filter((seg) => seg.text);
+  return { text: data.text, segments, language: typeof data.language === "string" ? data.language : "en", duration: Number(data.duration) || 0 };
 }
 
 async function transcribe(audioUrl: string) {
@@ -242,7 +343,8 @@ async function transcribe(audioUrl: string) {
   form.append("model", "whisper-large-v3-turbo");
   form.append("language", "en");
   form.append("temperature", "0");
-  form.append("response_format", "json");
+  form.append("response_format", "verbose_json");
+  form.append("timestamp_granularities[]", "segment");
 
   let response: Response;
   try {
@@ -272,7 +374,8 @@ async function transcribe(audioUrl: string) {
           uploadForm.append("model", "whisper-large-v3-turbo");
           uploadForm.append("language", "en");
           uploadForm.append("temperature", "0");
-          uploadForm.append("response_format", "json");
+          uploadForm.append("response_format", "verbose_json");
+          uploadForm.append("timestamp_granularities[]", "segment");
           response = await sendTranscriptionRequest(uploadForm);
           failureDetails = response.ok ? "" : await response.text();
         }
@@ -354,13 +457,35 @@ Deno.serve(async (request) => {
       throw userMessage(400, "invalid_audio", "This audio file cannot be summarized.");
     }
     const force = body.force === true;
+    const mode = body.mode === "transcript" ? "transcript" : body.mode === "sections" ? "sections" : "summary";
+
+    // Regenerate just the AI sections/topics from a transcript already saved.
+    if (mode === "sections") {
+      const existing = await readTranscript(token, audioId);
+      if (!existing || existing.segments.length === 0) throw userMessage(404, "no_transcript", "This recording doesn't have a transcript yet.");
+      try {
+        const result = await generateSections(existing.segments, typeof body.title === "string" ? body.title.slice(0, 300) : "Untitled audio");
+        await saveSections(token, audioId, result.sections, result.topics);
+        return json(request, { ok: true, sections: result.sections, topics: result.topics });
+      } catch (error) {
+        console.error("Section generation failed", error);
+        throw userMessage(502, "sections_failed", "We couldn't generate sections right now. Please try again.");
+      }
+    }
+
+    // Transcript-only requests skip the summary cache check, but never
+    // transcribe twice: an existing transcript is returned as-is.
+    if (mode === "transcript" && !force) {
+      const existing = await readTranscript(token, audioId);
+      if (existing && existing.segments.length > 0) return json(request, { ok: true, cached: true });
+    }
 
     // One read up front — this is what actually saves the money/limits:
     // it stops any two callers (a manual click, a background
     // auto-summarize triggered by playback, a re-summarize, whatever)
     // from paying for the same transcription twice.
     const state = await readFirestoreSummaryState(token, audioId);
-    if (!force && state.summary) {
+    if (mode === "summary" && !force && state.summary) {
       return json(request, { summary: state.summary, cached: true });
     }
     if (state.pending) {
@@ -375,16 +500,39 @@ Deno.serve(async (request) => {
     const title = typeof body.title === "string" ? body.title.slice(0, 300) : "Untitled audio";
 
     await claimSummaryPending(token, audioId);
-    let summary: string;
+    let summary: string | null = null;
     try {
-      const transcript = await transcribe(audioUrl);
-      summary = await summarize(transcript, body.audioType, title);
-      await saveFirestoreSummary(token, audioId, summary);
+      const transcription = await transcribe(audioUrl);
+      // Keep the timestamped transcript (best-effort in summary mode; the
+      // point of transcript mode, so a failure there is reported).
+      try {
+        if (transcription.segments.length) await saveTranscript(token, audioId, transcription);
+      } catch (error) {
+        if (mode === "transcript") throw error;
+        console.warn("Transcript save skipped", error);
+      }
+
+      // One transcription serves both: summarize too unless one already exists.
+      if (mode === "summary" || !state.summary || force) {
+        summary = await summarize(transcription.text, body.audioType, title);
+        await saveFirestoreSummary(token, audioId, summary);
+      } else {
+        await releaseSummaryPending(token, audioId);
+      }
+
+      if (mode === "transcript" && transcription.segments.length) {
+        try {
+          const result = await generateSections(transcription.segments, title);
+          await saveSections(token, audioId, result.sections, result.topics);
+        } catch (error) {
+          console.warn("Sections skipped", error);
+        }
+      }
     } catch (error) {
       await releaseSummaryPending(token, audioId);
       throw error;
     }
-    return json(request, { summary, cached: false });
+    return mode === "transcript" ? json(request, { ok: true, cached: false, summary }) : json(request, { summary, cached: false });
   } catch (error) {
     if (error && typeof error === "object" && "status" in error) {
       const expected = error as { status: number; code: string; message: string };

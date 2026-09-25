@@ -15,6 +15,7 @@ import Downloads from "./pages/Downloads";
 import Playlists from "./pages/Playlists";
 import Notes from "./pages/Notes";
 import Search from "./pages/Search";
+import Transcript from "./pages/Transcript";
 import Bookmarks from "./pages/Bookmarks";
 import PlaylistDetail from "./pages/PlaylistDetail";
 import NotificationPopup from "./components/NotificationPopup";
@@ -514,6 +515,7 @@ function App() {
 
           {/* Public unified search */}
           <Route path="/search" element={<Search />} />
+          <Route path="/transcripts/:id" element={<Transcript />} />
 
           <Route path="/notes" element={<PageGate id="notes"><Notes /></PageGate>} />
           <Route path="/bookmarks" element={<PageGate id="bookmarks"><Bookmarks /></PageGate>} />

@@ -494,6 +494,10 @@ export default function Player() {
 
         {/* EXTRAS: QUEUE / SLEEP TIMER / OUTPUT / MINI PLAYER */}
         <div style={extrasRow}>
+          <button style={extraBtn} onClick={() => navigate(`/transcripts/${current.id}`)}>
+            📜 Transcript
+          </button>
+
           <button style={extraBtn} onClick={startFromBeginning}>
             ⟲ Start from Beginning
           </button>
