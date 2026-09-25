@@ -14,6 +14,7 @@ import DownloadScheduler from "./components/DownloadScheduler";
 import Downloads from "./pages/Downloads";
 import Playlists from "./pages/Playlists";
 import Notes from "./pages/Notes";
+import Search from "./pages/Search";
 import Bookmarks from "./pages/Bookmarks";
 import PlaylistDetail from "./pages/PlaylistDetail";
 import NotificationPopup from "./components/NotificationPopup";
@@ -510,6 +511,9 @@ function App() {
 
           {/* Public: shared playlists open without signing in */}
           <Route path="/playlists/:id" element={<PlaylistDetail />} />
+
+          {/* Public unified search */}
+          <Route path="/search" element={<Search />} />
 
           <Route path="/notes" element={<PageGate id="notes"><Notes /></PageGate>} />
           <Route path="/bookmarks" element={<PageGate id="bookmarks"><Bookmarks /></PageGate>} />

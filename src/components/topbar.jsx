@@ -60,6 +60,7 @@ function GlobalSearch({ onClose }) {
           placeholder="Search sermons, homilies, Sunday School…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter" && query.trim()) { navigate(`/search?q=${encodeURIComponent(query.trim())}`); onClose(); } }}
           style={searchInput}
         />
 
@@ -81,6 +82,11 @@ function GlobalSearch({ onClose }) {
           </div>
         )}
 
+        {q && (
+          <button style={searchCloseBtn} onClick={() => { navigate(`/search?q=${encodeURIComponent(query.trim())}`); onClose(); }}>
+            See all results (Scripture, resources, Doctrine, notes) →
+          </button>
+        )}
         <button style={searchCloseBtn} onClick={onClose}>Close</button>
       </div>
     </div>
