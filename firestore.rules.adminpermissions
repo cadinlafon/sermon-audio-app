@@ -113,3 +113,16 @@ match /playlists/{playlistId} {
   allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid;
   allow update, delete: if request.auth != null && request.auth.uid == resource.data.ownerId;
 }
+
+// ── Block 6: transcripts ────────────────────────────────────────────
+// transcripts/{audioId} is WRITTEN with the transcript text/segments by the
+// summarize-audio edge function (service role, bypasses rules). Listeners
+// read it in the app, and admins save corrections (the `edits` and
+// `speakerLabels` fields) from the transcript page.
+
+match /transcripts/{audioId} {
+  allow read: if true;
+  allow create, update: if request.auth != null &&
+    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+  allow delete: if false;
+}

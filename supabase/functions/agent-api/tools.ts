@@ -55,7 +55,7 @@ export const audioSummary = (a: Record<string, unknown>) => pick(a, ["id", "titl
 export const NOTICE_FIELDS = ["title", "details", "buttonEnabled", "buttonText", "buttonType", "buttonValue", "active", "pinned", "audience", "inputEnabled", "inputMessage", "inputPlaceholder", "inputButtonText"];
 export const CAMPAIGN_FIELDS = ["title", "speaker", "details", "docsLink", "memorization", "notes", "questions"];
 export const PAGE_FIELDS = ["name", "navLabel", "description", "enabled", "status", "showInNavigation", "badgeEnabled", "badgeText", "badgeColor", "pinned", "order", "accessLevel", "maintenanceTitle", "maintenanceMessage", "comingSoonTitle", "comingSoonMessage", "comingSoonBadge"];
-export const PAGE_IDS = ["home", "doctrine", "sermons", "sundayschool", "about", "feedback", "contact", "resources", "your-listens", "saved", "stats", "suggest", "settings"];
+export const PAGE_IDS = ["home", "doctrine", "sermons", "sundayschool", "about", "feedback", "contact", "resources", "your-listens", "saved", "stats", "suggest", "settings", "downloads", "playlists", "notes", "bookmarks", "goals", "year-in-review"];
 export const RESOURCE_FIELDS = ["type", "title", "description", "url", "author", "date", "featured", "published", "order", "categoryId", "sectionIds"];
 export const SUGGESTION_STATUSES = ["none", "planned", "in progress", "complete"];
 
