@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Palouse Fellowship Audio</string>
+
+    <string name="nav_home">Home</string>
+    <string name="nav_sermons">Sermons</string>
+    <string name="nav_sunday_school">Sunday School</string>
+    <string name="nav_doctrine">Doctrine</string>
+    <string name="nav_more">More</string>
+
+    <string name="more_homilies">Homilies</string>
+    <string name="more_resources">Resources</string>
+    <string name="more_spotify">Spotify</string>
+    <string name="more_settings">Settings &amp; About</string>
+
+    <string name="error_no_internet">You\'re offline. Showing the last saved copy of this list.</string>
+    <string name="error_generic">Something went wrong loading this. Pull down to try again.</string>
+    <string name="error_empty_audio">Nothing here yet — check back soon.</string>
+    <string name="error_audio_unavailable">This recording couldn\'t be loaded. Tap to retry.</string>
+    <string name="error_sign_in_required">Sign in to use this.</string>
+
+    <string name="action_retry">Retry</string>
+    <string name="action_sign_in">Sign In</string>
+    <string name="action_sign_up">Create Account</string>
+    <string name="action_sign_out">Sign Out</string>
+    <string name="action_continue_google">Continue with Google</string>
+
+    <string name="notification_channel_general_name">Announcements</string>
+    <string name="notification_channel_general_desc">New sermons and church announcements</string>
+    <string name="notification_channel_id" translatable="false">general</string>
+</resources>

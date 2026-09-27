@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Same palette as the web app (src/pages/*.jsx inline styles):
+         cream background, dark-brown text, orange/brown accent gradient.
+         Compose's Theme.kt is the real source of truth for the app UI;
+         these are only what plain Android resources need (manifest
+         notification tint, adaptive icon background). -->
+    <color name="brand_cream">#FDF8F3</color>
+    <color name="brand_dark">#3D2200</color>
+    <color name="brand_accent">#C97C2E</color>
+    <color name="brand_accent_dark">#A85E18</color>
+    <color name="ic_launcher_background">#3D2200</color>
+</resources>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The real theme (colors, typography) lives in Compose's Theme.kt —
+         this is only what Android needs before Compose takes over the
+         first frame, so cold start doesn't flash white. -->
+    <style name="Theme.PalouseFellowshipAudio" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/brand_cream</item>
+        <item name="android:statusBarColor">@color/brand_cream</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+</resources>

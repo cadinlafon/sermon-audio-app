@@ -1,0 +1,7 @@
+# Copy this file to supabase.properties (gitignored) and fill in the same
+# values the web app uses (sermon-audio-app/.env → VITE_SUPABASE_URL /
+# VITE_SUPABASE_ANON_KEY, or the Supabase dashboard → Project Settings →
+# API). SUPABASE_ANON_KEY is the public "anon" key, safe to ship in a
+# client build — never put the service-role key here.
+SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
+SUPABASE_ANON_KEY=YOUR_ANON_KEY
