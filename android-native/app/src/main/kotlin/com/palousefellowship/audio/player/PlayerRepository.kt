@@ -122,6 +122,27 @@ class PlayerRepository(
         seekTo(target)
     }
 
+    /** Inserts [audio] to play right after the current track, without
+     * interrupting what's playing now — mirrors the web app's "+ Play
+     * Next" button (src/components/AudioCard.jsx, src/pages/Doctrine.jsx).
+     * If nothing is playing yet, this just starts it. */
+    fun playNext(audio: Audio) {
+        if (queueIndex < 0) {
+            play(audio)
+            return
+        }
+        val mutable = queue.toMutableList()
+        val existingIndex = mutable.indexOfFirst { it.id == audio.id }
+        if (existingIndex >= 0 && existingIndex != queueIndex) {
+            mutable.removeAt(existingIndex)
+            if (existingIndex < queueIndex) queueIndex -= 1
+        }
+        val insertAt = (queueIndex + 1).coerceAtMost(mutable.size)
+        mutable.add(insertAt, audio)
+        queue = mutable
+        _state.update { it.copy(hasNext = queueIndex in 0 until queue.size - 1) }
+    }
+
     fun next() {
         if (queueIndex < 0 || queueIndex >= queue.size - 1) return
         queueIndex += 1

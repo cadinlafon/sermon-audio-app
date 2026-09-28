@@ -1,23 +1,32 @@
 package com.palousefellowship.audio.ui.screens.doctrine
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -26,31 +35,49 @@ import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.palousefellowship.audio.data.model.DoctrineAudioFile
 import com.palousefellowship.audio.data.model.DoctrineContent
 import com.palousefellowship.audio.data.model.DoctrineWeek
+import com.palousefellowship.audio.player.PlayerUiState
 import com.palousefellowship.audio.ui.components.EmptyView
 import com.palousefellowship.audio.ui.components.ErrorView
 import com.palousefellowship.audio.ui.components.LoadingView
 import com.palousefellowship.audio.ui.pfaViewModel
+import com.palousefellowship.audio.ui.theme.AccentBrownDark
+import com.palousefellowship.audio.ui.theme.AccentOrange
 import com.palousefellowship.audio.util.UiState
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.delay
+
+// Web's `dropdownHeader` / dot-row tones (src/pages/Doctrine.jsx).
+private val DropdownHeaderBg = Color(0xFFFDF1DE)
+private val DotInactive = Color(0xFFE4D3B8)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DoctrineScreen(onPlayDoctrineAudio: (DoctrineAudioFile, DoctrineContent) -> Unit) {
+fun DoctrineScreen(
+    playerState: PlayerUiState,
+    onPlayDoctrineAudio: (DoctrineAudioFile, DoctrineContent) -> Unit,
+    onPlayNextDoctrineAudio: (DoctrineAudioFile, DoctrineContent) -> Unit,
+    onTogglePlayPause: () -> Unit,
+) {
     val viewModel = pfaViewModel { c -> DoctrineViewModel(c.doctrineRepository) }
     val state by viewModel.state.collectAsStateWithLifecycle()
 
@@ -127,18 +154,17 @@ fun DoctrineScreen(onPlayDoctrineAudio: (DoctrineAudioFile, DoctrineContent) -> 
                         item {
                             ExpandableSection(title = "Audio") {
                                 if (audioFiles.isEmpty()) EmptySectionText("No audio uploaded yet.")
-                                else Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    audioFiles.forEach { file ->
-                                        Card(onClick = { onPlayDoctrineAudio(file, content) }, shape = RoundedCornerShape(12.dp)) {
-                                            Row(Modifier.padding(12.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                                                Icon(Icons.Filled.PlayArrow, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                                Text(
-                                                    file.label.ifBlank { "Audio" },
-                                                    modifier = Modifier.padding(start = 10.dp),
-                                                    style = MaterialTheme.typography.bodyMedium,
-                                                )
-                                            }
-                                        }
+                                else Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                                    audioFiles.forEachIndexed { i, file ->
+                                        DoctrineAudioRow(
+                                            file = file,
+                                            index = i,
+                                            content = content,
+                                            playerState = playerState,
+                                            onPlay = { onPlayDoctrineAudio(file, content) },
+                                            onTogglePlayPause = onTogglePlayPause,
+                                            onPlayNext = { onPlayNextDoctrineAudio(file, content) },
+                                        )
                                     }
                                 }
                             }
@@ -187,20 +213,93 @@ private fun ExpandableSection(title: String, startExpanded: Boolean = false, con
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(12.dp),
     ) {
-        Column(Modifier.padding(14.dp)) {
+        Column {
             Row(
-                modifier = Modifier.fillMaxWidth().clickable { expanded = !expanded },
+                modifier = Modifier.fillMaxWidth()
+                    .clickable { expanded = !expanded }
+                    .background(DropdownHeaderBg)
+                    .padding(horizontal = 16.dp, vertical = 13.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
             ) {
-                Text(title, style = MaterialTheme.typography.titleMedium)
-                Icon(if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore, contentDescription = null)
+                Text(title, style = MaterialTheme.typography.titleSmall)
+                Icon(
+                    if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                    contentDescription = null,
+                    tint = AccentBrownDark,
+                )
             }
             if (expanded) {
-                Column(Modifier.padding(top = 10.dp)) { content() }
+                Column(Modifier.padding(16.dp)) { content() }
             }
+        }
+    }
+}
+
+/** One audio track's row inside the "Audio" section — mirrors the web's
+ * AudioPlayerRow: a pill Play/Pause button, a "+ Play Next" button that
+ * splices the track in without interrupting what's currently playing,
+ * and a "Now playing." caption when this is the loaded track. Uses
+ * FlowRow (not Row) so "+ Play Next" wraps to its own line for a long
+ * label instead of being squeezed, matching the web's
+ * `flexWrap: "wrap"` on `audioRowButtons`. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun DoctrineAudioRow(
+    file: DoctrineAudioFile,
+    index: Int,
+    content: DoctrineContent,
+    playerState: PlayerUiState,
+    onPlay: () -> Unit,
+    onTogglePlayPause: () -> Unit,
+    onPlayNext: () -> Unit,
+) {
+    val trackId = "doctrine_${file.id}"
+    val isCurrent = playerState.current?.id == trackId
+    val label = file.label.ifBlank { "Track ${index + 1}" }
+    var queued by remember { mutableStateOf(false) }
+
+    LaunchedEffect(queued) {
+        if (queued) {
+            delay(1800)
+            queued = false
+        }
+    }
+
+    Column {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(
+                onClick = { if (isCurrent) onTogglePlayPause() else onPlay() },
+                shape = RoundedCornerShape(999.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = AccentBrownDark),
+            ) {
+                Icon(
+                    if (isCurrent && playerState.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                )
+                Text(
+                    if (isCurrent && playerState.isPlaying) "Pause" else label,
+                    modifier = Modifier.padding(start = 4.dp),
+                    style = MaterialTheme.typography.labelLarge,
+                )
+            }
+            OutlinedButton(
+                onClick = { onPlayNext(); queued = true },
+                shape = RoundedCornerShape(999.dp),
+            ) {
+                Text(if (queued) "✓ Added" else "+ Play Next", style = MaterialTheme.typography.labelLarge)
+            }
+        }
+        if (isCurrent) {
+            Text(
+                "Now playing.",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 8.dp),
+            )
         }
     }
 }
@@ -227,6 +326,25 @@ private fun WeeklyTopicSlider(weeks: List<DoctrineWeek>, defaultWeekId: String) 
         }
         IconButton(onClick = { if (index < weeks.size - 1) index++ }, enabled = index < weeks.size - 1) {
             Icon(Icons.Filled.ChevronRight, contentDescription = "Next week")
+        }
+    }
+
+    if (weeks.size > 1) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
+            horizontalArrangement = Arrangement.Center,
+        ) {
+            weeks.forEachIndexed { i, w ->
+                val active = i == index
+                Box(
+                    modifier = Modifier
+                        .padding(horizontal = 3.5.dp)
+                        .size(width = if (active) 18.dp else 8.dp, height = 8.dp)
+                        .clip(CircleShape)
+                        .background(if (active) AccentOrange else DotInactive)
+                        .clickable { index = i },
+                )
+            }
         }
     }
 

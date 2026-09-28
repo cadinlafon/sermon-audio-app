@@ -104,7 +104,14 @@ fun PfaNavHost(
             )
         }
         composable(Routes.DOCTRINE) {
-            DoctrineScreen(onPlayDoctrineAudio = { file, content -> play(file.asAudio(content)) })
+            val context = LocalContext.current
+            val container = (context.applicationContext as PfaApplication).container
+            DoctrineScreen(
+                playerState = playerState,
+                onPlayDoctrineAudio = { file, content -> play(file.asAudio(content)) },
+                onPlayNextDoctrineAudio = { file, content -> container.playerRepository.playNext(file.asAudio(content)) },
+                onTogglePlayPause = { container.playerRepository.togglePlayPause() },
+            )
         }
         composable(Routes.SERMONS) {
             AudioListScreen(
