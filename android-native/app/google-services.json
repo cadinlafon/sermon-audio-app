@@ -1,5 +1,4 @@
 {
-  "_comment": "PLACEHOLDER — the project builds with this file so a fresh checkout produces a real APK, but Firebase Auth/Firestore/Messaging will not actually work until you replace this with the real file. Firebase console → palousefellowshipsermonapp project → Project settings → Add app → Android, package com.palousefellowship.audio → download google-services.json → overwrite this file. This is not a secret (same trust level as an API key shipped in any client app) so it's fine to commit the real one too if you'd rather not keep it gitignored — see README.md 'Firebase & Supabase setup'.",
   "project_info": {
     "project_number": "591678059434",
     "project_id": "palousefellowshipsermonapp",
@@ -8,25 +7,30 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:591678059434:android:0000000000000000000000",
+        "mobilesdk_app_id": "1:591678059434:android:f4afc16b89bf261ff831d3",
         "android_client_info": {
           "package_name": "com.palousefellowship.audio"
         }
       },
       "oauth_client": [
         {
-          "client_id": "591678059434-placeholder.apps.googleusercontent.com",
+          "client_id": "591678059434-slmhptftimj2taaufn0ndhdvdso4g0p3.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "PLACEHOLDER_ANDROID_API_KEY"
+          "current_key": "AIzaSyAFT6SHO8qpL3xHp6y3zgddAcdmxkIhnr4"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "591678059434-9jc0lem0haeqdoonpr13v25e1djjss7e.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

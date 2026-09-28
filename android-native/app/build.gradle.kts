@@ -68,8 +68,16 @@ android {
 
     buildTypes {
         debug {
-            applicationIdSuffix = ".debug"
-            versionNameSuffix = "-debug"
+            // No applicationIdSuffix: the Firebase Android app is
+            // registered as exactly com.palousefellowship.audio (see
+            // app/google-services.json), and a ".debug" suffix here would
+            // make debug builds ship under com.palousefellowship.audio.debug
+            // — a package google-services doesn't have a client for
+            // (":app:processDebugGoogleServices" would fail with "No
+            // matching client found"). Debug and release intentionally
+            // share one applicationId; if you ever want them installable
+            // side by side, register a second Firebase Android app for
+            // the suffixed id instead of re-adding the suffix here.
             isDebuggable = true
         }
         release {
