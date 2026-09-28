@@ -225,7 +225,7 @@ export default function Settings() {
         <div style={toggleRow}>
           <div>
             <div style={toggleLabel}>Logs</div>
-            <div style={toggleHint}>The last 50 times someone actually ran an AI summary (not cached repeats).</div>
+            <div style={toggleHint}>The last 50 times someone ran the AI summary — including repeat clicks on an already-summarized recording.</div>
           </div>
           <button onClick={toggleAiLogs} style={logsToggleBtn}>
             {showAiLogs ? "Hide" : "View"} Logs {showAiLogs ? "▲" : "▼"}

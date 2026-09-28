@@ -511,12 +511,19 @@ Deno.serve(async (request) => {
       if (existing && existing.segments.length > 0) return json(request, { ok: true, cached: true });
     }
 
+    const title = typeof body.title === "string" ? body.title.slice(0, 300) : "Untitled audio";
+
     // One read up front — this is what actually saves the money/limits:
     // it stops any two callers (a manual click, a background
     // auto-summarize triggered by playback, a re-summarize, whatever)
     // from paying for the same transcription twice.
     const state = await readFirestoreSummaryState(token, audioId);
     if (mode === "summary" && !force && state.summary) {
+      // Still a real "ran the AI Summarize" event from the listener's
+      // point of view (they clicked it and got a summary back) — logged
+      // the same as a freshly-generated one, just skipping the transcribe/
+      // summarize work that a cache hit exists specifically to skip.
+      await logAiSummaryRun(token, payload, audioId, body.audioType, title);
       return json(request, { summary: state.summary, cached: true });
     }
     if (state.pending) {
@@ -528,7 +535,6 @@ Deno.serve(async (request) => {
     }
 
     const audioUrl = validateAudioUrl(body.audioUrl);
-    const title = typeof body.title === "string" ? body.title.slice(0, 300) : "Untitled audio";
 
     await claimSummaryPending(token, audioId);
     let summary: string | null = null;
