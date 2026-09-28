@@ -31,11 +31,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.palousefellowship.audio.PfaApplication
 import com.palousefellowship.audio.data.model.Audio
 import com.palousefellowship.audio.player.PlayerUiState
-import com.palousefellowship.audio.ui.components.AudioListItem
+import com.palousefellowship.audio.ui.components.AudioCard
 import com.palousefellowship.audio.ui.components.EmptyView
 import com.palousefellowship.audio.ui.components.ErrorView
 import com.palousefellowship.audio.ui.components.LoadingView
@@ -56,13 +58,25 @@ fun AudioListScreen(
     typeChips: List<Pair<String, String>> = emptyList(),
     playerState: PlayerUiState,
     onPlay: (Audio, List<Audio>) -> Unit,
+    onPlayNext: (Audio) -> Unit,
+    onTogglePlayPause: () -> Unit,
 ) {
-    val viewModel = pfaViewModel { container -> AudioListViewModel(container.audioRepository, types) }
+    val context = LocalContext.current
+    val container = (context.applicationContext as PfaApplication).container
+    val viewModel = pfaViewModel { c ->
+        AudioListViewModel(c.audioRepository, types, c.savedRepository, c.listenProgressRepository, c.downloadRepository)
+    }
     val state by viewModel.state.collectAsStateWithLifecycle()
     val refreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
     val search by viewModel.search.collectAsStateWithLifecycle()
     val typeFilter by viewModel.typeFilter.collectAsStateWithLifecycle()
     val sort by viewModel.sort.collectAsStateWithLifecycle()
+    val savedIds by viewModel.savedIds.collectAsStateWithLifecycle()
+    val downloadedIds by viewModel.downloadedIds.collectAsStateWithLifecycle()
+    val progressByAudioId by viewModel.progress.collectAsStateWithLifecycle()
+    val isOnline by container.connectivityObserver.isOnline.collectAsStateWithLifecycle(initialValue = true)
+    val authUser by container.authRepository.authState.collectAsStateWithLifecycle(initialValue = container.authRepository.currentUser)
+    val isSignedIn = authUser != null
 
     Scaffold(
         topBar = { TopAppBar(title = { Text(title, style = MaterialTheme.typography.titleLarge) }) },
@@ -122,11 +136,24 @@ fun AudioListScreen(
                                     verticalArrangement = Arrangement.spacedBy(10.dp),
                                 ) {
                                     items(s.data, key = { it.id }) { audio ->
-                                        AudioListItem(
+                                        val isCurrent = playerState.current?.id == audio.id
+                                        AudioCard(
                                             audio = audio,
-                                            isCurrent = playerState.current?.id == audio.id,
+                                            isCurrent = isCurrent,
                                             isPlaying = playerState.isPlaying,
-                                            onClick = { onPlay(audio, s.data) },
+                                            isSaved = audio.id in savedIds,
+                                            isDownloaded = audio.id in downloadedIds,
+                                            progress = progressByAudioId[audio.id],
+                                            currentPositionMs = if (isCurrent) playerState.positionMs else 0,
+                                            currentDurationMs = if (isCurrent) playerState.durationMs else 0,
+                                            isOnline = isOnline,
+                                            isSignedIn = isSignedIn,
+                                            onPlay = { onPlay(audio, s.data) },
+                                            onTogglePlayPause = onTogglePlayPause,
+                                            onPlayNext = { onPlayNext(audio) },
+                                            onToggleSave = { viewModel.toggleSaved(audio) },
+                                            onSetStatus = { status -> viewModel.setStatus(audio.id, status) },
+                                            onToggleDownload = { viewModel.toggleDownload(audio, audio.id in downloadedIds) },
                                         )
                                     }
                                 }

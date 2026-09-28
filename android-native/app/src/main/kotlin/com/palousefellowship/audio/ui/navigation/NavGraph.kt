@@ -114,6 +114,8 @@ fun PfaNavHost(
             )
         }
         composable(Routes.SERMONS) {
+            val context = LocalContext.current
+            val container = (context.applicationContext as PfaApplication).container
             AudioListScreen(
                 title = "Sermons",
                 emptyIcon = "🎙️",
@@ -122,9 +124,13 @@ fun PfaNavHost(
                 typeChips = listOf(Audio.TYPE_SERMON to "Sermons", Audio.TYPE_HOMILY to "Homilies"),
                 playerState = playerState,
                 onPlay = { audio, list -> play(audio, list) },
+                onPlayNext = { audio -> container.playerRepository.playNext(audio) },
+                onTogglePlayPause = { container.playerRepository.togglePlayPause() },
             )
         }
         composable(Routes.SUNDAY_SCHOOL) {
+            val context = LocalContext.current
+            val container = (context.applicationContext as PfaApplication).container
             AudioListScreen(
                 title = "Sunday School",
                 emptyIcon = "🏫",
@@ -132,6 +138,8 @@ fun PfaNavHost(
                 types = listOf(Audio.TYPE_SUNDAY_SCHOOL),
                 playerState = playerState,
                 onPlay = { audio, list -> play(audio, list) },
+                onPlayNext = { audio -> container.playerRepository.playNext(audio) },
+                onTogglePlayPause = { container.playerRepository.togglePlayPause() },
             )
         }
         composable(Routes.MORE) {
