@@ -8,4 +8,18 @@
         <item name="android:statusBarColor">@color/brand_cream</item>
         <item name="android:windowLightStatusBar">true</item>
     </style>
+
+    <!-- Cold-start splash (Android 12+ SplashScreen API, backported by
+         androidx.core:core-splashscreen down to this app's minSdk) — same
+         logo and background as the launcher icon (@mipmap/ic_launcher,
+         @color/ic_launcher_background), so app icon → splash → first
+         frame reads as one continuous brand, not three different looks.
+         Set as MainActivity's manifest theme; installSplashScreen() in
+         MainActivity.onCreate() swaps to postSplashScreenTheme once the
+         first frame is ready. -->
+    <style name="Theme.PalouseFellowshipAudio.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/ic_launcher_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.PalouseFellowshipAudio</item>
+    </style>
 </resources>

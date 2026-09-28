@@ -9,5 +9,13 @@
     <color name="brand_dark">#3D2200</color>
     <color name="brand_accent">#C97C2E</color>
     <color name="brand_accent_dark">#A85E18</color>
-    <color name="ic_launcher_background">#3D2200</color>
+    <!-- The launcher-icon/splash foreground art (@mipmap/ic_launcher_foreground,
+         same file as the web app's public/icons/icon-512.png) is black
+         linework on a transparent background — it needs a LIGHT backing,
+         not brand_dark, or it's invisible (black-on-near-black). The web
+         app's own dark-background usage (public/hero.jpg) uses a white
+         version of this mark for that reason; there's no white asset
+         checked in here, so cream is the correct pairing for the one we
+         have. -->
+    <color name="ic_launcher_background">#FDF8F3</color>
 </resources>
