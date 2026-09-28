@@ -99,6 +99,7 @@ fun PfaNavHost(
         composable(Routes.HOME) {
             HomeScreen(
                 onPlayLatest = { play(it) },
+                onNavigate = { navController.navigate(it) },
                 onNavigateRoute = { route -> WEB_ROUTE_TO_NATIVE[route]?.let(navController::navigate) },
             )
         }

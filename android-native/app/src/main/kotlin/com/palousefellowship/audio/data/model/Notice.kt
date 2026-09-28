@@ -18,6 +18,10 @@ data class Notice(
     val buttonType: String? = null, // "url" | "page"
     val buttonValue: String? = null,
     val buttonText: String? = null,
+    val inputEnabled: Boolean = false,
+    val inputMessage: String? = null,
+    val inputPlaceholder: String? = null,
+    val inputButtonText: String? = null,
 ) {
     fun isVisible(signedIn: Boolean, now: Long = System.currentTimeMillis()): Boolean {
         if (!active) return false
