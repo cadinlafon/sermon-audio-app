@@ -107,6 +107,12 @@ fun DoctrineScreen(onPlayDoctrineAudio: (DoctrineAudioFile, DoctrineContent) -> 
                             }
                         }
 
+                        item {
+                            ExpandableSection(title = "Schedule") {
+                                ScheduleTable()
+                            }
+                        }
+
                         val questions = content.questions
                         item {
                             ExpandableSection(title = "Questions") {
@@ -133,6 +139,17 @@ fun DoctrineScreen(onPlayDoctrineAudio: (DoctrineAudioFile, DoctrineContent) -> 
                                                 )
                                             }
                                         }
+                                    }
+                                }
+                            }
+                        }
+
+                        if (content.docsLink.isNotBlank()) {
+                            item {
+                                ExpandableSection(title = "Docs") {
+                                    val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
+                                    androidx.compose.material3.TextButton(onClick = { uriHandler.openUri(content.docsLink) }) {
+                                        Text("Open Docs →")
                                     }
                                 }
                             }
@@ -230,5 +247,40 @@ private fun WeeklyTopicSlider(weeks: List<DoctrineWeek>, defaultWeekId: String) 
         }
     } else {
         EmptySectionText("Nothing added for this week yet.")
+    }
+}
+
+/** The full-year curriculum schedule — static content on both platforms
+ * (src/data/doctrineSchedule.js), not admin-editable. */
+@Composable
+private fun ScheduleTable() {
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        com.palousefellowship.audio.data.model.DOCTRINE_SCHEDULE.forEach { row ->
+            if (row.isBreak) {
+                Text(
+                    "${row.date} — ${row.topic}",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = 6.dp),
+                )
+            } else {
+                Row(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+                    Text(
+                        "Wk ${row.week}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(end = 8.dp),
+                    )
+                    Column(Modifier.weight(1f)) {
+                        Text(row.topic, style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            listOfNotNull(row.date, row.memoryText.takeIf { it.isNotBlank() }).joinToString("  ·  "),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+        }
     }
 }

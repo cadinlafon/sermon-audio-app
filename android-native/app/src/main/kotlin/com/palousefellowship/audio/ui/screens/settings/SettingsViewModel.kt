@@ -22,6 +22,13 @@ class SettingsViewModel(
     private val _pushError = MutableStateFlow<String?>(null)
     val pushError: StateFlow<String?> = _pushError.asStateFlow()
 
+    private val _accountMessage = MutableStateFlow<String?>(null)
+    val accountMessage: StateFlow<String?> = _accountMessage.asStateFlow()
+    private val _accountError = MutableStateFlow<String?>(null)
+    val accountError: StateFlow<String?> = _accountError.asStateFlow()
+    private val _accountBusy = MutableStateFlow(false)
+    val accountBusy: StateFlow<Boolean> = _accountBusy.asStateFlow()
+
     fun signOut() = authRepository.signOut()
 
     /** Called once notification permission is confirmed granted (or on
@@ -31,6 +38,25 @@ class SettingsViewModel(
             pushRepository.registerCurrentToken().onFailure {
                 _pushError.value = it.message ?: "Couldn't enable notifications."
             }
+        }
+    }
+
+    fun clearAccountFeedback() { _accountMessage.value = null; _accountError.value = null }
+
+    fun updateDisplayName(name: String) = runAccountAction { authRepository.updateDisplayName(name) }
+    fun changeEmail(currentPassword: String, newEmail: String) = runAccountAction { authRepository.changeEmail(currentPassword, newEmail) }
+    fun changePassword(currentPassword: String, newPassword: String) = runAccountAction { authRepository.changePassword(currentPassword, newPassword) }
+    fun deleteAccount(currentPassword: String, onDeleted: () -> Unit) = runAccountAction(onSuccess = onDeleted) { authRepository.deleteAccount(currentPassword) }
+
+    private fun runAccountAction(onSuccess: () -> Unit = {}, action: suspend () -> Result<Unit>) {
+        viewModelScope.launch {
+            _accountBusy.value = true
+            _accountError.value = null
+            action().fold(
+                onSuccess = { _accountMessage.value = "Done."; onSuccess() },
+                onFailure = { _accountError.value = it.message ?: "Something went wrong." },
+            )
+            _accountBusy.value = false
         }
     }
 }

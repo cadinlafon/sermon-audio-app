@@ -72,5 +72,20 @@ class AudioRepository(
             authorization,
         )
         response.url ?: error(response.error ?: "Audio is unavailable.")
+    }.recoverCatching { throw Exception(friendlyNetworkError(it)) }
+
+    // Never surface a raw exception message (a Retrofit/OkHttp message like
+    // "Expected URL scheme 'http' or 'https'..." or a bare java.net one) —
+    // the player screen shows this text directly, so it has to read like
+    // something a listener, not a developer, would understand.
+    private fun friendlyNetworkError(error: Throwable): String = when (error) {
+        is java.net.UnknownHostException, is java.net.ConnectException -> "You're offline and this hasn't been downloaded for offline listening. Tap to retry once you're back online."
+        is java.net.SocketTimeoutException -> "The connection timed out. Tap to retry."
+        is retrofit2.HttpException -> "This recording couldn't be loaded right now. Tap to retry."
+        else -> if (error.message?.let { it.contains("Audio is unavailable") || it.contains("storage_unconfigured") || it.contains("storage_unavailable") } == true) {
+            "Audio is unavailable right now. Tap to retry."
+        } else {
+            "This recording couldn't be loaded. Tap to retry."
+        }
     }
 }

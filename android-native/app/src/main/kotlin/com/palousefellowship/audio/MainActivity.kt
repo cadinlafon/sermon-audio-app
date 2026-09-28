@@ -64,8 +64,8 @@ private fun PfaApp() {
     val currentRoute = backStackEntry?.destination?.route
     val showChrome = currentRoute !in NO_CHROME_ROUTES
 
-    val playAndOpen: (Audio, List<Audio>) -> Unit = { audio, list ->
-        container.playerRepository.play(audio, list.ifEmpty { listOf(audio) })
+    val playAndOpen: (Audio, List<Audio>, Long) -> Unit = { audio, list, resumeAtSeconds ->
+        container.playerRepository.play(audio, list.ifEmpty { listOf(audio) }, resumeAtSeconds)
         navController.navigate(Routes.PLAYER)
     }
 

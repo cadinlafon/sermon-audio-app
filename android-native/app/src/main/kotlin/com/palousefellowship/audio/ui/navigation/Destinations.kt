@@ -17,20 +17,35 @@ object Routes {
     const val SERMONS = "sermons"
     const val SUNDAY_SCHOOL = "sunday_school"
     const val MORE = "more"
-    const val HOMILIES = "homilies"
     const val RESOURCES = "resources"
     const val SPOTIFY = "spotify"
     const val SETTINGS = "settings"
     const val PLAYER = "player"
     const val LOGIN = "login"
     const val SIGN_UP = "sign_up"
+    const val ABOUT = "about"
+    const val CONTACT = "contact"
+    const val SEARCH = "search"
+    const val SAVED = "saved"
+    const val YOUR_LISTENS = "your_listens"
+    const val STATS = "stats"
+    const val SUGGEST = "suggest"
+    const val PLAYLISTS = "playlists"
+    const val PLAYLIST_DETAIL = "playlists/{id}"
+    const val NOTES = "notes"
+    const val NOTE_DETAIL = "notes/{audioId}"
+    const val BOOKMARKS = "bookmarks"
+    const val DOWNLOADS = "downloads"
+
+    fun playlistDetail(id: String) = "playlists/$id"
+    fun noteDetail(audioId: String) = "notes/$audioId"
 }
 
 data class BottomNavItem(val route: String, val label: String, val icon: ImageVector)
 
 // Same order as the web app's PAGE_REGISTRY primary-slot defaultOrder
 // (home, doctrine, sermons, sundayschool), with a fifth "More" tab for
-// everything the web keeps in its top-bar "more" menu.
+// everything the web keeps in its top-bar "more" menu / account dropdown.
 val BottomNavItems = listOf(
     BottomNavItem(Routes.HOME, "Home", Icons.Filled.Home),
     BottomNavItem(Routes.DOCTRINE, "Doctrine", Icons.Filled.MenuBook),

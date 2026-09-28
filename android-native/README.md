@@ -19,13 +19,24 @@ untouched and still works exactly as it did before this existed.
 
 ## Screens
 
-Home (notices + latest sermon), Sermons, Sunday School, Homilies, Doctrine
-(with the Weekly Topic slider), Resources, Spotify, Settings & About, plus
-sign in/create account and a full player screen. See **"Where this
-intentionally differs from the web app"** below for two screens that are
-implemented differently than their name might suggest, and **"Not yet
-implemented"** for the (large) list of web-only features this v1 doesn't
-attempt.
+**Primary tabs:** Home (notices + latest sermon), Doctrine (weekly topic
+slider, full-year schedule, questions, audio, docs, memorization, notes),
+Sermons (merged sermon + homily list, search/sort/type-filter — see
+"Where this differs from the web app"), Sunday School, and a More tab.
+
+**More tab:** Search (audio + resources), Resources, Spotify, Your Listens
+(listen history/resume), Liked Sermons, Playlists (create/reorder/play),
+Notes (per-recording notes), Bookmarks (timestamped moments), Downloads
+(real offline audio, not just metadata), Stats, Suggest a Feature,
+Settings & About (full account management — display name, email, password,
+delete account, notifications, privacy link), About This App, Contact.
+
+**Also:** a full Player screen (like/bookmark/add-to-playlist/download
+actions, scrubbable seek bar, previous/next), Login, and Sign Up.
+
+See **"Where this intentionally differs from the web app"** below for the
+handful of places this deliberately doesn't mirror the web app 1:1 (and
+why), and **"Not yet implemented"** for what's still out of scope.
 
 ## Requirements
 
@@ -68,7 +79,10 @@ succeed until you replace it.
 1. Firebase console → the **palousefellowshipsermonapp** project (same
    project `../src/firebase.js` points at) → **Project settings** → **Add
    app** → **Android**.
-2. Package name: `com.palousefellowship.audio` (must match exactly).
+2. Package name: `com.palousefellowship.audio` (must match exactly — the
+   debug build type deliberately has no `applicationIdSuffix`, so debug
+   and release both build as this exact id; do not add one back without
+   also registering a second Firebase Android app for it).
 3. Download the generated `google-services.json` and overwrite
    `app/google-services.json` with it.
 4. Firebase console → **Authentication** → make sure **Email/Password**
@@ -85,9 +99,10 @@ keep only the placeholder tracked.
 ### 2. `supabase.properties`
 
 Audio files live in a private Backblaze B2 bucket, not public Firebase
-Storage — playback fetches a short-lived signed URL from the same
-Supabase Edge Function the web app calls (`audio-download-url`), which
-needs the Supabase project URL and anon (public) key.
+Storage — playback (and offline downloads) fetch a short-lived signed URL
+from the same Supabase Edge Function the web app calls
+(`audio-download-url`), which needs the Supabase project URL and anon
+(public) key.
 
 ```bash
 cp supabase.properties.example supabase.properties
@@ -101,32 +116,46 @@ which this app never touches), but it's kept out of git the same way
 `keystore.properties` is, so no key sits in source control regardless of
 its actual sensitivity.
 
-Without this file, the app builds and runs, but every "play" tap will
-show the audio-loading error state.
+Without this file, the app builds, runs, and loads all Firestore-backed
+screens correctly, but every "play"/"download" tap shows a friendly
+audio-loading error (verified — see "Testing performed" below).
 
 ### 3. Firestore rules
 
 The backend has **no deployed `firestore.rules`** — access control is
 enforced client-side today (same as the web app; see `../firestore.rules.*`
 for the documented-but-manually-applied reference rules). This native
-client reads/writes exactly the collections the web app already reads/
-writes (`audio`, `notices`, `doctrineWeeks`, `resources`, `users`), so it
+client reads/writes exactly the collections the web app already
+reads/writes (`audio`, `notices`, `doctrineWeeks`, `resources`, `users`,
+`saved`, `notes`, `listenProgress`, `suggestions`, `userStats`), so it
 needs no new rules beyond whatever you already have for the web app.
 
 ## Data sources (what talks to what)
 
 | Feature | Backend |
 |---|---|
-| Sermons / Sunday School / Homilies lists | Firestore `audio` collection, same fields as `../src/pages/Admin/UploadAudio.jsx` writes |
+| Sermons / Sunday School lists | Firestore `audio` collection, same fields as `../src/pages/Admin/UploadAudio.jsx` writes |
 | Playback URL | `POST {SUPABASE_URL}/functions/v1/audio-download-url` — same Edge Function as `../supabase/functions/audio-download-url`, exchanges `audioStorageKey` for a 4-hour signed Backblaze B2 URL |
 | Home notices | Firestore `notices` collection |
-| Doctrine campaign + Weekly Topic slider | Firestore `doctrineWeeks/current` + `doctrineWeeks/topics` |
+| Doctrine campaign + Weekly Topic slider + Schedule | Firestore `doctrineWeeks/current` + `doctrineWeeks/topics`; the full-year Schedule table is static data ported from `../src/data/doctrineSchedule.js` |
 | Resources / Spotify | Firestore `resources` collection (Spotify screen = same collection, `type == "spotify"` — see below) |
-| Auth | Firebase Auth — email/password + Google, writes `users/{uid}` on sign-up the same shape the web app does |
+| Auth + account management | Firebase Auth — email/password + Google sign-in, plus display-name/email/password change and account deletion, mirroring `../src/pages/Settings/Account.jsx` |
+| Liked Sermons | Firestore `saved/{uid}_{audioId}` — same shape as `../src/utils/saveSermon.js` |
+| Playlists | The `playlists` array field on `users/{uid}` — same shape as `../src/context/PlaylistContext.jsx` (parsed by hand, not via Firestore POJO mapping) |
+| Notes / Bookmarks | Firestore `notes/{uid}_{audioId}` — same shape as `../src/utils/notes.js` |
+| Your Listens (history) | Firestore `listenProgress` — see "Where this differs" below for why, instead of the web's own (currently unpopulated) `listens` query |
+| Downloads | Real offline audio: downloads the signed URL's bytes into app-private storage via OkHttp, tracked in Room, capped at 5 per device (same limit the web app enforces) |
+| Suggest a Feature | Firestore `suggestions` collection — same shape as `../src/pages/SuggestFeature.jsx`, including voting |
+| Stats | Firestore `userStats/{uid}` — same shape as `../src/pages/Stats.jsx` |
 | Push notifications | Firebase Cloud Messaging — writes the device token to `users/{uid}.fcmToken`, the same field the existing `sendPushNotification` Cloud Function already reads |
 | Images (Doctrine header, resource thumbnails) | Already-public URLs from a different Edge Function (`public-image`) — loaded directly with Coil, no extra network round-trip |
 
 ## Where this intentionally differs from the web app
+
+Findings from actually auditing the web app's code (not assumptions),
+each a case where reproducing the web app's exact current behavior would
+either not be a real feature or would be strictly worse than the
+alternative:
 
 - **Notices** has no dedicated screen — same as the web app, they're shown
   inline on Home.
@@ -135,10 +164,28 @@ needs no new rules beyond whatever you already have for the web app.
   real data model (`../src/lib/resourceTypes.js`) instead of inventing a
   separate one. Tapping a card opens the Spotify app directly via a
   `spotify:` URI when it's installed, and falls back to the web link.
-- **Sermons vs. Homilies**: the web app actually merges these into one
-  page with a type filter; this app keeps them as two separate screens
-  (both are in your required screen list), sharing one `AudioListScreen`
-  parameterized by type.
+- **Sermons + Homilies are one screen**, not two — the web app's own
+  `/homilies` page (`src/pages/Homilys.jsx`) exists as a file but **is not
+  registered as a route in `App.jsx`**, so it's unreachable on the live
+  web app today; the actual reachable Sermons page already queries
+  `type in [sermon, homily]` with a type filter. This app matches that
+  real, reachable behavior: one Sermons screen with All/Sermons/Homilies
+  filter chips, search, and sort — verified working against production
+  data.
+- **Your Listens uses `listenProgress`, not `listens`** — the web app's
+  `YourListens.jsx` queries a `listens` collection that, per an audit of
+  every write path in the codebase, **nothing writes to** (the actual
+  listen-tracking code writes to `appUsage` instead). The web page is
+  effectively non-functional today. Rather than reproduce that dead page,
+  this app powers "Your Listens" from `listenProgress` (real, already
+  populated, already used for resume-position elsewhere in the web app)
+  to actually deliver the feature.
+- **Contact** doesn't embed the web page's Cloudflare Turnstile challenge
+  (a browser widget with no native SDK here) — it explains why and opens
+  the real Contact page in the system browser for the actual reveal,
+  rather than adding a WebView just for one CAPTCHA.
+- **About** is reproduced as-is: the web app's `/about` route is currently
+  a literal "Coming Soon" placeholder, not a simplification on this side.
 
 ## How playback works (Media3)
 
@@ -151,34 +198,51 @@ once a `MediaSession` is attached to the player).
 
 `player/PlayerRepository.kt` is an app-wide singleton (owned by
 `AppContainer`) that both the mini player and the full Player screen read
-from, so they always agree. Tapping "play" resolves a signed URL first
-(via the repository/Retrofit call above), then hands ExoPlayer a
-`MediaItem` with title/artist metadata for the lock screen and
-notification.
+from, so they always agree. Tapping "play" checks for a downloaded local
+copy first (offline-first — see Downloads), otherwise resolves a signed
+URL via the Retrofit call above, then hands ExoPlayer a `MediaItem` with
+title/artist/category/date metadata for the lock screen and notification.
+While playing, listen progress is saved to Firestore periodically and on
+pause, powering both resume and "Your Listens".
 
 Covered: play/pause, seek/scrub, position/duration, loading state, error
-state with retry, background playback, lock-screen + notification
-controls, Bluetooth/headset buttons, audio focus (ducking/pausing for
-calls and other apps), previous/next within whatever list you played
-from, and proper `MediaSession`/`ExoPlayer` lifecycle teardown.
+state with retry (friendly messages only — network/HTTP exceptions are
+translated, never shown raw), background playback, lock-screen +
+notification controls, Bluetooth/headset buttons, audio focus
+(ducking/pausing for calls and other apps), previous/next within whatever
+list or playlist you played from, jump-to-timestamp (from a bookmark),
+and proper `MediaSession`/`ExoPlayer` lifecycle teardown.
 
 ## Offline / caching
 
-Per the brief, this does **not** bulk-download the audio library. It
-caches list *metadata* only: after every successful load, the Sermons /
-Sunday School / Homilies lists are written to a small Room database
-(`data/local/AppDatabase.kt`); if a later load fails (offline, Firebase
-unreachable), the last successful list is shown instead with an "You're
-offline" banner, rather than a blank screen. Notices/Doctrine/Resources
-are not cached in v1 — a documented trim, not an oversight (see below).
+Two distinct layers, per the brief's "don't bulk-download the library"
+guidance:
+
+- **List metadata cache** (Room, `data/local/AppDatabase.kt`): after every
+  successful load, the Sermons and Sunday School lists are cached; if a
+  later load fails (offline, Firebase unreachable), the last successful
+  list is shown with a "You're offline" banner instead of a blank screen.
+  A separate app-wide offline banner (via `ConnectivityManager`) also
+  shows across every screen when the device has no network at all —
+  verified working on-device (toggling connectivity mid-session showed
+  and cleared the banner correctly).
+- **Real offline audio** (Downloads, `data/repository/DownloadRepository.kt`):
+  a listener explicitly downloads a recording's actual audio bytes to
+  app-private storage; the player checks for and prefers a local download
+  before ever requesting a fresh signed URL, so a downloaded recording
+  plays with no connection at all. Capped at 5 per device.
 
 ## Error handling
 
 Every screen's ViewModel exposes one `UiState<T>` (`Loading` /
 `Success(data, fromCache)` / `Error(message)`) and every screen renders
 all three, plus an explicit empty state distinct from an error. No screen
-can end up blank on a failure. The player screen has a dedicated
-loading/error/retry state independent of the list screens.
+can end up blank on a failure. The player screen has its own dedicated
+loading/error/retry state, and every network failure it can hit
+(no connection, timeout, bad HTTP response, malformed URL) is mapped to a
+plain-language message — this was a real bug caught during on-device
+testing (a raw `HttpUrl` parsing exception was originally shown verbatim)
+and fixed; see "Testing performed."
 
 ## Permissions
 
@@ -255,50 +319,76 @@ if lost) — this same keystore works fine as that upload key.
 ## Store readiness
 
 This is a real native Compose UI with its own navigation, not a
-WebView/TWA wrapper — meant to satisfy stores (e.g. Samsung Galaxy Store,
-Amazon Appstore) that reject simple website wrappers. It does not attempt
-to disguise a webview as native; there isn't one anywhere in this project.
+WebView/TWA wrapper — meant to satisfy stores (e.g. Uptodown, Samsung
+Galaxy Store, Amazon Appstore) that reject simple website wrappers. It
+does not attempt to disguise a webview as native; there isn't one
+anywhere in this project (verified with `grep -ri webview` across the
+whole module — zero matches, aside from this sentence).
 
 ## Not yet implemented
 
-Deliberately out of scope for this first native pass — the web app has
-grown a lot of features over many sessions (playlists, downloads for
-offline listening, notes/bookmarks, listening goals, Year in Review,
-transcripts, unified search, Chromecast, driving mode, the full admin
-panel) that aren't in your minimum screen list. None of the backend work
-needed for them is hard to reach from Android (same Firestore
-collections), so they're a reasonable v2, not a redesign.
+Real features, deliberately out of scope for this pass, each independently
+addable later without a redesign (same Firestore collections the web app
+already uses):
 
-Also trimmed from what *is* in scope, each independently addable:
-
+- **Listening goals, Year in Review, Transcripts, driving mode, and
+  Chromecast/TV mode** — the most complex remaining web features. Goals
+  and Year in Review need new aggregation + a shareable-image canvas;
+  Transcripts need an AI-generation trigger and a synced viewer; Chromecast
+  is architecturally a different, larger effort on Android (the Google
+  Cast SDK + a receiver, not a port of the web's sender-API code) and is
+  arguably better done as a first-class Android feature later than rushed
+  here.
+- **Timestamped note entries** (adding a new categorized note *while*
+  listening, beyond the one general text note per recording) and **notes
+  markdown/checklist rendering** — the underlying data model (`entries[]`)
+  is read and displayed, just not yet authored from this app.
+- **Playlist drag-reorder** — up/down buttons instead of drag-and-drop
+  (same end result, less gesture-handling code).
 - Sign-up's daily registration-count cap (the web app enforces one; this
   app only checks the on/off `registrationEnabled` flag).
-- Metadata caching for Notices/Doctrine/Resources (Sermons/Sunday
-  School/Homilies are cached; those three aren't yet).
-- Custom small icon on the Media3 playback notification (currently uses
-  Media3's own bundled default icon rather than the app's branding —
-  customizing it needs `DefaultMediaNotificationProvider`'s builder API,
-  which I didn't want to guess at without being able to compile and
-  verify it here).
+- Metadata caching for Notices/Doctrine/Resources/Saved/Playlists (only
+  Sermons/Sunday School are Room-cached for offline viewing).
+- Custom small icon on the Media3 playback notification (uses Media3's
+  own bundled default icon rather than the app's branding).
 - Tablet-specific multi-column layouts (screens are responsive/scrollable
   and work fine on a tablet, but don't yet use the extra width for a
   two-pane layout).
+- The full admin panel (upload, content manager, users, analytics,
+  notices editor, page manager, etc.) — this app is the listener-facing
+  client only, matching the original brief's screen list.
 
-## What still needs testing
+## Testing performed
 
-**I could not run an actual Gradle/Android build in this environment** —
-no Android SDK, no JDK, no emulator here. Everything above was written
-carefully against real, current, stable APIs (Media3 1.4.1, Compose BOM
-2024.10.01, Firebase BoM 33.5.1, etc.), and checked by hand for balanced
-braces, consistent imports, and correct Kotlin idioms — but it has not
-been compiled. When you open it in Android Studio:
+This was built and verified against a real Android SDK, Gradle 8.9, and a
+running emulator (`sdk_gphone16k_arm64`, API 35) in this environment —
+not just written and assumed to compile. Concretely:
 
-1. Let Gradle sync fully and fix anything it flags (should be nothing,
-   but this is the real first checkpoint).
-2. Fill in `google-services.json` and `supabase.properties` as above,
-   then run on a device/emulator and confirm sign-in, list loading, and
-   playback (including lock-screen controls and backgrounding) all work.
-3. Test the offline banner by toggling airplane mode after a list has
-   loaded once.
-4. Test the Spotify screen's "open in app vs. browser" fallback with and
-   without the Spotify app installed.
+- `./gradlew assembleDebug` and `assembleRelease` both succeed.
+- The debug APK was installed and launched on-device; the app connects to
+  the **real production Firestore** (no test/demo data) and rendered real
+  content throughout: Home's latest-sermon card, the full Sermons list
+  with working search/sort/type-filter chips (verified narrowing "Genesis"
+  to 2 matching real recordings, and the Homilies chip correctly showing
+  a real, honest empty state), Sunday School, the full Doctrine page
+  (Weekly Topic slider on the real current week, the ported full-year
+  Schedule table, Questions, Docs), the More menu and every page it links
+  to (Playlists, Suggest a Feature — both showing correct signed-out/empty
+  states with live Firestore reads), and Settings (signed-out Account
+  state, Sign In screen).
+- No crashes were observed in `logcat` across this session; one real bug
+  *was* found and fixed this way — a raw OkHttp/Retrofit exception message
+  leaking into the Player screen's error text instead of a friendly one
+  (missing local Supabase config surfaced it) — now shows "This recording
+  couldn't be played. Tap to retry." like every other failure mode.
+- **Not exercised in this pass** (needs either real user credentials
+  against production or a longer interactive session than was practical
+  here): completing an actual sign-in/sign-up, a full playback session
+  end-to-end (this dev environment has no local `supabase.properties`
+  configured — the error-state path is what was verified instead),
+  lock-screen/notification controls during real playback, a download
+  actually completing, and CRUD round-trips on Notes/Bookmarks/Playlists.
+  These are the same code paths already exercised for reads and for the
+  identical pattern used elsewhere (e.g. Saved's toggle, which shares its
+  Firestore write pattern with these), so they're low-risk, but they
+  haven't been watched happen.

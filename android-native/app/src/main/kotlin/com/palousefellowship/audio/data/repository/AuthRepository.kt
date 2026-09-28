@@ -1,5 +1,6 @@
 package com.palousefellowship.audio.data.repository
 
+import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
@@ -57,6 +58,44 @@ class AuthRepository(
     }.mapAuthError()
 
     fun signOut() = auth.signOut()
+
+    // ---- Account management (mirrors src/pages/Settings/Account.jsx) -----
+
+    suspend fun updateDisplayName(fullName: String): Result<Unit> = runCatching {
+        val uid = auth.currentUser?.uid ?: error("You're signed out.")
+        firestore.collection("users").document(uid).update("fullName", fullName).await()
+        Unit
+    }.mapAuthError()
+
+    private suspend fun reauthenticate(currentPassword: String) {
+        val user = auth.currentUser ?: error("You're signed out.")
+        val email = user.email ?: error("This account has no email/password to verify.")
+        user.reauthenticate(EmailAuthProvider.getCredential(email, currentPassword)).await()
+    }
+
+    suspend fun changeEmail(currentPassword: String, newEmail: String): Result<Unit> = runCatching {
+        val user = auth.currentUser ?: error("You're signed out.")
+        reauthenticate(currentPassword)
+        @Suppress("DEPRECATION") // matches the web app's own updateEmail call exactly
+        user.updateEmail(newEmail).await()
+        firestore.collection("users").document(user.uid).update("email", newEmail).await()
+        Unit
+    }.mapAuthError()
+
+    suspend fun changePassword(currentPassword: String, newPassword: String): Result<Unit> = runCatching {
+        val user = auth.currentUser ?: error("You're signed out.")
+        reauthenticate(currentPassword)
+        user.updatePassword(newPassword).await()
+        Unit
+    }.mapAuthError()
+
+    suspend fun deleteAccount(currentPassword: String): Result<Unit> = runCatching {
+        val user = auth.currentUser ?: error("You're signed out.")
+        reauthenticate(currentPassword)
+        firestore.collection("users").document(user.uid).delete().await()
+        user.delete().await()
+        Unit
+    }.mapAuthError()
 
     private suspend fun writeNewUserDoc(uid: String, email: String, fullName: String, loginMethod: String) {
         val data = mapOf(

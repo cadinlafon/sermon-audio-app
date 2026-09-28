@@ -13,6 +13,8 @@ import com.google.common.util.concurrent.MoreExecutors
 import com.palousefellowship.audio.R
 import com.palousefellowship.audio.data.model.Audio
 import com.palousefellowship.audio.data.repository.AudioRepository
+import com.palousefellowship.audio.data.repository.DownloadRepository
+import com.palousefellowship.audio.data.repository.ListenProgressRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -36,12 +38,15 @@ import kotlinx.coroutines.launch
 class PlayerRepository(
     private val appContext: Context,
     private val audioRepository: AudioRepository,
+    private val downloadRepository: DownloadRepository,
+    private val listenProgressRepository: ListenProgressRepository,
     private val scope: CoroutineScope,
 ) {
     private var controller: MediaController? = null
     private var queue: List<Audio> = emptyList()
     private var queueIndex: Int = -1
     private var positionTicker: Job? = null
+    private var progressTickCount = 0
 
     private val _state = MutableStateFlow(PlayerUiState())
     val state: StateFlow<PlayerUiState> = _state.asStateFlow()
@@ -49,7 +54,12 @@ class PlayerRepository(
     private val playerListener = object : Player.Listener {
         override fun onIsPlayingChanged(isPlaying: Boolean) {
             _state.update { it.copy(isPlaying = isPlaying) }
-            if (isPlaying) startPositionTicker() else positionTicker?.cancel()
+            if (isPlaying) {
+                startPositionTicker()
+            } else {
+                positionTicker?.cancel()
+                saveProgressNow()
+            }
         }
 
         override fun onPlaybackStateChanged(playbackState: Int) {
@@ -87,11 +97,13 @@ class PlayerRepository(
     }
 
     /** Starts playing [audio] and remembers [fromList] (the screen's
-     * current list, in display order) as the queue for Previous/Next. */
-    fun play(audio: Audio, fromList: List<Audio> = listOf(audio)) {
+     * current list, in display order) as the queue for Previous/Next.
+     * [resumeAtSeconds] jumps straight to that point once ready — used by
+     * Bookmarks / shared timestamp links. */
+    fun play(audio: Audio, fromList: List<Audio> = listOf(audio), resumeAtSeconds: Long = 0) {
         queue = fromList
         queueIndex = fromList.indexOfFirst { it.id == audio.id }.coerceAtLeast(0)
-        loadAndPlay(audio)
+        loadAndPlay(audio, resumeAtSeconds * 1000)
     }
 
     fun togglePlayPause() {
@@ -129,7 +141,7 @@ class PlayerRepository(
         loadAndPlay(audio)
     }
 
-    private fun loadAndPlay(audio: Audio) {
+    private fun loadAndPlay(audio: Audio, resumeAtMs: Long = 0) {
         positionTicker?.cancel()
         _state.value = PlayerUiState(
             current = audio,
@@ -143,7 +155,13 @@ class PlayerRepository(
                 _state.update { it.copy(phase = PlaybackPhase.ERROR, errorMessage = "Player isn't ready yet — try again in a moment.") }
                 return@launch
             }
-            audioRepository.resolvePlaybackUrl(audio).fold(
+            // Offline-first: a downloaded copy plays straight from disk (works
+            // with no connection at all and never re-spends bandwidth), same
+            // idea as the web app's offlineDownloads.js local-blob shortcut.
+            val local = downloadRepository.getDownload(audio.id)
+            val urlResult = if (local != null) Result.success(Uri.fromFile(java.io.File(local.localPath)).toString()) else audioRepository.resolvePlaybackUrl(audio)
+
+            urlResult.fold(
                 onSuccess = { url ->
                     val artworkUri = Uri.parse("android.resource://${appContext.packageName}/${R.mipmap.ic_launcher}")
                     val mediaItem = MediaItem.Builder()
@@ -159,6 +177,7 @@ class PlayerRepository(
                         .build()
                     c.setMediaItem(mediaItem)
                     c.prepare()
+                    if (resumeAtMs > 0) c.seekTo(resumeAtMs)
                     c.play()
                 },
                 onFailure = { error ->
@@ -175,6 +194,7 @@ class PlayerRepository(
 
     private fun startPositionTicker() {
         positionTicker?.cancel()
+        progressTickCount = 0
         positionTicker = scope.launch {
             while (true) {
                 val c = controller
@@ -187,8 +207,21 @@ class PlayerRepository(
                     }
                 }
                 delay(500)
+                // Every ~15s of actual playing time, not every 500ms tick —
+                // frequent enough to resume close to where you left off,
+                // rare enough not to spam Firestore writes.
+                progressTickCount++
+                if (progressTickCount % 30 == 0) saveProgressNow()
             }
         }
+    }
+
+    private fun saveProgressNow() {
+        val audio = _state.value.current ?: return
+        val positionSeconds = _state.value.positionMs / 1000
+        val durationSeconds = _state.value.durationMs / 1000
+        if (positionSeconds <= 0) return
+        scope.launch { listenProgressRepository.saveProgress(audio.id, positionSeconds, durationSeconds) }
     }
 
     fun release() {
