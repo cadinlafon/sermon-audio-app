@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, limit, orderBy, query, updateDoc } from "firebase/firestore";
 import { db } from "../../firebase";
 import { useModulePermissions } from "../../hooks/usePermissions";
 import { useAdminPin } from "../../context/AdminPinContext";
@@ -27,6 +27,10 @@ export default function Settings() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [originalConfig, setOriginalConfig] = useState(null);
+  const [showAiLogs, setShowAiLogs] = useState(false);
+  const [aiLogs, setAiLogs] = useState(null);
+  const [aiLogsError, setAiLogsError] = useState("");
+  const [aiLogsLoading, setAiLogsLoading] = useState(false);
 
   const configRef = doc(db, "appConfig", "status");
 
@@ -66,6 +70,25 @@ export default function Settings() {
   const toggleShutdown = async () => {
     if (!(await requirePin("appShutdown"))) return;
     setShutdown((v) => !v);
+  };
+
+  const loadAiLogs = async () => {
+    setAiLogsLoading(true);
+    setAiLogsError("");
+    try {
+      const snap = await getDocs(query(collection(db, "aiSummaryLogs"), orderBy("createdAt", "desc"), limit(50)));
+      setAiLogs(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    } catch (err) {
+      console.error("Failed to load AI summary logs:", err);
+      setAiLogsError("Couldn't load the logs.");
+    }
+    setAiLogsLoading(false);
+  };
+
+  const toggleAiLogs = () => {
+    const next = !showAiLogs;
+    setShowAiLogs(next);
+    if (next && aiLogs === null) loadAiLogs();
   };
 
   const toggleAudience = (value) => {
@@ -196,6 +219,43 @@ export default function Settings() {
             ))}
           </div>
         </Field>
+
+        <div style={logsDivider} />
+
+        <div style={toggleRow}>
+          <div>
+            <div style={toggleLabel}>Logs</div>
+            <div style={toggleHint}>The last 50 times someone actually ran an AI summary (not cached repeats).</div>
+          </div>
+          <button onClick={toggleAiLogs} style={logsToggleBtn}>
+            {showAiLogs ? "Hide" : "View"} Logs {showAiLogs ? "▲" : "▼"}
+          </button>
+        </div>
+
+        {showAiLogs && (
+          <div style={logsBox}>
+            <div style={logsHeading}>Users who have ran the AI Summarize:</div>
+            {aiLogsLoading ? (
+              <div style={logsEmpty}>Loading…</div>
+            ) : aiLogsError ? (
+              <div style={{ ...logsEmpty, color: "#dc2626" }}>{aiLogsError}</div>
+            ) : aiLogs && aiLogs.length > 0 ? (
+              <div style={logsList}>
+                {aiLogs.map((log) => (
+                  <div key={log.id} style={logRow}>
+                    <span style={logRowText}>
+                      <strong>{log.userName || log.userEmail || "Unknown user"}</strong>
+                      {" – Summarized “"}{log.audioTitle || "Untitled audio"}{"”"}
+                    </span>
+                    {log.createdAt && <span style={logRowTime}>{formatLogTime(log.createdAt)}</span>}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={logsEmpty}>No one has run an AI summary yet.</div>
+            )}
+          </div>
+        )}
       </div>
 
       <div style={{ ...card, marginTop: "20px" }}>
@@ -255,6 +315,12 @@ function Field({ label, children }) {
   return <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}><label style={fieldLabel}>{label}</label>{children}</div>;
 }
 
+function formatLogTime(createdAt) {
+  const date = typeof createdAt?.toDate === "function" ? createdAt.toDate() : new Date(createdAt);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+}
+
 const page = { maxWidth: "600px" };
 const pageHeader = { marginBottom: "24px" };
 const pageTitle = { fontSize: "26px", fontWeight: "normal", color: "#3d2200", margin: "0 0 4px", fontFamily: "'Georgia', serif" };
@@ -275,6 +341,15 @@ const toggleKnob = { position: "absolute", top: "3px", left: "3px", width: "20px
 const statusBanner = { padding: "10px 14px", borderRadius: "10px", fontSize: "13px", fontFamily: "sans-serif" };
 
 const fieldLabel = { fontSize: "11px", fontFamily: "sans-serif", color: "#9b7040", letterSpacing: "0.06em", textTransform: "uppercase" };
+const logsDivider = { borderTop: "1px solid #eddfc8", margin: "4px 0" };
+const logsToggleBtn = { padding: "8px 14px", borderRadius: "8px", border: "1px solid #eddfc8", background: "#fdf8f3", color: "#3d2200", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer", whiteSpace: "nowrap" };
+const logsBox = { background: "#fdf8f3", border: "1px solid #eddfc8", borderRadius: "12px", padding: "14px 16px" };
+const logsHeading = { fontSize: "13px", fontFamily: "sans-serif", color: "#3d2200", fontWeight: "600", marginBottom: "10px" };
+const logsList = { display: "flex", flexDirection: "column", gap: "8px", maxHeight: "320px", overflowY: "auto" };
+const logRow = { display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: "10px", padding: "8px 10px", background: "#fffdf9", border: "1px solid #eddfc8", borderRadius: "8px" };
+const logRowText = { fontSize: "13px", fontFamily: "sans-serif", color: "#3d2200", lineHeight: "1.4" };
+const logRowTime = { fontSize: "11px", fontFamily: "sans-serif", color: "#9b7040", whiteSpace: "nowrap", flexShrink: 0 };
+const logsEmpty = { fontSize: "13px", fontFamily: "sans-serif", color: "#9b7040" };
 const checkRow = { display: "flex", gap: "16px", flexWrap: "wrap" };
 const checkLabel = { display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", fontFamily: "sans-serif", color: "#5c3a1e", cursor: "pointer" };
 const input = { padding: "10px 12px", borderRadius: "10px", border: "1px solid #eddfc8", background: "#fdf8f3", fontSize: "14px", fontFamily: "sans-serif", color: "#3d2200", outline: "none", width: "100%", boxSizing: "border-box" };

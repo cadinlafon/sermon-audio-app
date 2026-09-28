@@ -9,6 +9,10 @@ export default defineConfig({
       registerType: 'autoUpdate',
 
       workbox: {
+        // The main bundle has grown past workbox's 2 MiB default precache
+        // limit (Media3-adjacent web features: QR codes, Cast, etc.) —
+        // raise the cap rather than leaving the service worker un-buildable.
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [
           /\/[^/?]+\.[^/]+$/,

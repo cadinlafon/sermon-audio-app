@@ -126,3 +126,19 @@ match /transcripts/{audioId} {
     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
   allow delete: if false;
 }
+
+// ── Block 7: AI summary usage log ───────────────────────────────────
+// aiSummaryLogs/{id} is written by the summarize-audio edge function
+// using the CALLING USER'S OWN Firebase token (same pattern as the
+// transcripts/audio.aiSummary writes above — there's no service-role
+// key wired into that function), one doc per completed "Summarize with
+// AI" run. Read by the Advanced admin page's "Users who have ran the AI
+// Summarize" log (src/pages/Admin/Settings.jsx). Logs are append-only:
+// no one — including the log's own author — can edit or delete a row.
+
+match /aiSummaryLogs/{logId} {
+  allow read: if request.auth != null &&
+    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+  allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+  allow update, delete: if false;
+}

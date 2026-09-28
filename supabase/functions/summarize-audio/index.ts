@@ -198,6 +198,37 @@ async function readTranscript(firebaseToken: string, audioId: string): Promise<{
   }
 }
 
+// deno-lint-ignore no-explicit-any
+type FirebaseTokenPayload = { sub?: string; name?: string; email?: string; [key: string]: any };
+
+// Feeds the "Users who have ran the AI Summarize" log on the admin
+// Advanced page (src/pages/Admin/Settings.jsx). Best-effort: logging is
+// never allowed to fail (or slow down) the actual summary the user is
+// waiting on, so failures here are only ever warned about, never thrown.
+async function logAiSummaryRun(firebaseToken: string, payload: FirebaseTokenPayload, audioId: string, audioType: string, title: string) {
+  try {
+    const url = new URL(`https://firestore.googleapis.com/v1/projects/${firebaseProjectId}/databases/(default)/documents/aiSummaryLogs`);
+    const response = await fetchWithRetry(url, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${firebaseToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fields: {
+          uid: { stringValue: payload.sub ?? "" },
+          userName: { stringValue: payload.name || payload.email || "Unknown user" },
+          userEmail: { stringValue: payload.email ?? "" },
+          audioId: { stringValue: audioId },
+          audioTitle: { stringValue: title },
+          audioType: { stringValue: audioType },
+          createdAt: { timestampValue: new Date().toISOString() },
+        },
+      }),
+    });
+    if (!response.ok) console.warn("AI summary log write failed", response.status, await response.text());
+  } catch (error) {
+    console.warn("AI summary log write threw", error);
+  }
+}
+
 async function saveTranscript(firebaseToken: string, audioId: string, t: Transcription) {
   const url = transcriptUrl(audioId);
   for (const f of ["segments", "language", "duration", "createdAt"]) url.searchParams.append("updateMask.fieldPaths", f);
@@ -440,7 +471,7 @@ Deno.serve(async (request) => {
   if (!groqApiKey) return json(request, { error: "AI summaries are not configured yet.", code: "missing_groq_key" }, 500);
 
   try {
-    const { token } = await requireFirebaseUser(request);
+    const { token, payload } = await requireFirebaseUser(request);
     // deno-lint-ignore no-explicit-any
     let body: any;
     try {
@@ -516,6 +547,7 @@ Deno.serve(async (request) => {
       if (mode === "summary" || !state.summary || force) {
         summary = await summarize(transcription.text, body.audioType, title);
         await saveFirestoreSummary(token, audioId, summary);
+        if (mode === "summary") await logAiSummaryRun(token, payload, audioId, body.audioType, title);
       } else {
         await releaseSummaryPending(token, audioId);
       }
