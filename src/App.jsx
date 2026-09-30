@@ -56,6 +56,7 @@ import AudioAppLanding from "./pages/AudioAppLanding";
 import Doctrine from "./pages/Doctrine";
 import Resources from "./pages/Resources";
 import ResourceDetail from "./pages/ResourceDetail";
+import WhatsNew from "./pages/WhatsNew";
 import DevInfo from "./pages/DevInfo";
 
 // Admin
@@ -449,6 +450,15 @@ function App() {
           />
 
           <Route path="/tv" element={<TV />} />
+
+          <Route
+            path="/whats-new"
+            element={
+              <PageGate id="whats-new">
+                <WhatsNew />
+              </PageGate>
+            }
+          />
 
           <Route
             path="/player"

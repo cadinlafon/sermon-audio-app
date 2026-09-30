@@ -88,6 +88,15 @@ export const PAGE_REGISTRY = [
     defaultOrder: 3,
   },
   {
+    id: "whats-new",
+    route: "/whats-new",
+    defaultName: "What's New",
+    defaultIcon: "🆕",
+    defaultDescription: "Recent updates and improvements to the app.",
+    navSlot: "more",
+    defaultOrder: 4,
+  },
+  {
     id: "your-listens",
     route: "/your-listens",
     defaultName: "Your Listens",
