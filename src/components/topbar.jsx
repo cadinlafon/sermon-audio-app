@@ -18,6 +18,8 @@ import {
 
 import { auth, db, googleProvider } from "../firebase";
 import { logEvent } from "../utils/logEvent";
+import { usePages } from "../context/PagesContext";
+import { getDisplayName, isVisibleInNav, sortForNavigation, BADGE_COLORS } from "../lib/pageManager";
 
 import googleLogo from "../assets/auth/google-logo.png";
 
@@ -96,9 +98,17 @@ function GlobalSearch({ onClose }) {
 export default function TopBar() {
   const navigate = useNavigate();
   const profileRef = useRef(null);
+  const { pages } = usePages();
 
   const [user, setUser] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
+
+  // Every registered page whose navSlot is "account" — the Page Manager
+  // registry (src/pageRegistry.js) is the single source of truth for
+  // this list, so a page added there shows up here automatically instead
+  // of needing a matching hardcoded button (see pageRegistry.js's
+  // navSlot doc comment).
+  const accountPages = sortForNavigation((pages || []).filter((p) => p.navSlot === "account" && isVisibleInNav(p)));
 
   const [showProfile, setShowProfile] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
@@ -285,25 +295,15 @@ export default function TopBar() {
 
             <div style={divider} />
 
-            <button style={accountButton} onClick={() => navigate("/your-listens")}>
-              Your Listens
-            </button>
-
-            <button style={accountButton} onClick={() => navigate("/saved")}>
-              Liked Sermons
-            </button>
-
-            <button style={accountButton} onClick={() => navigate("/stats")}>
-              Stats
-            </button>
-
-            <button style={accountButton} onClick={() => navigate("/suggest")}>
-              Suggest Feature
-            </button>
-
-            <button style={accountButton} onClick={() => navigate("/settings")}>
-              Account Page
-            </button>
+            {accountPages.map((p) => (
+              <button key={p.id} style={accountButton} onClick={() => navigate(p.route)}>
+                <span style={accountIcon}>{p.icon}</span>
+                {getDisplayName(p)}
+                {p.badgeEnabled && p.badgeText && (
+                  <span style={miniBadge(p.badgeColor)}>{p.badgeText}</span>
+                )}
+              </button>
+            ))}
 
             {isAdmin && (
               <button style={adminButton} onClick={() => navigate("/admin")}>
@@ -400,7 +400,9 @@ const dropdown = {
   gap: "10px",
   width: "260px",
   borderRadius: "14px",
-  boxShadow: "0 12px 32px rgba(160,80,20,0.16)"
+  boxShadow: "0 12px 32px rgba(160,80,20,0.16)",
+  maxHeight: "80vh",
+  overflowY: "auto",
 };
 
 const dropdownHeading = {
@@ -521,8 +523,24 @@ const adminButton = {
 };
 
 const accountIcon = {
-  width: "16px",
-  filter: "sepia(1) saturate(2) hue-rotate(10deg) brightness(0.6)"
+  fontSize: "14px",
+  lineHeight: 1,
+  flexShrink: 0,
+};
+
+const miniBadge = (color) => {
+  const c = BADGE_COLORS[color] || BADGE_COLORS.amber;
+  return {
+    marginLeft: "auto",
+    fontSize: "10px",
+    fontWeight: "700",
+    padding: "2px 7px",
+    borderRadius: "999px",
+    background: c.bg,
+    color: c.color,
+    fontFamily: "sans-serif",
+    whiteSpace: "nowrap",
+  };
 };
 
 const logoutButton = {
