@@ -19,6 +19,14 @@
 
 export const WHATS_NEW = [
   {
+    id: "theme-toggle-2026-10-01",
+    date: "2026-10-01",
+    title: "Light, Dark, and System Theme",
+    details:
+      "A new button next to search (top right) switches the whole app between light and dark — or set it to System to automatically match your phone or computer's own theme. Your choice is remembered next time you open the app.",
+    minor: [],
+  },
+  {
     id: "nav-discoverability-2026-09-29",
     date: "2026-09-29",
     title: "Playlists, Downloads, and More Are Easier to Find",
