@@ -19,6 +19,14 @@
 
 export const WHATS_NEW = [
   {
+    id: "continue-listening-2026-10-01",
+    date: "2026-10-01",
+    title: "Continue Listening, Right on Home",
+    details:
+      "If you're signed in, Home now shows up to 3 recordings you've started but haven't finished, right at the top — tap Resume on any of them to pick up exactly where you left off.",
+    minor: [],
+  },
+  {
     id: "theme-toggle-2026-10-01",
     date: "2026-10-01",
     title: "Light, Dark, and System Theme",
