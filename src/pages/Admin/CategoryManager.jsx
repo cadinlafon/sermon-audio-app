@@ -134,7 +134,7 @@ export default function CategoryManager({
                 ) : (
                   <button style={actionBtn} onClick={() => startEdit(c)} disabled={busy}>Rename</button>
                 )}
-                <button style={{ ...actionBtn, color: "#dc2626", borderColor: "#fca5a5" }} onClick={() => handleDelete(c)} disabled={busy}>Delete</button>
+                <button style={{ ...actionBtn, color: "var(--color-dc2626)", borderColor: "var(--color-fca5a5)" }} onClick={() => handleDelete(c)} disabled={busy}>Delete</button>
               </div>
             </div>
           ))}
@@ -147,19 +147,19 @@ export default function CategoryManager({
 }
 
 const modalBg = { position: "fixed", inset: 0, background: "rgba(40,18,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 3200, padding: "20px" };
-const modal = { background: "#fffdf9", border: "1px solid #eddfc8", borderRadius: "20px", padding: "24px", width: "100%", maxWidth: "440px", maxHeight: "85vh", display: "flex", flexDirection: "column", gap: "16px" };
+const modal = { background: "var(--color-fffdf9)", border: "1px solid var(--color-eddfc8)", borderRadius: "20px", padding: "24px", width: "100%", maxWidth: "440px", maxHeight: "85vh", display: "flex", flexDirection: "column", gap: "16px" };
 const header = { display: "flex", justifyContent: "space-between", alignItems: "center" };
-const modalTitle = { fontSize: "18px", fontWeight: "normal", color: "#3d2200", fontFamily: "'Georgia', serif", margin: 0 };
-const closeX = { border: "none", background: "transparent", color: "#9b7040", fontSize: "16px", cursor: "pointer" };
+const modalTitle = { fontSize: "18px", fontWeight: "normal", color: "var(--color-3d2200)", fontFamily: "'Georgia', serif", margin: 0 };
+const closeX = { border: "none", background: "transparent", color: "var(--color-9b7040)", fontSize: "16px", cursor: "pointer" };
 
 const addRow = { display: "flex", gap: "8px" };
-const input = { padding: "9px 12px", borderRadius: "10px", border: "1px solid #eddfc8", background: "#fdf8f3", fontSize: "13px", fontFamily: "sans-serif", color: "#3d2200", outline: "none", flex: 1 };
-const addBtn = { padding: "9px 14px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, #c97c2e, #a85e18)", color: "#fff8ee", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer", whiteSpace: "nowrap" };
+const input = { padding: "9px 12px", borderRadius: "10px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fdf8f3)", fontSize: "13px", fontFamily: "sans-serif", color: "var(--color-3d2200)", outline: "none", flex: 1 };
+const addBtn = { padding: "9px 14px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, var(--color-c97c2e), var(--color-a85e18))", color: "var(--color-fff8ee)", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer", whiteSpace: "nowrap" };
 
 const list = { display: "flex", flexDirection: "column", gap: "8px", overflowY: "auto" };
-const row = { display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px", padding: "9px 12px", border: "1px solid #eddfc8", borderRadius: "10px", background: "#fdf8f3", flexWrap: "wrap" };
-const name = { fontSize: "13px", fontFamily: "sans-serif", color: "#3d2200", flex: 1 };
+const row = { display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px", padding: "9px 12px", border: "1px solid var(--color-eddfc8)", borderRadius: "10px", background: "var(--color-fdf8f3)", flexWrap: "wrap" };
+const name = { fontSize: "13px", fontFamily: "sans-serif", color: "var(--color-3d2200)", flex: 1 };
 const actions = { display: "flex", gap: "4px", flexShrink: 0 };
-const moveBtn = { width: "22px", height: "22px", padding: 0, borderRadius: "6px", border: "1px solid #eddfc8", background: "#fffdf9", color: "#7a4f10", fontSize: "9px", cursor: "pointer" };
-const actionBtn = { padding: "5px 9px", borderRadius: "8px", border: "1px solid #eddfc8", background: "#fffdf9", color: "#5c3a1e", fontSize: "11px", fontFamily: "sans-serif", cursor: "pointer" };
-const empty = { textAlign: "center", color: "#b08050", fontFamily: "sans-serif", fontStyle: "italic", padding: "20px 0" };
+const moveBtn = { width: "22px", height: "22px", padding: 0, borderRadius: "6px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fffdf9)", color: "var(--color-7a4f10)", fontSize: "9px", cursor: "pointer" };
+const actionBtn = { padding: "5px 9px", borderRadius: "8px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fffdf9)", color: "var(--color-5c3a1e)", fontSize: "11px", fontFamily: "sans-serif", cursor: "pointer" };
+const empty = { textAlign: "center", color: "var(--color-b08050)", fontFamily: "sans-serif", fontStyle: "italic", padding: "20px 0" };

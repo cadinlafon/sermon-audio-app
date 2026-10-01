@@ -318,7 +318,7 @@ function Overview({
         ) : (
           <ResponsiveContainer width="100%" height={320}>
             <LineChart data={dailySeries}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#eddfc8" />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-eddfc8)" />
               <XAxis dataKey="date" tick={{ fontSize: 11, fontFamily: "sans-serif" }} />
               <YAxis allowDecimals={false} tick={{ fontSize: 11, fontFamily: "sans-serif" }} />
               <Tooltip />
@@ -663,8 +663,8 @@ function CampaignLinks({ logs, rangeDays }) {
                 <div
                   style={{
                     ...statusPill,
-                    background: point.active ? "#e7f6e9" : "#f3e5e5",
-                    color: point.active ? "#286a31" : "#8a3d3d",
+                    background: point.active ? "var(--color-e7f6e9)" : "var(--color-f3e5e5)",
+                    color: point.active ? "var(--color-286a31)" : "var(--color-8a3d3d)",
                   }}
                 >
                   {point.active ? "Active" : "Disabled"}
@@ -777,7 +777,7 @@ function Field({ label, required, value, onChange, placeholder }) {
     <div style={field}>
       <label style={labelStyle}>
         {label}
-        {required && <span style={{ color: "#b34a35" }}> *</span>}
+        {required && <span style={{ color: "var(--color-b34a35)" }}> *</span>}
       </label>
       <input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={input} />
     </div>
@@ -810,13 +810,13 @@ const header = {
 const title = {
   fontSize: "28px",
   fontWeight: "normal",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   margin: 0,
   fontFamily: "'Georgia', serif",
 };
 
 const subtitle = {
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   margin: "5px 0 0",
   fontFamily: "sans-serif",
   fontSize: "14px",
@@ -825,38 +825,38 @@ const subtitle = {
 const tabRow = { display: "flex", gap: "6px" };
 
 const tabButton = {
-  border: "1px solid #eddfc8",
+  border: "1px solid var(--color-eddfc8)",
   borderRadius: "9px",
   padding: "9px 16px",
-  background: "#fffdf9",
-  color: "#7a4f10",
+  background: "var(--color-fffdf9)",
+  color: "var(--color-7a4f10)",
   cursor: "pointer",
   fontFamily: "sans-serif",
   fontSize: "13px",
 };
 
 const tabButtonActive = {
-  background: "linear-gradient(135deg, #c97c2e, #a85e18)",
-  color: "#fff",
+  background: "linear-gradient(135deg, var(--color-c97c2e), var(--color-a85e18))",
+  color: "var(--color-ffffff)",
   border: "1px solid transparent",
 };
 
 const rangeRow = { display: "flex", gap: "6px", marginBottom: "18px" };
 
 const rangeButton = {
-  border: "1px solid #eddfc8",
+  border: "1px solid var(--color-eddfc8)",
   borderRadius: "999px",
   padding: "6px 14px",
-  background: "#fffdf9",
-  color: "#7a4f10",
+  background: "var(--color-fffdf9)",
+  color: "var(--color-7a4f10)",
   cursor: "pointer",
   fontFamily: "sans-serif",
   fontSize: "12px",
 };
 
 const rangeButtonActive = {
-  background: "#f4e7d4",
-  color: "#3d2200",
+  background: "var(--color-f4e7d4)",
+  color: "var(--color-3d2200)",
   fontWeight: "bold",
 };
 
@@ -868,8 +868,8 @@ const summaryGrid = {
 };
 
 const summaryCard = {
-  background: "#fffdf9",
-  border: "1px solid #eddfc8",
+  background: "var(--color-fffdf9)",
+  border: "1px solid var(--color-eddfc8)",
   borderRadius: "14px",
   padding: "16px 18px",
   display: "flex",
@@ -879,13 +879,13 @@ const summaryCard = {
 
 const summaryValue = {
   fontSize: "26px",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   fontFamily: "'Georgia', serif",
 };
 
 const summaryLabel = {
   fontSize: "12px",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   fontFamily: "sans-serif",
 };
 
@@ -897,8 +897,8 @@ const grid = {
 };
 
 const card = {
-  background: "#fffdf9",
-  border: "1px solid #eddfc8",
+  background: "var(--color-fffdf9)",
+  border: "1px solid var(--color-eddfc8)",
   borderRadius: "16px",
   padding: "16px",
 };
@@ -909,7 +909,7 @@ const cardIcon = { fontSize: "22px" };
 
 const cardLabel = {
   fontFamily: "'Georgia', serif",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   fontSize: "15px",
 };
 
@@ -923,20 +923,20 @@ const statsGrid = {
 const stat = { display: "flex", flexDirection: "column", gap: "2px", fontFamily: "sans-serif" };
 
 const chartCard = {
-  background: "#fffdf9",
-  border: "1px solid #eddfc8",
+  background: "var(--color-fffdf9)",
+  border: "1px solid var(--color-eddfc8)",
   borderRadius: "16px",
   padding: "20px",
 };
 
 const sectionTitle = {
   fontFamily: "'Georgia', serif",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   margin: "0 0 14px",
   fontSize: "18px",
 };
 
-const empty = { textAlign: "center", padding: "50px 20px", color: "#9b7040", fontFamily: "sans-serif" };
+const empty = { textAlign: "center", padding: "50px 20px", color: "var(--color-9b7040)", fontFamily: "sans-serif" };
 
 const emptyIcon = { fontSize: "40px" };
 
@@ -949,51 +949,51 @@ const linksGrid = {
 };
 
 const trackingUrl = {
-  background: "#f8f1e8",
+  background: "var(--color-f8f1e8)",
   padding: "10px",
   borderRadius: "8px",
   wordBreak: "break-all",
   fontFamily: "monospace",
   fontSize: "11px",
-  color: "#5c3a1e",
+  color: "var(--color-5c3a1e)",
   marginTop: "12px",
 };
 
 const cardActions = { display: "flex", gap: "7px", flexWrap: "wrap", marginTop: "14px" };
 
 const secondaryButton = {
-  border: "1px solid #eddfc8",
+  border: "1px solid var(--color-eddfc8)",
   borderRadius: "9px",
   padding: "8px 12px",
-  background: "#fffdf9",
-  color: "#7a4f10",
+  background: "var(--color-fffdf9)",
+  color: "var(--color-7a4f10)",
   cursor: "pointer",
   fontFamily: "sans-serif",
   fontSize: "12px",
 };
 
-const dangerButton = { ...secondaryButton, color: "#a33d32" };
+const dangerButton = { ...secondaryButton, color: "var(--color-a33d32)" };
 
 const primaryButton = {
   border: "none",
   borderRadius: "9px",
   padding: "9px 15px",
-  background: "linear-gradient(135deg, #c97c2e, #a85e18)",
-  color: "#fff",
+  background: "linear-gradient(135deg, var(--color-c97c2e), var(--color-a85e18))",
+  color: "var(--color-ffffff)",
   cursor: "pointer",
   fontFamily: "sans-serif",
 };
 
 const field = { display: "flex", flexDirection: "column", gap: "6px" };
 
-const labelStyle = { fontSize: "13px", fontWeight: "600", color: "#5c3a1e", fontFamily: "sans-serif" };
+const labelStyle = { fontSize: "13px", fontWeight: "600", color: "var(--color-5c3a1e)", fontFamily: "sans-serif" };
 
 const input = {
   padding: "10px 12px",
   borderRadius: "9px",
-  border: "1px solid #eddfc8",
-  background: "#fff",
-  color: "#3d2200",
+  border: "1px solid var(--color-eddfc8)",
+  background: "var(--color-ffffff)",
+  color: "var(--color-3d2200)",
   fontSize: "14px",
   outline: "none",
   fontFamily: "sans-serif",
@@ -1012,8 +1012,8 @@ const addButton = {
   height: "44px",
   borderRadius: "50%",
   border: "none",
-  background: "linear-gradient(135deg, #c97c2e, #a85e18)",
-  color: "white",
+  background: "linear-gradient(135deg, var(--color-c97c2e), var(--color-a85e18))",
+  color: "var(--color-ffffff)",
   fontSize: "26px",
   cursor: "pointer",
   flexShrink: 0,
@@ -1024,13 +1024,13 @@ const typeBadge = {
   fontSize: "11px",
   padding: "4px 9px",
   borderRadius: "999px",
-  background: "#f4e7d4",
-  color: "#7a4f10",
+  background: "var(--color-f4e7d4)",
+  color: "var(--color-7a4f10)",
   fontFamily: "sans-serif",
   marginBottom: "6px",
 };
 
-const sourceText = { marginTop: "4px", fontFamily: "monospace", fontSize: "12px", color: "#9b7040" };
+const sourceText = { marginTop: "4px", fontFamily: "monospace", fontSize: "12px", color: "var(--color-9b7040)" };
 
 const statusPill = { height: "fit-content", padding: "4px 9px", borderRadius: "999px", fontSize: "11px", fontFamily: "sans-serif" };
 
@@ -1046,7 +1046,7 @@ const overlay = {
 };
 
 const modal = {
-  background: "#fffdf9",
+  background: "var(--color-fffdf9)",
   borderRadius: "18px",
   width: "100%",
   maxWidth: "600px",
@@ -1058,23 +1058,23 @@ const modal = {
 
 const modalHeader = { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "18px" };
 
-const modalTitle = { margin: 0, fontFamily: "'Georgia', serif", color: "#3d2200" };
+const modalTitle = { margin: 0, fontFamily: "'Georgia', serif", color: "var(--color-3d2200)" };
 
-const modalSubtitle = { margin: "5px 0 0", color: "#9b7040", fontFamily: "sans-serif", fontSize: "13px" };
+const modalSubtitle = { margin: "5px 0 0", color: "var(--color-9b7040)", fontFamily: "sans-serif", fontSize: "13px" };
 
-const closeButton = { border: "none", background: "transparent", fontSize: "28px", cursor: "pointer", color: "#7a4f10" };
+const closeButton = { border: "none", background: "transparent", fontSize: "28px", cursor: "pointer", color: "var(--color-7a4f10)" };
 
 const formStyle = { display: "flex", flexDirection: "column", gap: "12px" };
 
 const urlPreview = {
-  background: "#f8f1e8",
+  background: "var(--color-f8f1e8)",
   borderRadius: "10px",
   padding: "12px",
   display: "flex",
   flexDirection: "column",
   gap: "8px",
   fontSize: "12px",
-  color: "#7a4f10",
+  color: "var(--color-7a4f10)",
   fontFamily: "sans-serif",
 };
 

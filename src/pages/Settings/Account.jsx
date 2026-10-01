@@ -136,7 +136,7 @@ export default function Account() {
           <span style={infoLabel}>Account created</span>
           <span style={infoValue}>{createdAt}</span>
         </div>
-        <div style={{ height: "1px", background: "#f0e4d0" }} />
+        <div style={{ height: "1px", background: "var(--color-f0e4d0)" }} />
         <div style={infoRow}>
           <span style={infoLabel}>Last sign in</span>
           <span style={infoValue}>{lastLogin}</span>
@@ -217,7 +217,7 @@ function Section({ icon, title, danger, children }) {
     <div style={{ ...card, ...(danger ? dangerCard : {}) }}>
       <div style={cardHeader}>
         <span style={cardIcon}>{icon}</span>
-        <h3 style={{ ...cardTitle, ...(danger ? { color: "#dc2626" } : {}) }}>{title}</h3>
+        <h3 style={{ ...cardTitle, ...(danger ? { color: "var(--color-dc2626)" } : {}) }}>{title}</h3>
       </div>
       <div style={cardBody}>{children}</div>
     </div>
@@ -258,16 +258,16 @@ const container = {
 };
 
 const card = {
-  background: "#fffdf9",
-  border: "1px solid #eddfc8",
+  background: "var(--color-fffdf9)",
+  border: "1px solid var(--color-eddfc8)",
   borderRadius: "18px",
   boxShadow: "0 2px 12px rgba(160,100,40,0.07)",
   overflow: "hidden",
 };
 
 const dangerCard = {
-  border: "1px solid #fca5a5",
-  background: "#fff8f8",
+  border: "1px solid var(--color-fca5a5)",
+  background: "var(--color-fff8f8)",
 };
 
 const cardHeader = {
@@ -275,42 +275,42 @@ const cardHeader = {
   alignItems: "center",
   gap: "10px",
   padding: "16px 20px",
-  borderBottom: "1px solid #eddfc8",
-  background: "#fdf8f3",
+  borderBottom: "1px solid var(--color-eddfc8)",
+  background: "var(--color-fdf8f3)",
 };
 
 const cardIcon  = { fontSize: "18px" };
-const cardTitle = { margin: 0, fontSize: "16px", fontWeight: "normal", color: "#3d2200" };
+const cardTitle = { margin: 0, fontSize: "16px", fontWeight: "normal", color: "var(--color-3d2200)" };
 const cardBody  = { padding: "18px 20px", display: "flex", flexDirection: "column", gap: "14px" };
 
-const fieldLabel = { fontSize: "11px", fontFamily: "sans-serif", color: "#9b7040", letterSpacing: "0.06em", textTransform: "uppercase" };
+const fieldLabel = { fontSize: "11px", fontFamily: "sans-serif", color: "var(--color-9b7040)", letterSpacing: "0.06em", textTransform: "uppercase" };
 
 const input = {
   padding: "10px 14px",
   borderRadius: "10px",
-  border: "1px solid #eddfc8",
-  background: "#fdf8f3",
+  border: "1px solid var(--color-eddfc8)",
+  background: "var(--color-fdf8f3)",
   fontSize: "14px",
   fontFamily: "sans-serif",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   outline: "none",
   width: "100%",
   boxSizing: "border-box",
 };
 
 const infoRow   = { display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" };
-const infoLabel = { fontSize: "13px", fontFamily: "sans-serif", color: "#9b7040" };
-const infoValue = { fontSize: "13px", fontFamily: "sans-serif", color: "#3d2200" };
+const infoLabel = { fontSize: "13px", fontFamily: "sans-serif", color: "var(--color-9b7040)" };
+const infoValue = { fontSize: "13px", fontFamily: "sans-serif", color: "var(--color-3d2200)" };
 
-const sectionHint = { fontSize: "13px", fontFamily: "sans-serif", color: "#9b7040", margin: 0, lineHeight: 1.6 };
-const dangerHint  = { fontSize: "13px", fontFamily: "sans-serif", color: "#b45555", margin: 0, lineHeight: 1.6 };
+const sectionHint = { fontSize: "13px", fontFamily: "sans-serif", color: "var(--color-9b7040)", margin: 0, lineHeight: 1.6 };
+const dangerHint  = { fontSize: "13px", fontFamily: "sans-serif", color: "var(--color-b45555)", margin: 0, lineHeight: 1.6 };
 
 const saveBtn = {
   padding: "11px 20px",
   borderRadius: "10px",
   border: "none",
-  background: "linear-gradient(135deg, #c97c2e 0%, #a85e18 100%)",
-  color: "#fff8ee",
+  background: "linear-gradient(135deg, var(--color-c97c2e) 0%, var(--color-a85e18) 100%)",
+  color: "var(--color-fff8ee)",
   fontSize: "14px",
   fontFamily: "sans-serif",
   cursor: "pointer",
@@ -320,9 +320,9 @@ const saveBtn = {
 const outlineBtn = {
   padding: "10px 18px",
   borderRadius: "10px",
-  border: "1px solid #c8922a",
+  border: "1px solid var(--color-c8922a)",
   background: "transparent",
-  color: "#7a4f10",
+  color: "var(--color-7a4f10)",
   fontSize: "14px",
   fontFamily: "sans-serif",
   cursor: "pointer",
@@ -333,8 +333,8 @@ const deleteBtn = {
   padding: "11px 20px",
   borderRadius: "10px",
   border: "none",
-  background: "#dc2626",
-  color: "#fff",
+  background: "var(--color-dc2626)",
+  color: "var(--color-ffffff)",
   fontSize: "14px",
   fontFamily: "sans-serif",
   cursor: "pointer",
@@ -354,8 +354,8 @@ const modalOverlay = {
 };
 
 const modal = {
-  background: "#fffdf9",
-  border: "1px solid #eddfc8",
+  background: "var(--color-fffdf9)",
+  border: "1px solid var(--color-eddfc8)",
   borderRadius: "20px",
   width: "100%",
   maxWidth: "400px",
@@ -368,30 +368,30 @@ const modalHeader = {
   justifyContent: "space-between",
   alignItems: "center",
   padding: "16px 20px",
-  borderBottom: "1px solid #eddfc8",
-  background: "#fdf8f3",
+  borderBottom: "1px solid var(--color-eddfc8)",
+  background: "var(--color-fdf8f3)",
 };
 
-const modalTitle = { margin: 0, fontSize: "17px", fontWeight: "normal", color: "#3d2200", fontFamily: "'Georgia', serif" };
-const closeBtn   = { background: "none", border: "none", fontSize: "16px", color: "#9b7040", cursor: "pointer", lineHeight: 1 };
+const modalTitle = { margin: 0, fontSize: "17px", fontWeight: "normal", color: "var(--color-3d2200)", fontFamily: "'Georgia', serif" };
+const closeBtn   = { background: "none", border: "none", fontSize: "16px", color: "var(--color-9b7040)", cursor: "pointer", lineHeight: 1 };
 const modalBody  = { padding: "20px", display: "flex", flexDirection: "column", gap: "14px" };
-const modalHint  = { fontSize: "12px", fontFamily: "sans-serif", color: "#9b7040", margin: 0, textTransform: "uppercase", letterSpacing: "0.06em" };
+const modalHint  = { fontSize: "12px", fontFamily: "sans-serif", color: "var(--color-9b7040)", margin: 0, textTransform: "uppercase", letterSpacing: "0.06em" };
 
 const emailBox = {
   padding: "10px 14px",
-  background: "#fdf8f3",
-  border: "1px solid #eddfc8",
+  background: "var(--color-fdf8f3)",
+  border: "1px solid var(--color-eddfc8)",
   borderRadius: "10px",
   fontSize: "14px",
   fontFamily: "sans-serif",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   fontWeight: "600",
 };
 
 const ghostBtn = {
   background: "none",
   border: "none",
-  color: "#c97c2e",
+  color: "var(--color-c97c2e)",
   cursor: "pointer",
   padding: 0,
   fontSize: "13px",

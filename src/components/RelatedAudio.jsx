@@ -100,14 +100,14 @@ const wrap = {
 const heading = {
   fontSize: "15px",
   fontWeight: "normal",
-  color: "#5c3a1e",
+  color: "var(--color-5c3a1e)",
   fontFamily: "'Georgia', serif",
   margin: "0 0 10px",
 };
 
 const hint = {
   fontSize: "13px",
-  color: "#b08050",
+  color: "var(--color-b08050)",
   fontStyle: "italic",
   fontFamily: "sans-serif",
   margin: 0,
@@ -127,8 +127,8 @@ const itemBtn = {
   textAlign: "left",
   padding: "12px 14px",
   borderRadius: "14px",
-  border: "1px solid #eddfc8",
-  background: "#fffdf9",
+  border: "1px solid var(--color-eddfc8)",
+  background: "var(--color-fffdf9)",
   cursor: "pointer",
   width: "100%",
   boxSizing: "border-box",
@@ -138,21 +138,21 @@ const itemTag = {
   fontSize: "10px",
   padding: "2px 8px",
   borderRadius: "999px",
-  background: "#f6e4b0",
-  color: "#7a5a10",
+  background: "var(--color-f6e4b0)",
+  color: "var(--color-7a5a10)",
   fontFamily: "sans-serif",
   letterSpacing: "0.04em",
 };
 
 const itemTitle = {
   fontSize: "14px",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   fontFamily: "sans-serif",
   fontWeight: "600",
 };
 
 const itemSpeaker = {
   fontSize: "12px",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   fontFamily: "sans-serif",
 };

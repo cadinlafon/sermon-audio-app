@@ -112,7 +112,7 @@ const styles = {
   },
 
   popup: {
-    background: "white",
+    background: "var(--color-ffffff)",
     padding: "25px",
     borderRadius: "12px",
     width: "320px",
@@ -122,8 +122,8 @@ const styles = {
 
   openBtn: {
     padding: "10px 18px",
-    background: "#16a34a",
-    color: "white",
+    background: "var(--color-16a34a)",
+    color: "var(--color-ffffff)",
     border: "none",
     borderRadius: "8px",
     cursor: "pointer"
@@ -131,7 +131,7 @@ const styles = {
 
   closeBtn: {
     padding: "10px 18px",
-    background: "#e5e7eb",
+    background: "var(--color-e5e7eb)",
     border: "none",
     borderRadius: "8px",
     cursor: "pointer"

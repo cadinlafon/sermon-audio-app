@@ -168,7 +168,7 @@ const styles = {
   backButton: {
     background: "none",
     border: "none",
-    color: "#555",
+    color: "var(--color-555555)",
     fontSize: "14px",
     cursor: "pointer",
     marginBottom: "20px",
@@ -182,7 +182,7 @@ const styles = {
     cursor: "pointer",
   },
   card: {
-    background: "#fff",
+    background: "var(--color-ffffff)",
     padding: "15px",
     borderRadius: "8px",
     marginBottom: "12px",
@@ -191,7 +191,7 @@ const styles = {
   },
   type: {
     fontSize: "12px",
-    color: "#888",
+    color: "var(--color-888888)",
     margin: "6px 0",
   },
 };

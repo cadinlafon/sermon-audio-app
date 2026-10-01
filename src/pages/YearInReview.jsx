@@ -60,16 +60,16 @@ export default function YearInReview() {
   const draw = () => {
     const c = canvasRef.current; const ctx = c.getContext("2d");
     const W = 1080; const H = 1350; c.width = W; c.height = H;
-    const g = ctx.createLinearGradient(0, 0, W, H); g.addColorStop(0, "#3d2200"); g.addColorStop(1, "#a85e18");
+    const g = ctx.createLinearGradient(0, 0, W, H); g.addColorStop(0, "var(--color-3d2200)"); g.addColorStop(1, "var(--color-a85e18)");
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
     ctx.fillStyle = "rgba(255,255,255,0.06)"; ctx.beginPath(); ctx.arc(W - 120, 160, 320, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = "#fde8b8"; ctx.font = "600 34px sans-serif"; ctx.fillText(APP_LABEL.toUpperCase(), 80, 110);
-    ctx.fillStyle = "#fff8ee"; ctx.font = "bold 84px Georgia, serif"; ctx.fillText(`Your ${year}`, 80, 220); ctx.fillText("in listening", 80, 315);
+    ctx.fillStyle = "var(--color-fde8b8)"; ctx.font = "600 34px sans-serif"; ctx.fillText(APP_LABEL.toUpperCase(), 80, 110);
+    ctx.fillStyle = "var(--color-fff8ee)"; ctx.font = "bold 84px Georgia, serif"; ctx.fillText(`Your ${year}`, 80, 220); ctx.fillText("in listening", 80, 315);
     ctx.font = "34px Georgia, serif";
     let y = 430;
     for (const [icon, label, value] of rows.slice(0, 8)) {
-      ctx.fillStyle = "#fde8b8"; ctx.font = "28px sans-serif"; ctx.fillText(`${icon}  ${label}`, 80, y);
-      ctx.fillStyle = "#fff8ee"; ctx.font = "bold 40px Georgia, serif";
+      ctx.fillStyle = "var(--color-fde8b8)"; ctx.font = "28px sans-serif"; ctx.fillText(`${icon}  ${label}`, 80, y);
+      ctx.fillStyle = "var(--color-fff8ee)"; ctx.font = "bold 40px Georgia, serif";
       const v = value.length > 28 ? `${value.slice(0, 27)}…` : value;
       ctx.fillText(v, 80, y + 48);
       y += 110;
@@ -115,19 +115,19 @@ export default function YearInReview() {
 
 function Shell({ children }) { return <div style={page}>{children}</div>; }
 
-const page = { padding: "32px 20px 60px", maxWidth: "560px", margin: "0 auto", background: "#fdf8f3", minHeight: "100vh", fontFamily: "'Georgia', serif" };
-const title = { textAlign: "center", margin: "0 0 6px", fontSize: "28px", fontWeight: "normal", color: "#3d2200" };
-const subtitle = { textAlign: "center", margin: "0 0 14px", fontSize: "14px", color: "#9b7040", fontFamily: "sans-serif" };
-const muted = { margin: "12px 0", fontSize: "12px", color: "#9b7040", fontFamily: "sans-serif", lineHeight: 1.55 };
+const page = { padding: "32px 20px 60px", maxWidth: "560px", margin: "0 auto", background: "var(--color-fdf8f3)", minHeight: "100vh", fontFamily: "'Georgia', serif" };
+const title = { textAlign: "center", margin: "0 0 6px", fontSize: "28px", fontWeight: "normal", color: "var(--color-3d2200)" };
+const subtitle = { textAlign: "center", margin: "0 0 14px", fontSize: "14px", color: "var(--color-9b7040)", fontFamily: "sans-serif" };
+const muted = { margin: "12px 0", fontSize: "12px", color: "var(--color-9b7040)", fontFamily: "sans-serif", lineHeight: 1.55 };
 const yearRow = { display: "flex", justifyContent: "center", gap: "8px", marginBottom: "16px" };
-const chip = { padding: "8px 16px", borderRadius: "999px", border: "1px solid #eddfc8", background: "#fffdf9", color: "#7a4f10", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer" };
-const chipOn = { background: "#fde8b8", borderColor: "#e5c27a", fontWeight: "600" };
-const card = { background: "linear-gradient(160deg, #3d2200, #8a4f12)", borderRadius: "22px", padding: "10px 18px", marginBottom: "16px", color: "#fff8ee" };
+const chip = { padding: "8px 16px", borderRadius: "999px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fffdf9)", color: "var(--color-7a4f10)", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer" };
+const chipOn = { background: "var(--color-fde8b8)", borderColor: "var(--color-e5c27a)", fontWeight: "600" };
+const card = { background: "linear-gradient(160deg, var(--color-3d2200), var(--color-8a4f12))", borderRadius: "22px", padding: "10px 18px", marginBottom: "16px", color: "var(--color-fff8ee)" };
 const row = { display: "flex", alignItems: "center", gap: "12px", padding: "14px 0", borderBottom: "1px solid rgba(255,255,255,0.12)" };
 const rowIcon = { fontSize: "20px", width: "28px" };
-const rowLabel = { flex: 1, fontSize: "13px", color: "#fde8b8", fontFamily: "sans-serif" };
+const rowLabel = { flex: 1, fontSize: "13px", color: "var(--color-fde8b8)", fontFamily: "sans-serif" };
 const rowValue = { fontSize: "16px", fontWeight: "bold", textAlign: "right", maxWidth: "55%" };
 const btnRow = { display: "flex", gap: "10px", flexWrap: "wrap", justifyContent: "center" };
-const primary = { padding: "11px 20px", borderRadius: "999px", border: "none", background: "linear-gradient(135deg, #c97c2e, #a85e18)", color: "#fff8ee", fontSize: "13px", fontFamily: "sans-serif", fontWeight: "600", cursor: "pointer" };
-const ghost = { padding: "10px 16px", borderRadius: "999px", border: "1px solid #eddfc8", background: "#fffdf9", color: "#7a4f10", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer" };
+const primary = { padding: "11px 20px", borderRadius: "999px", border: "none", background: "linear-gradient(135deg, var(--color-c97c2e), var(--color-a85e18))", color: "var(--color-fff8ee)", fontSize: "13px", fontFamily: "sans-serif", fontWeight: "600", cursor: "pointer" };
+const ghost = { padding: "10px 16px", borderRadius: "999px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fffdf9)", color: "var(--color-7a4f10)", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer" };
 const empty = { textAlign: "center", padding: "30px 10px" };

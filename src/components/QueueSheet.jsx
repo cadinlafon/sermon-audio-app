@@ -96,7 +96,7 @@ export default function QueueSheet({ onClose, styles }) {
                 <div
                   key={`${sermon.id}-${i}`}
                   ref={(el) => { rowRefs.current[i] = el; }}
-                  style={{ ...queueRow, opacity: dragging ? 0.55 : 1, boxShadow: dragging ? "0 4px 14px rgba(160,80,20,0.25)" : "none", borderTop: showLineAbove ? "2px solid #c97c2e" : "2px solid transparent", borderBottom: showLineBelow ? "2px solid #c97c2e" : "2px solid transparent" }}
+                  style={{ ...queueRow, opacity: dragging ? 0.55 : 1, boxShadow: dragging ? "0 4px 14px rgba(160,80,20,0.25)" : "none", borderTop: showLineAbove ? "2px solid var(--color-c97c2e)" : "2px solid transparent", borderBottom: showLineBelow ? "2px solid var(--color-c97c2e)" : "2px solid transparent" }}
                 >
                   <button
                     style={handle}
@@ -124,12 +124,12 @@ export default function QueueSheet({ onClose, styles }) {
   );
 }
 
-const nowRow = { display: "flex", alignItems: "center", gap: "12px", background: "#fdf1de", border: "1px solid #eddfc8", borderRadius: "12px", padding: "10px 12px", marginBottom: "10px" };
+const nowRow = { display: "flex", alignItems: "center", gap: "12px", background: "var(--color-fdf1de)", border: "1px solid var(--color-eddfc8)", borderRadius: "12px", padding: "10px 12px", marginBottom: "10px" };
 const nowBars = { display: "inline-flex", alignItems: "flex-end", gap: "3px", height: "18px", flexShrink: 0 };
-const bar = { width: "4px", height: "18px", background: "#c97c2e", borderRadius: "2px", transformOrigin: "bottom", transform: "scaleY(.6)" };
-const nowLabel = { display: "block", fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.06em", color: "#9b7040", fontFamily: "sans-serif" };
+const bar = { width: "4px", height: "18px", background: "var(--color-c97c2e)", borderRadius: "2px", transformOrigin: "bottom", transform: "scaleY(.6)" };
+const nowLabel = { display: "block", fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--color-9b7040)", fontFamily: "sans-serif" };
 const controlsRow = { display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "8px" };
-const pillBtn = { padding: "8px 12px", borderRadius: "999px", border: "1px solid #eddfc8", background: "#fdf8f3", color: "#7a4f10", fontSize: "12px", fontFamily: "sans-serif", cursor: "pointer" };
-const pillOn = { background: "#fde8b8", borderColor: "#e5c27a", color: "#7a4f10", fontWeight: "600" };
-const summary = { margin: "4px 0 8px", fontSize: "12px", color: "#9b7040", fontFamily: "sans-serif" };
-const handle = { border: "none", background: "transparent", color: "#b08050", fontSize: "18px", padding: "0 6px", cursor: "grab", touchAction: "none", letterSpacing: "-3px", minWidth: "32px", minHeight: "40px" };
+const pillBtn = { padding: "8px 12px", borderRadius: "999px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fdf8f3)", color: "var(--color-7a4f10)", fontSize: "12px", fontFamily: "sans-serif", cursor: "pointer" };
+const pillOn = { background: "var(--color-fde8b8)", borderColor: "var(--color-e5c27a)", color: "var(--color-7a4f10)", fontWeight: "600" };
+const summary = { margin: "4px 0 8px", fontSize: "12px", color: "var(--color-9b7040)", fontFamily: "sans-serif" };
+const handle = { border: "none", background: "transparent", color: "var(--color-b08050)", fontSize: "18px", padding: "0 6px", cursor: "grab", touchAction: "none", letterSpacing: "-3px", minWidth: "32px", minHeight: "40px" };

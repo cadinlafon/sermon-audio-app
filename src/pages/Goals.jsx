@@ -60,12 +60,12 @@ export default function Goals() {
         const p = goalProgress(g, { daily: stats.daily, completed, audioTypes, totals });
         const isMin = p.unit === "min";
         return (
-          <div key={g.id} style={{ ...card, borderColor: p.done ? "#86c99a" : "#eddfc8" }}>
+          <div key={g.id} style={{ ...card, borderColor: p.done ? "var(--color-86c99a)" : "var(--color-eddfc8)" }}>
             <div style={cardHead}>
               <div><div style={goalTitle}>{describe(g)}</div><div style={goalSub}>{p.done ? "🎉 Goal reached!" : `${Math.max(0, Math.round(p.target - p.value))}${isMin ? " min" : ""} to go`}</div></div>
               <button style={x} onClick={() => remove(g)} aria-label="Remove goal">✕</button>
             </div>
-            <div style={track} role="progressbar" aria-valuenow={Math.round(p.pct)} aria-valuemin={0} aria-valuemax={100}><div style={{ ...fill, width: `${p.pct}%`, background: p.done ? "#2f8a4a" : undefined }} /></div>
+            <div style={track} role="progressbar" aria-valuenow={Math.round(p.pct)} aria-valuemin={0} aria-valuemax={100}><div style={{ ...fill, width: `${p.pct}%`, background: p.done ? "var(--color-2f8a4a)" : undefined }} /></div>
             <div style={mono}>{asciiBar(p.pct)} {isMin ? `${fmtMinutes(p.value)} / ${fmtMinutes(p.target)}` : `${Math.round(p.value)} / ${Math.round(p.target)} recordings`}</div>
           </div>
         );
@@ -113,28 +113,28 @@ export default function Goals() {
 function Stat({ label, value, icon }) { return <div style={stat}><div style={{ fontSize: "20px" }}>{icon}</div><div style={statVal}>{value}</div><div style={statLab}>{label}</div></div>; }
 function Shell({ children }) { return <div style={page}>{children}</div>; }
 
-const page = { padding: "32px 20px 60px", maxWidth: "640px", margin: "0 auto", background: "#fdf8f3", minHeight: "100vh", fontFamily: "'Georgia', serif" };
-const title = { textAlign: "center", margin: "0 0 6px", fontSize: "28px", fontWeight: "normal", color: "#3d2200" };
-const subtitle = { textAlign: "center", margin: "0 0 20px", fontSize: "14px", color: "#9b7040", fontFamily: "sans-serif" };
-const muted = { margin: "0 0 12px", fontSize: "13px", color: "#9b7040", fontFamily: "sans-serif", lineHeight: 1.55 };
+const page = { padding: "32px 20px 60px", maxWidth: "640px", margin: "0 auto", background: "var(--color-fdf8f3)", minHeight: "100vh", fontFamily: "'Georgia', serif" };
+const title = { textAlign: "center", margin: "0 0 6px", fontSize: "28px", fontWeight: "normal", color: "var(--color-3d2200)" };
+const subtitle = { textAlign: "center", margin: "0 0 20px", fontSize: "14px", color: "var(--color-9b7040)", fontFamily: "sans-serif" };
+const muted = { margin: "0 0 12px", fontSize: "13px", color: "var(--color-9b7040)", fontFamily: "sans-serif", lineHeight: 1.55 };
 const streakRow = { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px", marginBottom: "16px" };
-const stat = { background: "#fffdf9", border: "1px solid #eddfc8", borderRadius: "14px", padding: "12px", textAlign: "center" };
-const statVal = { fontSize: "18px", color: "#3d2200", margin: "2px 0" };
-const statLab = { fontSize: "11px", color: "#9b7040", fontFamily: "sans-serif" };
-const card = { background: "#fffdf9", border: "1px solid #eddfc8", borderRadius: "16px", padding: "16px", marginBottom: "14px" };
+const stat = { background: "var(--color-fffdf9)", border: "1px solid var(--color-eddfc8)", borderRadius: "14px", padding: "12px", textAlign: "center" };
+const statVal = { fontSize: "18px", color: "var(--color-3d2200)", margin: "2px 0" };
+const statLab = { fontSize: "11px", color: "var(--color-9b7040)", fontFamily: "sans-serif" };
+const card = { background: "var(--color-fffdf9)", border: "1px solid var(--color-eddfc8)", borderRadius: "16px", padding: "16px", marginBottom: "14px" };
 const cardHead = { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "10px", marginBottom: "10px" };
-const goalTitle = { fontSize: "16px", color: "#3d2200" };
-const goalSub = { fontSize: "12px", color: "#9b7040", fontFamily: "sans-serif", marginTop: "2px" };
-const track = { height: "12px", background: "#eddfc8", borderRadius: "999px", overflow: "hidden" };
-const fill = { height: "100%", background: "linear-gradient(to right, #e08930, #c97c2e)", borderRadius: "999px", transition: "width 0.4s" };
-const mono = { marginTop: "8px", fontFamily: "monospace", fontSize: "12px", color: "#7a5530", letterSpacing: "0.02em" };
-const x = { width: "30px", height: "30px", borderRadius: "50%", border: "none", background: "#f4e7d4", color: "#7a4f10", cursor: "pointer", fontSize: "12px" };
-const h2 = { margin: "0 0 12px", fontSize: "16px", fontWeight: "600", color: "#3d2200", fontFamily: "sans-serif" };
+const goalTitle = { fontSize: "16px", color: "var(--color-3d2200)" };
+const goalSub = { fontSize: "12px", color: "var(--color-9b7040)", fontFamily: "sans-serif", marginTop: "2px" };
+const track = { height: "12px", background: "var(--color-eddfc8)", borderRadius: "999px", overflow: "hidden" };
+const fill = { height: "100%", background: "linear-gradient(to right, var(--color-e08930), var(--color-c97c2e))", borderRadius: "999px", transition: "width 0.4s" };
+const mono = { marginTop: "8px", fontFamily: "monospace", fontSize: "12px", color: "var(--color-7a5530)", letterSpacing: "0.02em" };
+const x = { width: "30px", height: "30px", borderRadius: "50%", border: "none", background: "var(--color-f4e7d4)", color: "var(--color-7a4f10)", cursor: "pointer", fontSize: "12px" };
+const h2 = { margin: "0 0 12px", fontSize: "16px", fontWeight: "600", color: "var(--color-3d2200)", fontFamily: "sans-serif" };
 const formGrid = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "12px", marginBottom: "12px" };
 const field = { display: "flex", flexDirection: "column", gap: "4px" };
-const lab = { fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em", color: "#9b7040", fontFamily: "sans-serif" };
-const select = { padding: "10px 12px", borderRadius: "10px", border: "1px solid #eddfc8", background: "#fdf8f3", fontSize: "14px", fontFamily: "sans-serif", color: "#3d2200" };
-const primary = { padding: "10px 18px", borderRadius: "999px", border: "none", background: "linear-gradient(135deg, #c97c2e, #a85e18)", color: "#fff8ee", fontSize: "13px", fontFamily: "sans-serif", fontWeight: "600", cursor: "pointer" };
-const ghost = { padding: "9px 14px", borderRadius: "999px", border: "1px solid #eddfc8", background: "#fffdf9", color: "#7a4f10", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer" };
+const lab = { fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--color-9b7040)", fontFamily: "sans-serif" };
+const select = { padding: "10px 12px", borderRadius: "10px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fdf8f3)", fontSize: "14px", fontFamily: "sans-serif", color: "var(--color-3d2200)" };
+const primary = { padding: "10px 18px", borderRadius: "999px", border: "none", background: "linear-gradient(135deg, var(--color-c97c2e), var(--color-a85e18))", color: "var(--color-fff8ee)", fontSize: "13px", fontFamily: "sans-serif", fontWeight: "600", cursor: "pointer" };
+const ghost = { padding: "9px 14px", borderRadius: "999px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fffdf9)", color: "var(--color-7a4f10)", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer" };
 const empty = { textAlign: "center", padding: "20px 10px" };
-const emptyTitle = { margin: "8px 0 4px", fontSize: "18px", fontWeight: "normal", color: "#3d2200" };
+const emptyTitle = { margin: "8px 0 4px", fontSize: "18px", fontWeight: "normal", color: "var(--color-3d2200)" };

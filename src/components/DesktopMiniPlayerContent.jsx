@@ -54,7 +54,7 @@ export default function DesktopMiniPlayerContent({ pipWindow }) {
 
 const wrap = {
   fontFamily: "'Georgia', serif",
-  background: "#fffdf9",
+  background: "var(--color-fffdf9)",
   height: "100vh",
   boxSizing: "border-box",
   display: "flex",
@@ -63,19 +63,19 @@ const wrap = {
   gap: "8px",
 };
 
-const progressTrack = { height: "3px", borderRadius: "999px", background: "#eddfc8", overflow: "hidden" };
-const progressFill = { height: "100%", background: "linear-gradient(to right, #e08930, #c97c2e)" };
+const progressTrack = { height: "3px", borderRadius: "999px", background: "var(--color-eddfc8)", overflow: "hidden" };
+const progressFill = { height: "100%", background: "linear-gradient(to right, var(--color-e08930), var(--color-c97c2e))" };
 
 const textBlock = { flex: 1, overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "center" };
 const title = {
   fontSize: "14px",
   fontWeight: "600",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   whiteSpace: "nowrap",
   overflow: "hidden",
   textOverflow: "ellipsis",
 };
-const speaker = { fontSize: "12px", color: "#9b7040", fontFamily: "sans-serif", marginTop: "2px" };
+const speaker = { fontSize: "12px", color: "var(--color-9b7040)", fontFamily: "sans-serif", marginTop: "2px" };
 
 const controls = { display: "flex", alignItems: "center", justifyContent: "center", gap: "18px" };
 
@@ -83,7 +83,7 @@ const iconBtn = { background: "none", border: "none", cursor: "pointer", padding
 const iconImg = { width: "20px", filter: "sepia(1) saturate(2) hue-rotate(10deg) brightness(0.6)" };
 
 const playBtn = {
-  background: "linear-gradient(135deg, #c97c2e 0%, #a85e18 100%)",
+  background: "linear-gradient(135deg, var(--color-c97c2e) 0%, var(--color-a85e18) 100%)",
   border: "none",
   borderRadius: "50%",
   width: "40px",
@@ -93,4 +93,4 @@ const playBtn = {
   justifyContent: "center",
   cursor: "pointer",
 };
-const playGlyph = { color: "#fff", fontSize: "24px", lineHeight: 1 };
+const playGlyph = { color: "var(--color-ffffff)", fontSize: "24px", lineHeight: 1 };

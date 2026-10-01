@@ -362,50 +362,50 @@ function Field({ label, children }) {
 
 const page = { maxWidth: "800px" };
 const pageHeader = { marginBottom: "24px" };
-const pageTitle = { fontSize: "26px", fontWeight: "normal", color: "#3d2200", margin: "0 0 4px", fontFamily: "'Georgia', serif" };
-const pageSubtitle = { fontSize: "14px", color: "#9b7040", fontFamily: "sans-serif", margin: 0 };
+const pageTitle = { fontSize: "26px", fontWeight: "normal", color: "var(--color-3d2200)", margin: "0 0 4px", fontFamily: "'Georgia', serif" };
+const pageSubtitle = { fontSize: "14px", color: "var(--color-9b7040)", fontFamily: "sans-serif", margin: 0 };
 
 const backfillCard = {
   display: "flex", justifyContent: "space-between", alignItems: "center", gap: "14px", flexWrap: "wrap",
-  background: "#fffbee", border: "1px solid #f0d898", borderRadius: "14px",
+  background: "var(--color-fffbee)", border: "1px solid var(--color-f0d898)", borderRadius: "14px",
   padding: "14px 18px", marginBottom: "18px",
 };
 const backfillHeader = { display: "flex", gap: "12px", alignItems: "flex-start" };
-const backfillTitle = { fontSize: "14px", color: "#3d2200", fontFamily: "'Georgia', serif", marginBottom: "3px" };
-const backfillHint = { fontSize: "12px", color: "#7a5530", fontFamily: "sans-serif", lineHeight: 1.5 };
+const backfillTitle = { fontSize: "14px", color: "var(--color-3d2200)", fontFamily: "'Georgia', serif", marginBottom: "3px" };
+const backfillHint = { fontSize: "12px", color: "var(--color-7a5530)", fontFamily: "sans-serif", lineHeight: 1.5 };
 const backfillRunBtn = {
   padding: "10px 18px", borderRadius: "10px", border: "none", flexShrink: 0,
-  background: "linear-gradient(135deg, #c97c2e 0%, #a85e18 100%)",
-  color: "#fff8ee", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer",
+  background: "linear-gradient(135deg, var(--color-c97c2e) 0%, var(--color-a85e18) 100%)",
+  color: "var(--color-fff8ee)", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer",
   boxShadow: "0 3px 10px rgba(160,80,20,0.25)",
 };
 const backfillStopBtn = {
-  padding: "10px 18px", borderRadius: "10px", border: "1px solid #f0b4b4", flexShrink: 0,
-  background: "transparent", color: "#c23c3c", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer",
+  padding: "10px 18px", borderRadius: "10px", border: "1px solid var(--color-f0b4b4)", flexShrink: 0,
+  background: "transparent", color: "var(--color-c23c3c)", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer",
 };
 
 const toolbar = { display: "flex", gap: "10px", marginBottom: "20px", flexWrap: "wrap" };
 
 const select = {
-  padding: "9px 14px", borderRadius: "10px", border: "1px solid #eddfc8",
-  background: "#fffdf9", fontSize: "13px", fontFamily: "sans-serif", color: "#3d2200",
+  padding: "9px 14px", borderRadius: "10px", border: "1px solid var(--color-eddfc8)",
+  background: "var(--color-fffdf9)", fontSize: "13px", fontFamily: "sans-serif", color: "var(--color-3d2200)",
 };
 
 const searchInput = {
-  flex: 1, padding: "9px 14px", borderRadius: "10px", border: "1px solid #eddfc8",
-  background: "#fffdf9", fontSize: "13px", fontFamily: "sans-serif", color: "#3d2200", outline: "none",
+  flex: 1, padding: "9px 14px", borderRadius: "10px", border: "1px solid var(--color-eddfc8)",
+  background: "var(--color-fffdf9)", fontSize: "13px", fontFamily: "sans-serif", color: "var(--color-3d2200)", outline: "none",
 };
 
 const pillBtn = {
-  padding: "9px 16px", borderRadius: "10px", border: "1px solid #c8922a",
-  background: "transparent", color: "#7a4f10", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer",
+  padding: "9px 16px", borderRadius: "10px", border: "1px solid var(--color-c8922a)",
+  background: "transparent", color: "var(--color-7a4f10)", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer",
 };
 
 const list = { display: "flex", flexDirection: "column", gap: "10px" };
 
 const card = {
   display: "flex", justifyContent: "space-between", alignItems: "center",
-  background: "#fffdf9", border: "1px solid #eddfc8", borderRadius: "14px",
+  background: "var(--color-fffdf9)", border: "1px solid var(--color-eddfc8)", borderRadius: "14px",
   padding: "14px 18px", boxShadow: "0 2px 8px rgba(160,100,40,0.06)", flexWrap: "wrap", gap: "10px",
 };
 
@@ -413,36 +413,36 @@ const cardLeft = { display: "flex", alignItems: "center", gap: "14px" };
 
 const orderBadge = {
   width: "32px", height: "32px", borderRadius: "8px",
-  background: "#f6e4b0", color: "#7a5a10", fontSize: "11px",
+  background: "var(--color-f6e4b0)", color: "var(--color-7a5a10)", fontSize: "11px",
   fontFamily: "sans-serif", display: "flex", alignItems: "center",
   justifyContent: "center", flexShrink: 0,
 };
 
-const cardTitle = { fontSize: "15px", color: "#3d2200", fontFamily: "'Georgia', serif", marginBottom: "2px" };
-const cardSub = { fontSize: "12px", color: "#9b7040", fontFamily: "sans-serif" };
+const cardTitle = { fontSize: "15px", color: "var(--color-3d2200)", fontFamily: "'Georgia', serif", marginBottom: "2px" };
+const cardSub = { fontSize: "12px", color: "var(--color-9b7040)", fontFamily: "sans-serif" };
 
 const actionGroup = { display: "flex", gap: "6px", flexWrap: "wrap" };
 
 const arrowBtn = {
   width: "32px", height: "32px", borderRadius: "8px",
-  border: "1px solid #eddfc8", background: "#fdf8f3",
-  color: "#7a4f10", cursor: "pointer", fontSize: "12px",
+  border: "1px solid var(--color-eddfc8)", background: "var(--color-fdf8f3)",
+  color: "var(--color-7a4f10)", cursor: "pointer", fontSize: "12px",
   display: "flex", alignItems: "center", justifyContent: "center",
 };
 
 const editBtn = {
   padding: "0 14px", height: "32px", borderRadius: "8px",
-  border: "1px solid #c8922a", background: "transparent",
-  color: "#7a4f10", cursor: "pointer", fontSize: "12px", fontFamily: "sans-serif",
+  border: "1px solid var(--color-c8922a)", background: "transparent",
+  color: "var(--color-7a4f10)", cursor: "pointer", fontSize: "12px", fontFamily: "sans-serif",
 };
 
 const deleteBtn = {
   padding: "0 14px", height: "32px", borderRadius: "8px",
-  border: "1px solid #f0b4b4", background: "transparent",
-  color: "#c23c3c", cursor: "pointer", fontSize: "12px", fontFamily: "sans-serif",
+  border: "1px solid var(--color-f0b4b4)", background: "transparent",
+  color: "var(--color-c23c3c)", cursor: "pointer", fontSize: "12px", fontFamily: "sans-serif",
 };
 
-const empty = { textAlign: "center", color: "#b08050", fontFamily: "sans-serif", fontStyle: "italic", padding: "30px 0" };
+const empty = { textAlign: "center", color: "var(--color-b08050)", fontFamily: "sans-serif", fontStyle: "italic", padding: "30px 0" };
 
 // Modal
 const modalOverlay = {
@@ -452,41 +452,41 @@ const modalOverlay = {
 };
 
 const modal = {
-  background: "#fffdf9", border: "1px solid #eddfc8", borderRadius: "20px",
+  background: "var(--color-fffdf9)", border: "1px solid var(--color-eddfc8)", borderRadius: "20px",
   width: "100%", maxWidth: "440px", overflow: "hidden",
   boxShadow: "0 8px 32px rgba(40,18,0,0.25)", maxHeight: "90vh", display: "flex", flexDirection: "column",
 };
 
 const modalHeader = {
   display: "flex", justifyContent: "space-between", alignItems: "center",
-  padding: "16px 20px", borderBottom: "1px solid #eddfc8", background: "#fdf8f3",
+  padding: "16px 20px", borderBottom: "1px solid var(--color-eddfc8)", background: "var(--color-fdf8f3)",
 };
 
-const modalTitle = { margin: 0, fontSize: "17px", fontWeight: "normal", color: "#3d2200", fontFamily: "'Georgia', serif" };
-const closeBtn = { background: "none", border: "none", fontSize: "16px", color: "#9b7040", cursor: "pointer", lineHeight: 1 };
+const modalTitle = { margin: 0, fontSize: "17px", fontWeight: "normal", color: "var(--color-3d2200)", fontFamily: "'Georgia', serif" };
+const closeBtn = { background: "none", border: "none", fontSize: "16px", color: "var(--color-9b7040)", cursor: "pointer", lineHeight: 1 };
 const modalBody = { padding: "20px", display: "flex", flexDirection: "column", gap: "14px", overflowY: "auto" };
 
-const fieldLabel = { fontSize: "11px", fontFamily: "sans-serif", color: "#9b7040", letterSpacing: "0.06em", textTransform: "uppercase" };
+const fieldLabel = { fontSize: "11px", fontFamily: "sans-serif", color: "var(--color-9b7040)", letterSpacing: "0.06em", textTransform: "uppercase" };
 
 const row2 = { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" };
 
 const input = {
-  padding: "10px 14px", borderRadius: "10px", border: "1px solid #eddfc8",
-  background: "#fdf8f3", fontSize: "14px", fontFamily: "sans-serif", color: "#3d2200",
+  padding: "10px 14px", borderRadius: "10px", border: "1px solid var(--color-eddfc8)",
+  background: "var(--color-fdf8f3)", fontSize: "14px", fontFamily: "sans-serif", color: "var(--color-3d2200)",
   outline: "none", width: "100%", boxSizing: "border-box",
 };
 
 const outlineBtn = {
-  padding: "10px 18px", borderRadius: "10px", border: "1px solid #c8922a",
-  background: "transparent", color: "#7a4f10", fontSize: "14px",
+  padding: "10px 18px", borderRadius: "10px", border: "1px solid var(--color-c8922a)",
+  background: "transparent", color: "var(--color-7a4f10)", fontSize: "14px",
   fontFamily: "sans-serif", cursor: "pointer", alignSelf: "flex-start",
 };
 
-const fileNameHint = { fontSize: "12px", fontFamily: "sans-serif", color: "#9b7040", fontStyle: "italic" };
+const fileNameHint = { fontSize: "12px", fontFamily: "sans-serif", color: "var(--color-9b7040)", fontStyle: "italic" };
 
 const saveBtn = {
   padding: "11px 20px", borderRadius: "10px", border: "none",
-  background: "linear-gradient(135deg, #c97c2e 0%, #a85e18 100%)",
-  color: "#fff8ee", fontSize: "14px", fontFamily: "sans-serif",
+  background: "linear-gradient(135deg, var(--color-c97c2e) 0%, var(--color-a85e18) 100%)",
+  color: "var(--color-fff8ee)", fontSize: "14px", fontFamily: "sans-serif",
   cursor: "pointer", boxShadow: "0 3px 10px rgba(160,80,20,0.25)",
 };

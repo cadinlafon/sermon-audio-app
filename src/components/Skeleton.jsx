@@ -21,5 +21,5 @@ export default function SkeletonList({ count = 4, label = "Loading" }) {
   );
 }
 
-const card = { background: "#fffdf9", borderRadius: "18px", padding: "22px", marginBottom: "16px", border: "1px solid #eddfc8" };
-const bar = { background: "#f0e4d0", borderRadius: "8px" };
+const card = { background: "var(--color-fffdf9)", borderRadius: "18px", padding: "22px", marginBottom: "16px", border: "1px solid var(--color-eddfc8)" };
+const bar = { background: "var(--color-f0e4d0)", borderRadius: "8px" };

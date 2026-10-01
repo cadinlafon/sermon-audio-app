@@ -408,7 +408,7 @@ const page = {
   padding: "32px 20px 60px",
   maxWidth: "700px",
   margin: "0 auto",
-  background: "#fdf8f3",
+  background: "var(--color-fdf8f3)",
   minHeight: "100vh",
 };
 
@@ -417,12 +417,12 @@ const pageTitle = {
   marginBottom: "24px",
   fontFamily: "'Georgia', serif",
   fontWeight: "normal",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
 };
 
 const card = {
-  background: "#fffdf9",
-  border: "1px solid #eddfc8",
+  background: "var(--color-fffdf9)",
+  border: "1px solid var(--color-eddfc8)",
   borderRadius: "18px",
   padding: "24px 22px",
   boxShadow: "0 2px 10px rgba(160,100,40,0.06)",
@@ -447,7 +447,7 @@ const questionsList = {
 
 const questionItem = {
   fontSize: "14px",
-  color: "#5c3a1e",
+  color: "var(--color-5c3a1e)",
   fontFamily: "sans-serif",
   lineHeight: 1.6,
 };
@@ -455,21 +455,21 @@ const questionItem = {
 const cardTitle = {
   fontSize: "22px",
   fontWeight: "normal",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   fontFamily: "'Georgia', serif",
   margin: "0 0 8px",
 };
 
 const speaker = {
   fontSize: "13px",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   fontFamily: "sans-serif",
   margin: "0 0 14px",
 };
 
 const details = {
   fontSize: "14px",
-  color: "#5c3a1e",
+  color: "var(--color-5c3a1e)",
   fontFamily: "sans-serif",
   lineHeight: 1.7,
   margin: "0 0 20px",
@@ -477,7 +477,7 @@ const details = {
 };
 
 const dropdown = {
-  border: "1px solid #eddfc8",
+  border: "1px solid var(--color-eddfc8)",
   borderRadius: "12px",
   marginBottom: "10px",
   overflow: "hidden",
@@ -489,12 +489,12 @@ const dropdownHeader = {
   justifyContent: "space-between",
   alignItems: "center",
   padding: "13px 16px",
-  background: "#fdf1de",
+  background: "var(--color-fdf1de)",
   border: "none",
   fontFamily: "sans-serif",
   fontSize: "14px",
   fontWeight: "600",
-  color: "#5c3a1e",
+  color: "var(--color-5c3a1e)",
   cursor: "pointer",
 };
 
@@ -502,17 +502,17 @@ const dropdownChevron = (open) => ({
   display: "inline-block",
   transition: "transform 0.15s",
   transform: open ? "rotate(180deg)" : "rotate(0deg)",
-  color: "#a85e18",
+  color: "var(--color-a85e18)",
 });
 
 const dropdownBody = {
   padding: "14px 16px",
-  background: "#fffdf9",
+  background: "var(--color-fffdf9)",
 };
 
 const sectionText = {
   fontSize: "14px",
-  color: "#5c3a1e",
+  color: "var(--color-5c3a1e)",
   fontFamily: "sans-serif",
   lineHeight: 1.7,
   margin: 0,
@@ -521,7 +521,7 @@ const sectionText = {
 
 const emptySection = {
   fontSize: "13px",
-  color: "#b08050",
+  color: "var(--color-b08050)",
   fontFamily: "sans-serif",
   fontStyle: "italic",
   margin: 0,
@@ -547,31 +547,31 @@ const scheduleTh = {
   fontSize: "11px",
   letterSpacing: "0.05em",
   textTransform: "uppercase",
-  color: "#9b7040",
-  borderBottom: "1px solid #eddfc8",
+  color: "var(--color-9b7040)",
+  borderBottom: "1px solid var(--color-eddfc8)",
   whiteSpace: "nowrap",
 };
 
 const scheduleTd = {
   padding: "8px 10px",
-  color: "#5c3a1e",
-  borderBottom: "1px solid #f0e4d0",
+  color: "var(--color-5c3a1e)",
+  borderBottom: "1px solid var(--color-f0e4d0)",
   verticalAlign: "top",
 };
 
 const scheduleBreakRow = {
-  background: "#fdf1de",
+  background: "var(--color-fdf1de)",
 };
 
 const scheduleBreakText = {
   fontWeight: "600",
-  color: "#a85e18",
+  color: "var(--color-a85e18)",
   letterSpacing: "0.03em",
 };
 
 const link = {
   fontSize: "14px",
-  color: "#a85e18",
+  color: "var(--color-a85e18)",
   fontFamily: "sans-serif",
   fontWeight: "600",
   textDecoration: "none",
@@ -579,7 +579,7 @@ const link = {
 
 const empty = {
   textAlign: "center",
-  color: "#b08050",
+  color: "var(--color-b08050)",
   fontFamily: "sans-serif",
   fontStyle: "italic",
   padding: "40px 0",
@@ -599,8 +599,8 @@ const playButton = {
   padding: "10px 20px",
   borderRadius: "999px",
   border: "none",
-  background: "linear-gradient(135deg, #c97c2e 0%, #a85e18 100%)",
-  color: "#fff8ee",
+  background: "linear-gradient(135deg, var(--color-c97c2e) 0%, var(--color-a85e18) 100%)",
+  color: "var(--color-fff8ee)",
   fontSize: "13px",
   fontWeight: "600",
   fontFamily: "sans-serif",
@@ -611,9 +611,9 @@ const playButton = {
 const playNextButton = {
   padding: "10px 16px",
   borderRadius: "999px",
-  border: "1px solid #eddfc8",
-  background: "#fdf8f3",
-  color: "#7a4f10",
+  border: "1px solid var(--color-eddfc8)",
+  background: "var(--color-fdf8f3)",
+  color: "var(--color-7a4f10)",
   fontSize: "13px",
   fontFamily: "sans-serif",
   cursor: "pointer",
@@ -621,14 +621,14 @@ const playNextButton = {
 
 const nowPlayingText = {
   fontSize: "12px",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   fontFamily: "sans-serif",
   margin: "8px 0 0",
 };
 
 const playErrorText = {
   fontSize: "12px",
-  color: "#b3432c",
+  color: "var(--color-b3432c)",
   fontFamily: "sans-serif",
   margin: "6px 0 0",
 };
@@ -639,7 +639,7 @@ const adminLink = {
   textAlign: "left",
   border: "none",
   background: "transparent",
-  color: "#b08050",
+  color: "var(--color-b08050)",
   fontFamily: "sans-serif",
   fontSize: "11px",
   fontStyle: "italic",
@@ -653,23 +653,23 @@ const adminLinkStandalone = {
   textAlign: "center",
   marginTop: "16px",
   paddingTop: "16px",
-  borderTop: "1px solid #f0e4d0",
+  borderTop: "1px solid var(--color-f0e4d0)",
 };
 
 const sliderBar = { display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px" };
 const sliderCenter = { textAlign: "center", flex: 1, minWidth: 0 };
-const sliderLabel = { fontSize: "20px", fontFamily: "'Georgia', serif", color: "#3d2200" };
-const sliderCount = { fontSize: "11px", fontFamily: "sans-serif", color: "#9b7040", marginTop: "2px", letterSpacing: "0.04em" };
+const sliderLabel = { fontSize: "20px", fontFamily: "'Georgia', serif", color: "var(--color-3d2200)" };
+const sliderCount = { fontSize: "11px", fontFamily: "sans-serif", color: "var(--color-9b7040)", marginTop: "2px", letterSpacing: "0.04em" };
 const arrowButton = (disabled) => ({
-  width: "44px", height: "44px", borderRadius: "50%", border: "1px solid #eddfc8", background: disabled ? "#f6efe6" : "#fdf1de",
-  color: disabled ? "#cdb99a" : "#a85e18", fontSize: "26px", lineHeight: 1, cursor: disabled ? "default" : "pointer", flexShrink: 0,
+  width: "44px", height: "44px", borderRadius: "50%", border: "1px solid var(--color-eddfc8)", background: disabled ? "var(--color-f6efe6)" : "var(--color-fdf1de)",
+  color: disabled ? "var(--color-cdb99a)" : "var(--color-a85e18)", fontSize: "26px", lineHeight: 1, cursor: disabled ? "default" : "pointer", flexShrink: 0,
   display: "flex", alignItems: "center", justifyContent: "center", paddingBottom: "3px",
 });
 const dotRow = { display: "flex", justifyContent: "center", gap: "7px", flexWrap: "wrap", margin: "12px 0 4px" };
-const dot = (active) => ({ width: active ? "18px" : "8px", height: "8px", borderRadius: "999px", border: "none", padding: 0, cursor: "pointer", background: active ? "#c97c2e" : "#e4d3b8", transition: "width 0.15s" });
-const weekBody = { marginTop: "14px", paddingTop: "14px", borderTop: "1px solid #f0e4d0", display: "flex", flexDirection: "column", gap: "10px" };
-const weekTopic = { margin: 0, fontSize: "17px", fontWeight: "normal", color: "#3d2200", fontFamily: "'Georgia', serif" };
-const weekDates = { margin: 0, fontSize: "12px", color: "#9b7040", fontFamily: "sans-serif", letterSpacing: "0.03em" };
-const memoryBox = { display: "flex", flexDirection: "column", gap: "3px", background: "#fdf1de", borderRadius: "10px", padding: "10px 12px" };
-const memoryLabel = { fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.06em", color: "#9b7040", fontFamily: "sans-serif" };
-const memoryValue = { fontSize: "14px", color: "#5c3a1e", fontFamily: "'Georgia', serif" };
+const dot = (active) => ({ width: active ? "18px" : "8px", height: "8px", borderRadius: "999px", border: "none", padding: 0, cursor: "pointer", background: active ? "var(--color-c97c2e)" : "var(--color-e4d3b8)", transition: "width 0.15s" });
+const weekBody = { marginTop: "14px", paddingTop: "14px", borderTop: "1px solid var(--color-f0e4d0)", display: "flex", flexDirection: "column", gap: "10px" };
+const weekTopic = { margin: 0, fontSize: "17px", fontWeight: "normal", color: "var(--color-3d2200)", fontFamily: "'Georgia', serif" };
+const weekDates = { margin: 0, fontSize: "12px", color: "var(--color-9b7040)", fontFamily: "sans-serif", letterSpacing: "0.03em" };
+const memoryBox = { display: "flex", flexDirection: "column", gap: "3px", background: "var(--color-fdf1de)", borderRadius: "10px", padding: "10px 12px" };
+const memoryLabel = { fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--color-9b7040)", fontFamily: "sans-serif" };
+const memoryValue = { fontSize: "14px", color: "var(--color-5c3a1e)", fontFamily: "'Georgia', serif" };

@@ -120,11 +120,11 @@ export default function PageNotices() {
             <div style={cardTitleRow}>
               <span style={cardTitle}>{n.title}</span>
               <div style={badgeRow}>
-                <Badge label={PAGE_LABELS[n.page] || n.page} bg="#e8f0fe" color="#2a5ab5" />
-                <Badge label={POS_LABELS[n.position] || n.position} bg="#f6e4b0" color="#7a5a10" />
+                <Badge label={PAGE_LABELS[n.page] || n.page} bg="var(--color-e8f0fe)" color="var(--color-2a5ab5)" />
+                <Badge label={POS_LABELS[n.position] || n.position} bg="var(--color-f6e4b0)" color="var(--color-7a5a10)" />
                 {n.enabled
-                  ? <Badge label="Active"   bg="#dcfce7" color="#166534" />
-                  : <Badge label="Disabled" bg="#fee2e2" color="#991b1b" />}
+                  ? <Badge label="Active"   bg="var(--color-dcfce7)" color="var(--color-166534)" />
+                  : <Badge label="Disabled" bg="var(--color-fee2e2)" color="var(--color-991b1b)" />}
               </div>
             </div>
             <p style={cardMsg}>{n.message}</p>
@@ -140,7 +140,7 @@ export default function PageNotices() {
               </>
             )}
             {perms.canDelete && (
-              <button style={{ ...actionBtn, color: "#dc2626", borderColor: "#fca5a5" }} onClick={() => handleDelete(n.id)}>
+              <button style={{ ...actionBtn, color: "var(--color-dc2626)", borderColor: "var(--color-fca5a5)" }} onClick={() => handleDelete(n.id)}>
                 Delete
               </button>
             )}
@@ -176,26 +176,26 @@ function Badge({ label, bg, color }) {
 
 const page        = { maxWidth: "760px" };
 const topRow      = { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "24px" };
-const pageTitle   = { fontSize: "26px", fontWeight: "normal", color: "#3d2200", margin: "0 0 4px", fontFamily: "'Georgia', serif" };
-const pageSubtitle = { fontSize: "14px", color: "#9b7040", fontFamily: "sans-serif", margin: 0 };
-const addBtn      = { padding: "10px 18px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, #c97c2e, #a85e18)", color: "#fff8ee", fontSize: "14px", fontFamily: "sans-serif", cursor: "pointer", boxShadow: "0 3px 10px rgba(160,80,20,0.25)", whiteSpace: "nowrap" };
+const pageTitle   = { fontSize: "26px", fontWeight: "normal", color: "var(--color-3d2200)", margin: "0 0 4px", fontFamily: "'Georgia', serif" };
+const pageSubtitle = { fontSize: "14px", color: "var(--color-9b7040)", fontFamily: "sans-serif", margin: 0 };
+const addBtn      = { padding: "10px 18px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, var(--color-c97c2e), var(--color-a85e18))", color: "var(--color-fff8ee)", fontSize: "14px", fontFamily: "sans-serif", cursor: "pointer", boxShadow: "0 3px 10px rgba(160,80,20,0.25)", whiteSpace: "nowrap" };
 
 const modalBg     = { position: "fixed", inset: 0, background: "rgba(40,18,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2000, padding: "20px" };
-const modal       = { background: "#fffdf9", border: "1px solid #eddfc8", borderRadius: "20px", padding: "28px", width: "100%", maxWidth: "440px", display: "flex", flexDirection: "column", gap: "16px", maxHeight: "90vh", overflowY: "auto" };
-const modalTitle  = { fontSize: "20px", fontWeight: "normal", color: "#3d2200", fontFamily: "'Georgia', serif", margin: 0 };
-const fieldLabel  = { fontSize: "11px", fontFamily: "sans-serif", color: "#9b7040", letterSpacing: "0.06em", textTransform: "uppercase" };
-const input       = { padding: "9px 12px", borderRadius: "10px", border: "1px solid #eddfc8", background: "#fdf8f3", fontSize: "14px", fontFamily: "sans-serif", color: "#3d2200", outline: "none", width: "100%", boxSizing: "border-box" };
+const modal       = { background: "var(--color-fffdf9)", border: "1px solid var(--color-eddfc8)", borderRadius: "20px", padding: "28px", width: "100%", maxWidth: "440px", display: "flex", flexDirection: "column", gap: "16px", maxHeight: "90vh", overflowY: "auto" };
+const modalTitle  = { fontSize: "20px", fontWeight: "normal", color: "var(--color-3d2200)", fontFamily: "'Georgia', serif", margin: 0 };
+const fieldLabel  = { fontSize: "11px", fontFamily: "sans-serif", color: "var(--color-9b7040)", letterSpacing: "0.06em", textTransform: "uppercase" };
+const input       = { padding: "9px 12px", borderRadius: "10px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fdf8f3)", fontSize: "14px", fontFamily: "sans-serif", color: "var(--color-3d2200)", outline: "none", width: "100%", boxSizing: "border-box" };
 const row2        = { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" };
 const modalActions = { display: "flex", gap: "10px", marginTop: "4px" };
-const saveBtn     = { flex: 1, padding: "11px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, #c97c2e, #a85e18)", color: "#fff8ee", fontSize: "14px", fontFamily: "sans-serif", cursor: "pointer" };
-const cancelBtn   = { flex: 1, padding: "11px", borderRadius: "10px", border: "1px solid #eddfc8", background: "transparent", color: "#7a4f10", fontSize: "14px", fontFamily: "sans-serif", cursor: "pointer" };
+const saveBtn     = { flex: 1, padding: "11px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, var(--color-c97c2e), var(--color-a85e18))", color: "var(--color-fff8ee)", fontSize: "14px", fontFamily: "sans-serif", cursor: "pointer" };
+const cancelBtn   = { flex: 1, padding: "11px", borderRadius: "10px", border: "1px solid var(--color-eddfc8)", background: "transparent", color: "var(--color-7a4f10)", fontSize: "14px", fontFamily: "sans-serif", cursor: "pointer" };
 
-const card        = { background: "#fffdf9", border: "1px solid #eddfc8", borderRadius: "16px", padding: "18px 20px", marginBottom: "12px", boxShadow: "0 2px 10px rgba(160,100,40,0.06)" };
+const card        = { background: "var(--color-fffdf9)", border: "1px solid var(--color-eddfc8)", borderRadius: "16px", padding: "18px 20px", marginBottom: "12px", boxShadow: "0 2px 10px rgba(160,100,40,0.06)" };
 const cardBody    = { marginBottom: "14px" };
 const cardTitleRow = { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "10px", marginBottom: "8px", flexWrap: "wrap" };
-const cardTitle   = { fontSize: "16px", color: "#3d2200", fontFamily: "'Georgia', serif" };
+const cardTitle   = { fontSize: "16px", color: "var(--color-3d2200)", fontFamily: "'Georgia', serif" };
 const badgeRow    = { display: "flex", gap: "6px", flexWrap: "wrap" };
-const cardMsg     = { fontSize: "13px", color: "#7a5530", fontFamily: "sans-serif", lineHeight: 1.6, margin: 0 };
-const cardActions = { display: "flex", gap: "8px", flexWrap: "wrap", borderTop: "1px solid #f0e4d0", paddingTop: "12px" };
-const actionBtn   = { padding: "6px 12px", borderRadius: "8px", border: "1px solid #eddfc8", background: "transparent", color: "#5c3a1e", fontSize: "12px", fontFamily: "sans-serif", cursor: "pointer" };
-const empty       = { textAlign: "center", color: "#b08050", fontFamily: "sans-serif", fontStyle: "italic", padding: "40px 0" };
+const cardMsg     = { fontSize: "13px", color: "var(--color-7a5530)", fontFamily: "sans-serif", lineHeight: 1.6, margin: 0 };
+const cardActions = { display: "flex", gap: "8px", flexWrap: "wrap", borderTop: "1px solid var(--color-f0e4d0)", paddingTop: "12px" };
+const actionBtn   = { padding: "6px 12px", borderRadius: "8px", border: "1px solid var(--color-eddfc8)", background: "transparent", color: "var(--color-5c3a1e)", fontSize: "12px", fontFamily: "sans-serif", cursor: "pointer" };
+const empty       = { textAlign: "center", color: "var(--color-b08050)", fontFamily: "sans-serif", fontStyle: "italic", padding: "40px 0" };

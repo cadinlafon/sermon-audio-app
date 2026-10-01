@@ -7,7 +7,7 @@ export default function DisabledScreen({ config }) {
 
   return (
     <div style={s.page}>
-      <div style={s.iconRing({ background: "linear-gradient(135deg, #9a9082 0%, #6b6355 100%)" })}>
+      <div style={s.iconRing({ background: "linear-gradient(135deg, var(--color-9a9082) 0%, var(--color-6b6355) 100%)" })}>
         <span style={s.icon}>⛔</span>
       </div>
 

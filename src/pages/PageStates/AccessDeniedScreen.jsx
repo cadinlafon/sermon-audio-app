@@ -7,7 +7,7 @@ export default function AccessDeniedScreen({ config }) {
 
   return (
     <div style={s.page}>
-      <div style={s.iconRing({ background: "linear-gradient(135deg, #d65f5f 0%, #a83232 100%)" })}>
+      <div style={s.iconRing({ background: "linear-gradient(135deg, var(--color-d65f5f) 0%, var(--color-a83232) 100%)" })}>
         <span style={s.icon}>🚫</span>
       </div>
 

@@ -79,16 +79,16 @@ export default function Analytics() {
       </div>
 
       <div style={grid}>
-        <StatCard icon="👥" label="Total Users" value={stats.totalUsers} color="#c97c2e" />
-        <StatCard icon="✨" label="New Users This Week" value={stats.newUsers} color="#16a34a" />
-        <StatCard icon="🎙️" label="Total Uploads" value={stats.totalUploads} color="#2563eb" />
-        <StatCard icon="🎧" label="Listens This Week" value={stats.totalListens} color="#7c3aed" />
-        <StatCard icon="⏱️" label="Minutes Played" value={stats.minutesPlayed} color="#db2777" />
-        <StatCard icon="🌐" label="Web Opens" value={stats.usesWeb} color="#0891b2" />
-        <StatCard icon="📱" label="PWA Installs" value={stats.usesPWA} color="#65a30d" />
-        <StatCard icon="🍎" label="PWA on iPhone" value={stats.pwaIphone} color="#dc2626" />
-        <StatCard icon="🤖" label="PWA on Android" value={stats.pwaAndroid} color="#16a34a" />
-        <StatCard icon="💻" label="PWA on Desktop" value={stats.pwaDesktop} color="#6d28d9" />
+        <StatCard icon="👥" label="Total Users" value={stats.totalUsers} color="var(--color-c97c2e)" />
+        <StatCard icon="✨" label="New Users This Week" value={stats.newUsers} color="var(--color-16a34a)" />
+        <StatCard icon="🎙️" label="Total Uploads" value={stats.totalUploads} color="var(--color-2563eb)" />
+        <StatCard icon="🎧" label="Listens This Week" value={stats.totalListens} color="var(--color-7c3aed)" />
+        <StatCard icon="⏱️" label="Minutes Played" value={stats.minutesPlayed} color="var(--color-db2777)" />
+        <StatCard icon="🌐" label="Web Opens" value={stats.usesWeb} color="var(--color-0891b2)" />
+        <StatCard icon="📱" label="PWA Installs" value={stats.usesPWA} color="var(--color-65a30d)" />
+        <StatCard icon="🍎" label="PWA on iPhone" value={stats.pwaIphone} color="var(--color-dc2626)" />
+        <StatCard icon="🤖" label="PWA on Android" value={stats.pwaAndroid} color="var(--color-16a34a)" />
+        <StatCard icon="💻" label="PWA on Desktop" value={stats.pwaDesktop} color="var(--color-6d28d9)" />
       </div>
 
       {monthlyActivity.length > 0 && (
@@ -121,18 +121,18 @@ function StatCard({ icon, label, value, color }) {
 
 const page = { maxWidth: "1100px" };
 const pageHeader = { marginBottom: "24px" };
-const pageTitle = { fontSize: "26px", fontWeight: "normal", color: "#3d2200", margin: "0 0 4px", fontFamily: "'Georgia', serif" };
-const pageSubtitle = { fontSize: "14px", color: "#9b7040", fontFamily: "sans-serif", margin: 0 };
+const pageTitle = { fontSize: "26px", fontWeight: "normal", color: "var(--color-3d2200)", margin: "0 0 4px", fontFamily: "'Georgia', serif" };
+const pageSubtitle = { fontSize: "14px", color: "var(--color-9b7040)", fontFamily: "sans-serif", margin: 0 };
 const grid = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "14px", marginBottom: "28px" };
-const statCard = { background: "#fffdf9", border: "1px solid #eddfc8", borderRadius: "14px", padding: "18px", boxShadow: "0 2px 10px rgba(160,100,40,0.06)" };
+const statCard = { background: "var(--color-fffdf9)", border: "1px solid var(--color-eddfc8)", borderRadius: "14px", padding: "18px", boxShadow: "0 2px 10px rgba(160,100,40,0.06)" };
 const iconWrap = { width: "36px", height: "36px", borderRadius: "9px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px", marginBottom: "10px" };
-const statLabel = { fontSize: "11px", fontFamily: "sans-serif", color: "#9b7040", marginBottom: "4px", letterSpacing: "0.04em" };
-const statValue = { fontSize: "28px", fontWeight: "bold", color: "#3d2200", fontFamily: "sans-serif" };
+const statLabel = { fontSize: "11px", fontFamily: "sans-serif", color: "var(--color-9b7040)", marginBottom: "4px", letterSpacing: "0.04em" };
+const statValue = { fontSize: "28px", fontWeight: "bold", color: "var(--color-3d2200)", fontFamily: "sans-serif" };
 
-const chartCard = { background: "#fffdf9", border: "1px solid #eddfc8", borderRadius: "16px", padding: "24px", boxShadow: "0 2px 12px rgba(160,100,40,0.07)" };
-const chartTitle = { fontSize: "17px", fontWeight: "normal", color: "#5c3a1e", fontFamily: "'Georgia', serif", margin: "0 0 20px" };
+const chartCard = { background: "var(--color-fffdf9)", border: "1px solid var(--color-eddfc8)", borderRadius: "16px", padding: "24px", boxShadow: "0 2px 12px rgba(160,100,40,0.07)" };
+const chartTitle = { fontSize: "17px", fontWeight: "normal", color: "var(--color-5c3a1e)", fontFamily: "'Georgia', serif", margin: "0 0 20px" };
 const chartArea = { display: "flex", alignItems: "flex-end", gap: "12px", height: "200px" };
 const barWrapper = { flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", height: "100%" };
-const bar = { width: "100%", maxWidth: "48px", background: "linear-gradient(180deg, #e08930, #c97c2e)", borderRadius: "6px 6px 0 0" };
-const barValue = { fontSize: "12px", fontFamily: "sans-serif", color: "#7a4f10", fontWeight: "bold", marginBottom: "4px" };
-const barLabel = { fontSize: "11px", fontFamily: "sans-serif", color: "#9b7040", marginTop: "6px", textAlign: "center" };
+const bar = { width: "100%", maxWidth: "48px", background: "linear-gradient(180deg, var(--color-e08930), var(--color-c97c2e))", borderRadius: "6px 6px 0 0" };
+const barValue = { fontSize: "12px", fontFamily: "sans-serif", color: "var(--color-7a4f10)", fontWeight: "bold", marginBottom: "4px" };
+const barLabel = { fontSize: "11px", fontFamily: "sans-serif", color: "var(--color-9b7040)", marginTop: "6px", textAlign: "center" };

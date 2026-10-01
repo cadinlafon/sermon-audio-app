@@ -74,8 +74,8 @@ style={{
 padding: "8px 14px",
 borderRadius: "6px",
 border: "none",
-background: "#111827",
-color: "white",
+background: "var(--color-111827)",
+color: "var(--color-ffffff)",
 fontSize: "12px",
 cursor: "pointer"
 }}

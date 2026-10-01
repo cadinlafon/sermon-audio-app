@@ -75,19 +75,19 @@ export default function Bookmarks() {
 
 function Shell({ children }) { return <div style={page}>{children}</div>; }
 
-const page = { padding: "32px 20px 60px", maxWidth: "720px", margin: "0 auto", background: "#fdf8f3", minHeight: "100vh", fontFamily: "'Georgia', serif" };
-const title = { textAlign: "center", margin: "0 0 6px", fontSize: "28px", fontWeight: "normal", color: "#3d2200" };
-const subtitle = { textAlign: "center", margin: "0 0 16px", fontSize: "14px", color: "#9b7040", fontFamily: "sans-serif" };
-const search = { width: "100%", boxSizing: "border-box", padding: "10px 16px", borderRadius: "999px", border: "1px solid #eddfc8", background: "#fffdf9", fontSize: "14px", fontFamily: "sans-serif", marginBottom: "16px" };
-const card = { background: "#fffdf9", border: "1px solid #eddfc8", borderRadius: "16px", padding: "14px", marginBottom: "12px" };
-const cardTitle = { fontSize: "16px", color: "#3d2200" };
-const cardSub = { fontSize: "12px", color: "#9b7040", fontFamily: "sans-serif", marginBottom: "8px" };
-const row = { display: "flex", alignItems: "center", gap: "8px", padding: "6px 0", borderTop: "1px solid #f0e4d0" };
+const page = { padding: "32px 20px 60px", maxWidth: "720px", margin: "0 auto", background: "var(--color-fdf8f3)", minHeight: "100vh", fontFamily: "'Georgia', serif" };
+const title = { textAlign: "center", margin: "0 0 6px", fontSize: "28px", fontWeight: "normal", color: "var(--color-3d2200)" };
+const subtitle = { textAlign: "center", margin: "0 0 16px", fontSize: "14px", color: "var(--color-9b7040)", fontFamily: "sans-serif" };
+const search = { width: "100%", boxSizing: "border-box", padding: "10px 16px", borderRadius: "999px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fffdf9)", fontSize: "14px", fontFamily: "sans-serif", marginBottom: "16px" };
+const card = { background: "var(--color-fffdf9)", border: "1px solid var(--color-eddfc8)", borderRadius: "16px", padding: "14px", marginBottom: "12px" };
+const cardTitle = { fontSize: "16px", color: "var(--color-3d2200)" };
+const cardSub = { fontSize: "12px", color: "var(--color-9b7040)", fontFamily: "sans-serif", marginBottom: "8px" };
+const row = { display: "flex", alignItems: "center", gap: "8px", padding: "6px 0", borderTop: "1px solid var(--color-f0e4d0)" };
 const main = { flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: "12px", background: "none", border: "none", cursor: "pointer", textAlign: "left", padding: "4px 0" };
-const time = { padding: "6px 12px", borderRadius: "999px", background: "#fde8b8", color: "#7a4f10", fontSize: "13px", fontWeight: "600", fontFamily: "sans-serif", flexShrink: 0 };
-const label = { fontSize: "14px", color: "#3d2200", fontFamily: "sans-serif" };
-const mini = { width: "32px", height: "32px", borderRadius: "50%", border: "none", background: "#f4e7d4", color: "#7a4f10", cursor: "pointer", fontSize: "13px", flexShrink: 0 };
-const primary = { padding: "10px 18px", borderRadius: "999px", border: "none", background: "linear-gradient(135deg, #c97c2e, #a85e18)", color: "#fff8ee", fontSize: "13px", fontWeight: "600", cursor: "pointer" };
+const time = { padding: "6px 12px", borderRadius: "999px", background: "var(--color-fde8b8)", color: "var(--color-7a4f10)", fontSize: "13px", fontWeight: "600", fontFamily: "sans-serif", flexShrink: 0 };
+const label = { fontSize: "14px", color: "var(--color-3d2200)", fontFamily: "sans-serif" };
+const mini = { width: "32px", height: "32px", borderRadius: "50%", border: "none", background: "var(--color-f4e7d4)", color: "var(--color-7a4f10)", cursor: "pointer", fontSize: "13px", flexShrink: 0 };
+const primary = { padding: "10px 18px", borderRadius: "999px", border: "none", background: "linear-gradient(135deg, var(--color-c97c2e), var(--color-a85e18))", color: "var(--color-fff8ee)", fontSize: "13px", fontWeight: "600", cursor: "pointer" };
 const empty = { textAlign: "center", padding: "36px 10px" };
-const emptyTitle = { margin: "8px 0 4px", fontSize: "18px", fontWeight: "normal", color: "#3d2200" };
-const emptyText = { margin: "0 0 12px", color: "#9b7040", fontFamily: "sans-serif", fontSize: "14px", textAlign: "center" };
+const emptyTitle = { margin: "8px 0 4px", fontSize: "18px", fontWeight: "normal", color: "var(--color-3d2200)" };
+const emptyText = { margin: "0 0 12px", color: "var(--color-9b7040)", fontFamily: "sans-serif", fontSize: "14px", textAlign: "center" };

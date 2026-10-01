@@ -182,11 +182,11 @@ export default function UserStatsModal({ user, onClose }) {
               ) : (
                 <ResponsiveContainer width="100%" height={220}>
                   <BarChart data={activitySeries}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#eddfc8" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--color-eddfc8)" />
                     <XAxis dataKey="label" tick={{ fontSize: 11, fontFamily: "sans-serif" }} />
                     <YAxis allowDecimals={false} tick={{ fontSize: 11, fontFamily: "sans-serif" }} />
                     <Tooltip contentStyle={{ fontFamily: "sans-serif", fontSize: 12, borderRadius: 8 }} />
-                    <Bar dataKey="count" name="Events" fill="#c97c2e" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="count" name="Events" fill="var(--color-c97c2e)" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               )}
@@ -244,8 +244,8 @@ const modalBg = {
 };
 
 const modal = {
-  background: "#fffdf9",
-  border: "1px solid #eddfc8",
+  background: "var(--color-fffdf9)",
+  border: "1px solid var(--color-eddfc8)",
   borderRadius: "20px",
   padding: "28px",
   width: "100%",
@@ -266,21 +266,21 @@ const header = {
 const modalTitle = {
   fontSize: "20px",
   fontWeight: "normal",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   fontFamily: "'Georgia', serif",
   margin: 0,
 };
 
 const subtitle = {
   fontSize: "13px",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   fontFamily: "sans-serif",
   margin: "2px 0 0",
 };
 
 const hint = {
   fontSize: "13px",
-  color: "#b08050",
+  color: "var(--color-b08050)",
   fontFamily: "sans-serif",
   fontStyle: "italic",
   textAlign: "center",
@@ -295,8 +295,8 @@ const statGrid = {
 };
 
 const statTile = {
-  background: "#fdf8f3",
-  border: "1px solid #eddfc8",
+  background: "var(--color-fdf8f3)",
+  border: "1px solid var(--color-eddfc8)",
   borderRadius: "12px",
   padding: "12px 14px",
 };
@@ -304,7 +304,7 @@ const statTile = {
 const statTileLabel = {
   fontSize: "10px",
   fontFamily: "sans-serif",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   textTransform: "uppercase",
   letterSpacing: "0.05em",
   marginBottom: "4px",
@@ -314,12 +314,12 @@ const statTileValue = {
   fontSize: "15px",
   fontFamily: "sans-serif",
   fontWeight: "600",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
 };
 
 const chartCard = {
-  background: "#fdf8f3",
-  border: "1px solid #eddfc8",
+  background: "var(--color-fdf8f3)",
+  border: "1px solid var(--color-eddfc8)",
   borderRadius: "14px",
   padding: "16px 18px",
 };
@@ -336,7 +336,7 @@ const chartHeader = {
 const sectionTitle = {
   fontSize: "14px",
   fontWeight: "600",
-  color: "#5c3a1e",
+  color: "var(--color-5c3a1e)",
   fontFamily: "sans-serif",
   margin: 0,
 };
@@ -349,17 +349,17 @@ const rangeRow = {
 const rangeBtn = {
   padding: "5px 12px",
   borderRadius: "999px",
-  border: "1px solid #eddfc8",
-  background: "#fffdf9",
-  color: "#7a4f10",
+  border: "1px solid var(--color-eddfc8)",
+  background: "var(--color-fffdf9)",
+  color: "var(--color-7a4f10)",
   fontSize: "11px",
   fontFamily: "sans-serif",
   cursor: "pointer",
 };
 
 const rangeBtnActive = {
-  background: "linear-gradient(135deg, #c97c2e, #a85e18)",
-  color: "#fff8ee",
+  background: "linear-gradient(135deg, var(--color-c97c2e), var(--color-a85e18))",
+  color: "var(--color-fff8ee)",
   borderColor: "transparent",
 };
 
@@ -378,7 +378,7 @@ const pageRow = {
 const pageName = {
   fontSize: "12px",
   fontFamily: "sans-serif",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   width: "140px",
   flexShrink: 0,
   overflow: "hidden",
@@ -390,20 +390,20 @@ const pageBarTrack = {
   flex: 1,
   height: "8px",
   borderRadius: "999px",
-  background: "#eddfc8",
+  background: "var(--color-eddfc8)",
   overflow: "hidden",
 };
 
 const pageBarFill = {
   height: "100%",
   borderRadius: "999px",
-  background: "linear-gradient(90deg, #e08930, #c97c2e)",
+  background: "linear-gradient(90deg, var(--color-e08930), var(--color-c97c2e))",
 };
 
 const pageCount = {
   fontSize: "12px",
   fontFamily: "sans-serif",
-  color: "#7a4f10",
+  color: "var(--color-7a4f10)",
   fontWeight: "600",
   width: "24px",
   textAlign: "right",
@@ -418,9 +418,9 @@ const modalActions = {
 const closeBtn = {
   padding: "10px 20px",
   borderRadius: "10px",
-  border: "1px solid #eddfc8",
+  border: "1px solid var(--color-eddfc8)",
   background: "transparent",
-  color: "#7a4f10",
+  color: "var(--color-7a4f10)",
   fontSize: "13px",
   fontFamily: "sans-serif",
   cursor: "pointer",

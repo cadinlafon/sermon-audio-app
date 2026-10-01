@@ -30,13 +30,13 @@ const wrap = {
 const title = {
   fontSize: "18px",
   fontFamily: "'Georgia', serif",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   margin: "0 0 8px",
 };
 
 const subtitle = {
   fontSize: "14px",
   fontFamily: "sans-serif",
-  color: "#7a5530",
+  color: "var(--color-7a5530)",
   margin: 0,
 };

@@ -50,6 +50,6 @@ export default function PlayAllBar({ items, filtered }) {
 }
 
 const bar = { display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px", margin: "0 0 16px" };
-const primary = { padding: "9px 16px", borderRadius: "999px", border: "none", background: "linear-gradient(135deg, #c97c2e, #a85e18)", color: "#fff8ee", fontSize: "13px", fontFamily: "sans-serif", fontWeight: "600", cursor: "pointer" };
-const secondary = { padding: "9px 14px", borderRadius: "999px", border: "1px solid #eddfc8", background: "#fdf8f3", color: "#7a4f10", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer" };
-const note = { fontSize: "12px", color: "#166534", fontFamily: "sans-serif" };
+const primary = { padding: "9px 16px", borderRadius: "999px", border: "none", background: "linear-gradient(135deg, var(--color-c97c2e), var(--color-a85e18))", color: "var(--color-fff8ee)", fontSize: "13px", fontFamily: "sans-serif", fontWeight: "600", cursor: "pointer" };
+const secondary = { padding: "9px 14px", borderRadius: "999px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fdf8f3)", color: "var(--color-7a4f10)", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer" };
+const note = { fontSize: "12px", color: "var(--color-166534)", fontFamily: "sans-serif" };

@@ -16,7 +16,7 @@ const container = {
   left: 0,
   width: "100%",
   height: "100%",
-  background: "#062362", // 🔥 nice blue
+  background: "var(--color-062362)", // 🔥 nice blue
   display: "flex",
   alignItems: "center",
   justifyContent: "center",

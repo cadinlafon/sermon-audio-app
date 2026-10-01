@@ -58,15 +58,15 @@ const barBase = {
   fontSize: "12px",
   fontFamily: "sans-serif",
   fontWeight: "600",
-  color: "#fff8ee",
+  color: "var(--color-fff8ee)",
 };
 
 const offlineBar = {
   ...barBase,
-  background: "linear-gradient(135deg, #b3432c 0%, #8f2e1a 100%)",
+  background: "linear-gradient(135deg, var(--color-b3432c) 0%, var(--color-8f2e1a) 100%)",
 };
 
 const onlineBar = {
   ...barBase,
-  background: "linear-gradient(135deg, #2f8a4a 0%, #1f6b37 100%)",
+  background: "linear-gradient(135deg, var(--color-2f8a4a) 0%, var(--color-1f6b37) 100%)",
 };

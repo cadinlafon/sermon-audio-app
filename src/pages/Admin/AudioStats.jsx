@@ -105,10 +105,10 @@ export default function AudioStats() {
       </div>
 
       <div style={grid}>
-        <StatCard icon="🎧" label="Total Listens" value={totals.totalListens} color="#7c3aed" />
-        <StatCard icon="❤️" label="Total Likes" value={totals.totalLikes} color="#db2777" />
-        <StatCard icon="👤" label="Listens by Users" value={`${totals.userListens} (${totals.userPct}%)`} color="#16a34a" />
-        <StatCard icon="👻" label="Listens by Guests" value={`${totals.guestListens} (${totals.guestPct}%)`} color="#c97c2e" />
+        <StatCard icon="🎧" label="Total Listens" value={totals.totalListens} color="var(--color-7c3aed)" />
+        <StatCard icon="❤️" label="Total Likes" value={totals.totalLikes} color="var(--color-db2777)" />
+        <StatCard icon="👤" label="Listens by Users" value={`${totals.userListens} (${totals.userPct}%)`} color="var(--color-16a34a)" />
+        <StatCard icon="👻" label="Listens by Guests" value={`${totals.guestListens} (${totals.guestPct}%)`} color="var(--color-c97c2e)" />
       </div>
 
       {topListened.length > 0 && (
@@ -189,33 +189,33 @@ function StatCard({ icon, label, value, color }) {
 
 const page = { maxWidth: "1100px" };
 const pageHeader = { marginBottom: "24px" };
-const pageTitle = { fontSize: "26px", fontWeight: "normal", color: "#3d2200", margin: "0 0 4px", fontFamily: "'Georgia', serif" };
-const pageSubtitle = { fontSize: "14px", color: "#9b7040", fontFamily: "sans-serif", margin: 0 };
-const loadingWrap = { padding: "40px", fontFamily: "sans-serif", color: "#9b7040" };
+const pageTitle = { fontSize: "26px", fontWeight: "normal", color: "var(--color-3d2200)", margin: "0 0 4px", fontFamily: "'Georgia', serif" };
+const pageSubtitle = { fontSize: "14px", color: "var(--color-9b7040)", fontFamily: "sans-serif", margin: 0 };
+const loadingWrap = { padding: "40px", fontFamily: "sans-serif", color: "var(--color-9b7040)" };
 
 const grid = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "14px", marginBottom: "24px" };
-const statCard = { background: "#fffdf9", border: "1px solid #eddfc8", borderRadius: "14px", padding: "18px", boxShadow: "0 2px 10px rgba(160,100,40,0.06)" };
+const statCard = { background: "var(--color-fffdf9)", border: "1px solid var(--color-eddfc8)", borderRadius: "14px", padding: "18px", boxShadow: "0 2px 10px rgba(160,100,40,0.06)" };
 const iconWrap = { width: "36px", height: "36px", borderRadius: "9px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px", marginBottom: "10px" };
-const statLabel = { fontSize: "11px", fontFamily: "sans-serif", color: "#9b7040", marginBottom: "4px", letterSpacing: "0.04em" };
-const statValue = { fontSize: "22px", fontWeight: "bold", color: "#3d2200", fontFamily: "sans-serif" };
+const statLabel = { fontSize: "11px", fontFamily: "sans-serif", color: "var(--color-9b7040)", marginBottom: "4px", letterSpacing: "0.04em" };
+const statValue = { fontSize: "22px", fontWeight: "bold", color: "var(--color-3d2200)", fontFamily: "sans-serif" };
 
-const chartCard = { background: "#fffdf9", border: "1px solid #eddfc8", borderRadius: "16px", padding: "22px 24px", boxShadow: "0 2px 12px rgba(160,100,40,0.07)", marginBottom: "24px" };
-const chartTitle = { fontSize: "16px", fontWeight: "normal", color: "#5c3a1e", fontFamily: "'Georgia', serif", margin: "0 0 16px" };
+const chartCard = { background: "var(--color-fffdf9)", border: "1px solid var(--color-eddfc8)", borderRadius: "16px", padding: "22px 24px", boxShadow: "0 2px 12px rgba(160,100,40,0.07)", marginBottom: "24px" };
+const chartTitle = { fontSize: "16px", fontWeight: "normal", color: "var(--color-5c3a1e)", fontFamily: "'Georgia', serif", margin: "0 0 16px" };
 const barList = { display: "flex", flexDirection: "column", gap: "10px" };
 const barRow = { display: "flex", alignItems: "center", gap: "10px" };
-const barLabel = { width: "180px", flexShrink: 0, fontSize: "12px", color: "#3d2200", fontFamily: "sans-serif", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
-const barTrack = { flex: 1, height: "10px", borderRadius: "999px", background: "#eddfc8", overflow: "hidden" };
-const barFill = { height: "100%", background: "linear-gradient(to right, #e08930, #c97c2e)" };
-const barCount = { width: "32px", textAlign: "right", flexShrink: 0, fontSize: "12px", fontFamily: "sans-serif", color: "#7a4f10", fontWeight: "600" };
+const barLabel = { width: "180px", flexShrink: 0, fontSize: "12px", color: "var(--color-3d2200)", fontFamily: "sans-serif", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
+const barTrack = { flex: 1, height: "10px", borderRadius: "999px", background: "var(--color-eddfc8)", overflow: "hidden" };
+const barFill = { height: "100%", background: "linear-gradient(to right, var(--color-e08930), var(--color-c97c2e))" };
+const barCount = { width: "32px", textAlign: "right", flexShrink: 0, fontSize: "12px", fontFamily: "sans-serif", color: "var(--color-7a4f10)", fontWeight: "600" };
 
 const toolbar = { display: "flex", gap: "10px", marginBottom: "16px", flexWrap: "wrap" };
-const searchInput = { flex: 1, minWidth: "180px", padding: "9px 14px", borderRadius: "10px", border: "1px solid #eddfc8", background: "#fffdf9", fontSize: "13px", fontFamily: "sans-serif", color: "#3d2200", outline: "none" };
-const select = { padding: "9px 14px", borderRadius: "10px", border: "1px solid #eddfc8", background: "#fffdf9", fontSize: "13px", fontFamily: "sans-serif", color: "#3d2200" };
+const searchInput = { flex: 1, minWidth: "180px", padding: "9px 14px", borderRadius: "10px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fffdf9)", fontSize: "13px", fontFamily: "sans-serif", color: "var(--color-3d2200)", outline: "none" };
+const select = { padding: "9px 14px", borderRadius: "10px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fffdf9)", fontSize: "13px", fontFamily: "sans-serif", color: "var(--color-3d2200)" };
 
-const tableWrap = { background: "#fffdf9", border: "1px solid #eddfc8", borderRadius: "16px", padding: "8px", boxShadow: "0 2px 12px rgba(160,100,40,0.07)", overflowX: "auto" };
+const tableWrap = { background: "var(--color-fffdf9)", border: "1px solid var(--color-eddfc8)", borderRadius: "16px", padding: "8px", boxShadow: "0 2px 12px rgba(160,100,40,0.07)", overflowX: "auto" };
 const table = { width: "100%", borderCollapse: "collapse", minWidth: "620px" };
-const th = { textAlign: "left", padding: "10px 14px", fontSize: "11px", letterSpacing: "0.05em", textTransform: "uppercase", color: "#9b7040", fontFamily: "sans-serif", borderBottom: "1px solid #eddfc8" };
-const tr = { borderBottom: "1px solid #f0e4d0" };
-const td = { padding: "10px 14px", fontSize: "13px", color: "#5c3a1e", fontFamily: "sans-serif" };
-const tdTitle = { color: "#3d2200", fontWeight: "600", maxWidth: "260px" };
-const emptyText = { textAlign: "center", color: "#b08050", fontStyle: "italic", fontFamily: "sans-serif", padding: "24px 0" };
+const th = { textAlign: "left", padding: "10px 14px", fontSize: "11px", letterSpacing: "0.05em", textTransform: "uppercase", color: "var(--color-9b7040)", fontFamily: "sans-serif", borderBottom: "1px solid var(--color-eddfc8)" };
+const tr = { borderBottom: "1px solid var(--color-f0e4d0)" };
+const td = { padding: "10px 14px", fontSize: "13px", color: "var(--color-5c3a1e)", fontFamily: "sans-serif" };
+const tdTitle = { color: "var(--color-3d2200)", fontWeight: "600", maxWidth: "260px" };
+const emptyText = { textAlign: "center", color: "var(--color-b08050)", fontStyle: "italic", fontFamily: "sans-serif", padding: "24px 0" };

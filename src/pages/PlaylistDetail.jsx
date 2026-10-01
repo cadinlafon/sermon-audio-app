@@ -131,7 +131,7 @@ export default function PlaylistDetail() {
             {COVER_EMOJIS.map((e) => <button key={e} style={playlist.cover?.emoji === e ? { ...coverBtn, ...coverOn } : coverBtn} onClick={() => store.update(playlist.id, { cover: { ...playlist.cover, emoji: e } })} aria-label={`Cover ${e}`}>{e}</button>)}
           </div>
           <div style={coverRow}>
-            {COVER_COLORS.map(([a, b], i) => <button key={i} style={{ ...swatch, background: `linear-gradient(135deg, ${a}, ${b})`, outline: (playlist.cover?.color ?? 0) === i ? "3px solid #3d2200" : "none" }} onClick={() => store.update(playlist.id, { cover: { ...playlist.cover, color: i } })} aria-label={`Color ${i + 1}`} />)}
+            {COVER_COLORS.map(([a, b], i) => <button key={i} style={{ ...swatch, background: `linear-gradient(135deg, ${a}, ${b})`, outline: (playlist.cover?.color ?? 0) === i ? "3px solid var(--color-3d2200)" : "none" }} onClick={() => store.update(playlist.id, { cover: { ...playlist.cover, color: i } })} aria-label={`Color ${i + 1}`} />)}
           </div>
           <label style={toggleRow}>
             <span><strong>Public</strong><span style={muted}> — anyone with the link can listen</span></span>
@@ -195,7 +195,7 @@ function ItemList({ items, playlist, isOwner, onPlay, onRemove, onMove }) {
       {items.map((item, i) => {
         const now = current?.id === item.id;
         return (
-          <div key={item.id} ref={(el) => { rowRefs.current[i] = el; }} style={{ ...row, opacity: drag?.from === i ? 0.5 : 1, borderTop: drag && drag.over === i && drag.from > i ? "2px solid #c97c2e" : "2px solid transparent", borderBottom: drag && drag.over === i && drag.from < i ? "2px solid #c97c2e" : "2px solid transparent" }}>
+          <div key={item.id} ref={(el) => { rowRefs.current[i] = el; }} style={{ ...row, opacity: drag?.from === i ? 0.5 : 1, borderTop: drag && drag.over === i && drag.from > i ? "2px solid var(--color-c97c2e)" : "2px solid transparent", borderBottom: drag && drag.over === i && drag.from < i ? "2px solid var(--color-c97c2e)" : "2px solid transparent" }}>
             {isOwner && (
               <button style={handle} onPointerDown={(e) => start(e, i)} onKeyDown={(e) => { if (e.key === "ArrowUp") { e.preventDefault(); onMove(i, i - 1); } if (e.key === "ArrowDown") { e.preventDefault(); onMove(i, i + 1); } }} aria-label={`Reorder ${item.title}. Drag or use arrow keys.`} title="Drag to reorder">⋮⋮</button>
             )}
@@ -244,35 +244,35 @@ function AddRecordings({ playlist, onClose, onAdd }) {
 
 function Shell({ children }) { return <div style={page}>{children}</div>; }
 
-const page = { padding: "24px 20px 60px", maxWidth: "720px", margin: "0 auto", background: "#fdf8f3", minHeight: "100vh", fontFamily: "'Georgia', serif" };
-const back = { background: "none", border: "none", color: "#9b7040", fontFamily: "sans-serif", fontSize: "14px", cursor: "pointer", padding: "4px 0", marginBottom: "14px" };
+const page = { padding: "24px 20px 60px", maxWidth: "720px", margin: "0 auto", background: "var(--color-fdf8f3)", minHeight: "100vh", fontFamily: "'Georgia', serif" };
+const back = { background: "none", border: "none", color: "var(--color-9b7040)", fontFamily: "sans-serif", fontSize: "14px", cursor: "pointer", padding: "4px 0", marginBottom: "14px" };
 const header = { display: "flex", gap: "18px", alignItems: "center", marginBottom: "16px" };
-const h1 = { margin: "0 0 4px", fontSize: "26px", fontWeight: "normal", color: "#3d2200" };
-const h2 = { margin: 0, fontSize: "17px", fontWeight: "600", color: "#3d2200", fontFamily: "sans-serif" };
-const desc = { margin: "0 0 4px", fontSize: "14px", color: "#7a5530", fontFamily: "sans-serif" };
-const meta = { margin: 0, fontSize: "12px", color: "#9b7040", fontFamily: "sans-serif" };
-const muted = { fontSize: "13px", color: "#9b7040", fontFamily: "sans-serif" };
-const nameInput = { width: "100%", boxSizing: "border-box", padding: "10px 12px", borderRadius: "10px", border: "1px solid #eddfc8", background: "#fffdf9", fontSize: "18px", fontFamily: "'Georgia', serif", color: "#3d2200" };
-const descInput = { width: "100%", boxSizing: "border-box", marginTop: "8px", padding: "10px 12px", borderRadius: "10px", border: "1px solid #eddfc8", background: "#fffdf9", fontSize: "13px", fontFamily: "sans-serif", color: "#3d2200", resize: "vertical", minHeight: "60px" };
-const card = { background: "#fffdf9", border: "1px solid #eddfc8", borderRadius: "14px", padding: "14px", marginBottom: "14px", fontFamily: "sans-serif" };
-const label = { fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em", color: "#9b7040", marginBottom: "8px" };
+const h1 = { margin: "0 0 4px", fontSize: "26px", fontWeight: "normal", color: "var(--color-3d2200)" };
+const h2 = { margin: 0, fontSize: "17px", fontWeight: "600", color: "var(--color-3d2200)", fontFamily: "sans-serif" };
+const desc = { margin: "0 0 4px", fontSize: "14px", color: "var(--color-7a5530)", fontFamily: "sans-serif" };
+const meta = { margin: 0, fontSize: "12px", color: "var(--color-9b7040)", fontFamily: "sans-serif" };
+const muted = { fontSize: "13px", color: "var(--color-9b7040)", fontFamily: "sans-serif" };
+const nameInput = { width: "100%", boxSizing: "border-box", padding: "10px 12px", borderRadius: "10px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fffdf9)", fontSize: "18px", fontFamily: "'Georgia', serif", color: "var(--color-3d2200)" };
+const descInput = { width: "100%", boxSizing: "border-box", marginTop: "8px", padding: "10px 12px", borderRadius: "10px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fffdf9)", fontSize: "13px", fontFamily: "sans-serif", color: "var(--color-3d2200)", resize: "vertical", minHeight: "60px" };
+const card = { background: "var(--color-fffdf9)", border: "1px solid var(--color-eddfc8)", borderRadius: "14px", padding: "14px", marginBottom: "14px", fontFamily: "sans-serif" };
+const label = { fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--color-9b7040)", marginBottom: "8px" };
 const coverRow = { display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "10px" };
-const coverBtn = { width: "42px", height: "42px", borderRadius: "12px", border: "1px solid #eddfc8", background: "#fdf8f3", fontSize: "20px", cursor: "pointer" };
-const coverOn = { borderColor: "#c97c2e", background: "#fff1d6" };
+const coverBtn = { width: "42px", height: "42px", borderRadius: "12px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fdf8f3)", fontSize: "20px", cursor: "pointer" };
+const coverOn = { borderColor: "var(--color-c97c2e)", background: "var(--color-fff1d6)" };
 const swatch = { width: "34px", height: "34px", borderRadius: "50%", border: "none", cursor: "pointer", outlineOffset: "2px" };
-const toggleRow = { display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px", fontSize: "13px", color: "#3d2200", cursor: "pointer" };
+const toggleRow = { display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px", fontSize: "13px", color: "var(--color-3d2200)", cursor: "pointer" };
 const actions = { display: "flex", gap: "8px", flexWrap: "wrap", margin: "0 0 14px" };
-const primary = { padding: "10px 18px", borderRadius: "999px", border: "none", background: "linear-gradient(135deg, #c97c2e, #a85e18)", color: "#fff8ee", fontSize: "13px", fontFamily: "sans-serif", fontWeight: "600", cursor: "pointer" };
-const secondary = { padding: "10px 14px", borderRadius: "999px", border: "1px solid #eddfc8", background: "#fffdf9", color: "#7a4f10", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer" };
-const linkBtn = { background: "none", border: "none", color: "#a85e18", fontSize: "12px", cursor: "pointer", textDecoration: "underline", padding: 0 };
+const primary = { padding: "10px 18px", borderRadius: "999px", border: "none", background: "linear-gradient(135deg, var(--color-c97c2e), var(--color-a85e18))", color: "var(--color-fff8ee)", fontSize: "13px", fontFamily: "sans-serif", fontWeight: "600", cursor: "pointer" };
+const secondary = { padding: "10px 14px", borderRadius: "999px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fffdf9)", color: "var(--color-7a4f10)", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer" };
+const linkBtn = { background: "none", border: "none", color: "var(--color-a85e18)", fontSize: "12px", cursor: "pointer", textDecoration: "underline", padding: 0 };
 const sortBar = { display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px", flexWrap: "wrap", margin: "18px 0 10px" };
-const select = { padding: "8px 12px", borderRadius: "999px", border: "1px solid #eddfc8", background: "#fffdf9", fontSize: "12px", fontFamily: "sans-serif", color: "#3d2200" };
-const row = { display: "flex", alignItems: "center", gap: "6px", background: "#fffdf9", border: "1px solid #eddfc8", borderRadius: "12px", padding: "8px 10px", marginBottom: "8px" };
+const select = { padding: "8px 12px", borderRadius: "999px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fffdf9)", fontSize: "12px", fontFamily: "sans-serif", color: "var(--color-3d2200)" };
+const row = { display: "flex", alignItems: "center", gap: "6px", background: "var(--color-fffdf9)", border: "1px solid var(--color-eddfc8)", borderRadius: "12px", padding: "8px 10px", marginBottom: "8px" };
 const rowMain = { flex: 1, minWidth: 0, display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "2px", background: "none", border: "none", textAlign: "left", cursor: "pointer", padding: "4px" };
-const rowTitle = { display: "block", fontSize: "14px", color: "#3d2200" };
-const rowSub = { display: "block", fontSize: "12px", color: "#9b7040", fontFamily: "sans-serif" };
-const handle = { border: "none", background: "transparent", color: "#b08050", fontSize: "18px", padding: "0 6px", cursor: "grab", touchAction: "none", letterSpacing: "-3px", minWidth: "30px", minHeight: "40px" };
-const x = { width: "32px", height: "32px", borderRadius: "50%", border: "none", background: "#f4e7d4", color: "#7a4f10", cursor: "pointer", fontSize: "12px", flexShrink: 0 };
+const rowTitle = { display: "block", fontSize: "14px", color: "var(--color-3d2200)" };
+const rowSub = { display: "block", fontSize: "12px", color: "var(--color-9b7040)", fontFamily: "sans-serif" };
+const handle = { border: "none", background: "transparent", color: "var(--color-b08050)", fontSize: "18px", padding: "0 6px", cursor: "grab", touchAction: "none", letterSpacing: "-3px", minWidth: "30px", minHeight: "40px" };
+const x = { width: "32px", height: "32px", borderRadius: "50%", border: "none", background: "var(--color-f4e7d4)", color: "var(--color-7a4f10)", cursor: "pointer", fontSize: "12px", flexShrink: 0 };
 const backdrop = { position: "fixed", inset: 0, background: "rgba(40,18,0,0.5)", zIndex: 6000, display: "flex", alignItems: "flex-end", justifyContent: "center" };
-const sheet = { background: "#fffdf9", width: "100%", maxWidth: "520px", borderRadius: "22px 22px 0 0", padding: "20px 20px calc(env(safe-area-inset-bottom, 0px) + 20px)", fontFamily: "sans-serif" };
-const pickRow = { display: "flex", alignItems: "center", gap: "10px", padding: "8px 4px", borderBottom: "1px solid #f0e4d0", cursor: "pointer" };
+const sheet = { background: "var(--color-fffdf9)", width: "100%", maxWidth: "520px", borderRadius: "22px 22px 0 0", padding: "20px 20px calc(env(safe-area-inset-bottom, 0px) + 20px)", fontFamily: "sans-serif" };
+const pickRow = { display: "flex", alignItems: "center", gap: "10px", padding: "8px 4px", borderBottom: "1px solid var(--color-f0e4d0)", cursor: "pointer" };

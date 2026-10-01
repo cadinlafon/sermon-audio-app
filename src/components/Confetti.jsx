@@ -6,7 +6,7 @@ export function celebrate() {
   canvas.width = window.innerWidth; canvas.height = window.innerHeight;
   document.body.appendChild(canvas);
   const ctx = canvas.getContext("2d");
-  const colors = ["#c97c2e", "#e08930", "#fde8b8", "#2f8a4a", "#3b6ea8", "#b3432c"];
+  const colors = ["var(--color-c97c2e)", "var(--color-e08930)", "var(--color-fde8b8)", "var(--color-2f8a4a)", "var(--color-3b6ea8)", "var(--color-b3432c)"];
   const bits = Array.from({ length: 120 }, () => ({ x: canvas.width / 2, y: canvas.height * 0.4, vx: (Math.random() - 0.5) * 14, vy: -Math.random() * 14 - 4, s: 4 + Math.random() * 6, c: colors[Math.floor(Math.random() * colors.length)], r: Math.random() * 6 }));
   const start = performance.now();
   const frame = (now) => {

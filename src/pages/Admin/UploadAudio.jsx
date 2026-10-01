@@ -208,16 +208,16 @@ export default function UploadAudio() {
 
 const page = { maxWidth: "640px" };
 const pageHeader = { marginBottom: "24px" };
-const pageTitle = { fontSize: "26px", fontWeight: "normal", color: "#3d2200", margin: "0 0 4px", fontFamily: "'Georgia', serif" };
-const pageSubtitle = { fontSize: "14px", color: "#9b7040", fontFamily: "sans-serif", margin: 0 };
+const pageTitle = { fontSize: "26px", fontWeight: "normal", color: "var(--color-3d2200)", margin: "0 0 4px", fontFamily: "'Georgia', serif" };
+const pageSubtitle = { fontSize: "14px", color: "var(--color-9b7040)", fontFamily: "sans-serif", margin: 0 };
 
 const modeRow = { display: "flex", gap: "8px", marginBottom: "20px" };
-const modeBtn = { padding: "8px 16px", borderRadius: "999px", border: "1px solid #eddfc8", background: "#fdf8f3", color: "#7a4f10", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer" };
-const modeBtnActive = { background: "linear-gradient(135deg, #c97c2e, #a85e18)", color: "#fff8ee", border: "none" };
+const modeBtn = { padding: "8px 16px", borderRadius: "999px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fdf8f3)", color: "var(--color-7a4f10)", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer" };
+const modeBtnActive = { background: "linear-gradient(135deg, var(--color-c97c2e), var(--color-a85e18))", color: "var(--color-fff8ee)", border: "none" };
 
 const card = {
-  background: "#fffdf9",
-  border: "1px solid #eddfc8",
+  background: "var(--color-fffdf9)",
+  border: "1px solid var(--color-eddfc8)",
   borderRadius: "18px",
   padding: "28px",
   boxShadow: "0 2px 14px rgba(160,100,40,0.07)",
@@ -227,61 +227,61 @@ const card = {
 };
 
 const fieldGroup = { display: "flex", flexDirection: "column", gap: "6px" };
-const fieldLabel = { fontSize: "12px", fontFamily: "sans-serif", color: "#9b7040", letterSpacing: "0.06em", textTransform: "uppercase" };
+const fieldLabel = { fontSize: "12px", fontFamily: "sans-serif", color: "var(--color-9b7040)", letterSpacing: "0.06em", textTransform: "uppercase" };
 
 const row2 = { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" };
 
 const input = {
   padding: "10px 14px",
   borderRadius: "10px",
-  border: "1px solid #eddfc8",
-  background: "#fdf8f3",
+  border: "1px solid var(--color-eddfc8)",
+  background: "var(--color-fdf8f3)",
   fontSize: "14px",
   fontFamily: "sans-serif",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   outline: "none",
   width: "100%",
   boxSizing: "border-box",
 };
 
 const dropZone = {
-  border: "2px dashed #eddfc8",
+  border: "2px dashed var(--color-eddfc8)",
   borderRadius: "14px",
   padding: "36px 20px",
   cursor: "pointer",
-  background: "#fdf8f3",
+  background: "var(--color-fdf8f3)",
   transition: "border-color 0.2s",
 };
 
-const dropZoneActive = { borderColor: "#c97c2e", background: "#fef3e2" };
+const dropZoneActive = { borderColor: "var(--color-c97c2e)", background: "var(--color-fef3e2)" };
 const dropIcon = { fontSize: "32px", marginBottom: "8px" };
-const dropFileName = { fontSize: "14px", fontFamily: "sans-serif", color: "#3d2200", marginBottom: "4px" };
-const dropDuration = { fontSize: "12px", fontFamily: "sans-serif", color: "#9b7040" };
-const dropText = { fontSize: "14px", fontFamily: "sans-serif", color: "#5c3a1e", marginBottom: "4px" };
-const dropHint = { fontSize: "12px", fontFamily: "sans-serif", color: "#b08050" };
+const dropFileName = { fontSize: "14px", fontFamily: "sans-serif", color: "var(--color-3d2200)", marginBottom: "4px" };
+const dropDuration = { fontSize: "12px", fontFamily: "sans-serif", color: "var(--color-9b7040)" };
+const dropText = { fontSize: "14px", fontFamily: "sans-serif", color: "var(--color-5c3a1e)", marginBottom: "4px" };
+const dropHint = { fontSize: "12px", fontFamily: "sans-serif", color: "var(--color-b08050)" };
 
-const progressTrack = { height: "8px", background: "#eddfc8", borderRadius: "999px", overflow: "hidden" };
+const progressTrack = { height: "8px", background: "var(--color-eddfc8)", borderRadius: "999px", overflow: "hidden" };
 const progressFillIndeterminate = {
   height: "100%",
   width: "40%",
-  background: "linear-gradient(to right, #e08930, #c97c2e)",
+  background: "linear-gradient(to right, var(--color-e08930), var(--color-c97c2e))",
   borderRadius: "999px",
   animation: "uploadSlide 1.1s ease-in-out infinite",
 };
 const progressFillDeterminate = {
   height: "100%",
-  background: "linear-gradient(to right, #e08930, #c97c2e)",
+  background: "linear-gradient(to right, var(--color-e08930), var(--color-c97c2e))",
   borderRadius: "999px",
   transition: "width 0.2s ease-out",
 };
-const progressLabel = { fontSize: "12px", fontFamily: "sans-serif", color: "#9b7040", margin: "6px 0 0", textAlign: "center" };
+const progressLabel = { fontSize: "12px", fontFamily: "sans-serif", color: "var(--color-9b7040)", margin: "6px 0 0", textAlign: "center" };
 
 const uploadBtn = {
   padding: "13px",
   borderRadius: "12px",
   border: "none",
-  background: "linear-gradient(135deg, #c97c2e 0%, #a85e18 100%)",
-  color: "#fff8ee",
+  background: "linear-gradient(135deg, var(--color-c97c2e) 0%, var(--color-a85e18) 100%)",
+  color: "var(--color-fff8ee)",
   fontSize: "15px",
   fontFamily: "sans-serif",
   cursor: "pointer",

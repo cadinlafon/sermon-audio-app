@@ -154,7 +154,7 @@ export default function Transcript() {
               {refs.length > 0 && (
                 <>
                   <div style={label}>Scripture mentioned</div>
-                  <div style={chips}>{refs.map((r) => <button key={r.label} style={{ ...chip, background: "#e8f0fe", color: "#2a5ab5", borderColor: "#c9d8f5" }} onClick={() => navigate(`/search?q=${encodeURIComponent(r.label)}`)}>{r.label}{r.count > 1 ? ` ×${r.count}` : ""}</button>)}</div>
+                  <div style={chips}>{refs.map((r) => <button key={r.label} style={{ ...chip, background: "var(--color-e8f0fe)", color: "var(--color-2a5ab5)", borderColor: "var(--color-c9d8f5)" }} onClick={() => navigate(`/search?q=${encodeURIComponent(r.label)}`)}>{r.label}{r.count > 1 ? ` ×${r.count}` : ""}</button>)}</div>
                 </>
               )}
               {isAdmin && <button style={linkBtn} onClick={regenSections} disabled={generating}>{generating ? "Working…" : "↻ Regenerate AI sections"}</button>}
@@ -168,7 +168,7 @@ export default function Transcript() {
               const isHit = matches.length > 0 && matches[hit % matches.length] === pi;
               const edited = data.edits[p.index] !== undefined;
               return (
-                <div key={p.index} ref={(el) => { paraRefs.current[pi] = el; }} style={{ ...para, background: isActive ? "#fff1d6" : isHit ? "#fef9c3" : "transparent", borderLeft: isActive ? "3px solid #c97c2e" : "3px solid transparent" }}>
+                <div key={p.index} ref={(el) => { paraRefs.current[pi] = el; }} style={{ ...para, background: isActive ? "var(--color-fff1d6)" : isHit ? "var(--color-fef9c3)" : "transparent", borderLeft: isActive ? "3px solid var(--color-c97c2e)" : "3px solid transparent" }}>
                   <div style={paraHead}>
                     <button style={time} onClick={() => jump(p.start)} title="Play from here" className="pf-no-print">{formatTime(p.start)}</button>
                     <span className="pf-print-only" style={{ display: "none" }}>[{formatTime(p.start)}]</span>
@@ -218,35 +218,35 @@ function Marked({ text, term }) {
 
 function Shell({ children }) { return <div style={page}>{children}</div>; }
 
-const page = { padding: "24px 20px 80px", maxWidth: "760px", margin: "0 auto", background: "#fdf8f3", minHeight: "100vh", fontFamily: "'Georgia', serif" };
-const back = { background: "none", border: "none", color: "#9b7040", fontFamily: "sans-serif", fontSize: "14px", cursor: "pointer", padding: "4px 0", marginBottom: "10px" };
-const h1 = { margin: "0 0 4px", fontSize: "24px", fontWeight: "normal", color: "#3d2200" };
-const sub = { margin: "0 0 16px", fontSize: "13px", color: "#9b7040", fontFamily: "sans-serif" };
-const muted = { fontSize: "13px", color: "#9b7040", fontFamily: "sans-serif", lineHeight: 1.55 };
+const page = { padding: "24px 20px 80px", maxWidth: "760px", margin: "0 auto", background: "var(--color-fdf8f3)", minHeight: "100vh", fontFamily: "'Georgia', serif" };
+const back = { background: "none", border: "none", color: "var(--color-9b7040)", fontFamily: "sans-serif", fontSize: "14px", cursor: "pointer", padding: "4px 0", marginBottom: "10px" };
+const h1 = { margin: "0 0 4px", fontSize: "24px", fontWeight: "normal", color: "var(--color-3d2200)" };
+const sub = { margin: "0 0 16px", fontSize: "13px", color: "var(--color-9b7040)", fontFamily: "sans-serif" };
+const muted = { fontSize: "13px", color: "var(--color-9b7040)", fontFamily: "sans-serif", lineHeight: 1.55 };
 const empty = { textAlign: "center", padding: "40px 10px" };
-const emptyTitle = { margin: "8px 0 6px", fontSize: "18px", fontWeight: "normal", color: "#3d2200" };
+const emptyTitle = { margin: "8px 0 6px", fontSize: "18px", fontWeight: "normal", color: "var(--color-3d2200)" };
 const toolbar = { display: "flex", flexWrap: "wrap", gap: "8px", alignItems: "center", marginBottom: "12px" };
 const searchWrap = { position: "relative", flex: "1 1 220px" };
-const searchInput = { width: "100%", boxSizing: "border-box", padding: "10px 96px 10px 16px", borderRadius: "999px", border: "1px solid #eddfc8", background: "#fffdf9", fontSize: "14px", fontFamily: "sans-serif" };
-const hitCount = { position: "absolute", right: "6px", top: "50%", transform: "translateY(-50%)", display: "flex", alignItems: "center", gap: "4px", fontSize: "11px", color: "#9b7040", fontFamily: "sans-serif" };
-const miniBtn = { width: "28px", height: "28px", borderRadius: "50%", border: "none", background: "#f4e7d4", color: "#7a4f10", cursor: "pointer", fontSize: "12px" };
-const toggle = { display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", fontFamily: "sans-serif", color: "#5c3a1e" };
-const ghost = { padding: "9px 14px", borderRadius: "999px", border: "1px solid #eddfc8", background: "#fffdf9", color: "#7a4f10", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer" };
-const primary = { padding: "10px 18px", borderRadius: "999px", border: "none", background: "linear-gradient(135deg, #c97c2e, #a85e18)", color: "#fff8ee", fontSize: "13px", fontFamily: "sans-serif", fontWeight: "600", cursor: "pointer" };
-const linkBtn = { background: "none", border: "none", color: "#a85e18", fontSize: "12px", cursor: "pointer", textDecoration: "underline", padding: 0, marginTop: "8px", fontFamily: "sans-serif" };
-const card = { background: "#fffdf9", border: "1px solid #eddfc8", borderRadius: "14px", padding: "14px", marginBottom: "16px" };
-const label = { fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em", color: "#9b7040", fontFamily: "sans-serif", margin: "4px 0 8px" };
+const searchInput = { width: "100%", boxSizing: "border-box", padding: "10px 96px 10px 16px", borderRadius: "999px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fffdf9)", fontSize: "14px", fontFamily: "sans-serif" };
+const hitCount = { position: "absolute", right: "6px", top: "50%", transform: "translateY(-50%)", display: "flex", alignItems: "center", gap: "4px", fontSize: "11px", color: "var(--color-9b7040)", fontFamily: "sans-serif" };
+const miniBtn = { width: "28px", height: "28px", borderRadius: "50%", border: "none", background: "var(--color-f4e7d4)", color: "var(--color-7a4f10)", cursor: "pointer", fontSize: "12px" };
+const toggle = { display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", fontFamily: "sans-serif", color: "var(--color-5c3a1e)" };
+const ghost = { padding: "9px 14px", borderRadius: "999px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fffdf9)", color: "var(--color-7a4f10)", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer" };
+const primary = { padding: "10px 18px", borderRadius: "999px", border: "none", background: "linear-gradient(135deg, var(--color-c97c2e), var(--color-a85e18))", color: "var(--color-fff8ee)", fontSize: "13px", fontFamily: "sans-serif", fontWeight: "600", cursor: "pointer" };
+const linkBtn = { background: "none", border: "none", color: "var(--color-a85e18)", fontSize: "12px", cursor: "pointer", textDecoration: "underline", padding: 0, marginTop: "8px", fontFamily: "sans-serif" };
+const card = { background: "var(--color-fffdf9)", border: "1px solid var(--color-eddfc8)", borderRadius: "14px", padding: "14px", marginBottom: "16px" };
+const label = { fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--color-9b7040)", fontFamily: "sans-serif", margin: "4px 0 8px" };
 const chips = { display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "10px" };
-const chip = { padding: "6px 12px", borderRadius: "999px", border: "1px solid #eddfc8", background: "#fdf8f3", color: "#7a4f10", fontSize: "12px", fontFamily: "sans-serif", cursor: "pointer" };
+const chip = { padding: "6px 12px", borderRadius: "999px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fdf8f3)", color: "var(--color-7a4f10)", fontSize: "12px", fontFamily: "sans-serif", cursor: "pointer" };
 const secChip = { ...chip, textAlign: "left" };
-const secTime = { fontWeight: "600", color: "#a85e18", marginRight: "4px" };
+const secTime = { fontWeight: "600", color: "var(--color-a85e18)", marginRight: "4px" };
 const para = { padding: "10px 12px", borderRadius: "10px", marginBottom: "4px", transition: "background 0.2s" };
 const paraHead = { display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" };
-const time = { padding: "3px 10px", borderRadius: "999px", border: "none", background: "#fde8b8", color: "#7a4f10", fontSize: "12px", fontWeight: "600", cursor: "pointer", fontFamily: "sans-serif" };
-const speakerLabel = { fontSize: "12px", color: "#9b7040", fontFamily: "sans-serif", fontWeight: "600" };
-const editedTag = { fontSize: "10px", padding: "1px 8px", borderRadius: "999px", background: "#dcfce7", color: "#166534", fontFamily: "sans-serif" };
-const paraText = { margin: 0, fontSize: "16px", lineHeight: 1.75, color: "#3d2200" };
-const activeSeg = { background: "#fde8b8", borderRadius: "4px" };
-const mark = { background: "#fde047", color: "inherit", borderRadius: "3px" };
-const labelInput = { width: "100%", boxSizing: "border-box", padding: "8px 10px", borderRadius: "8px", border: "1px solid #eddfc8", background: "#fdf8f3", fontSize: "13px", fontFamily: "sans-serif", marginBottom: "8px" };
-const editArea = { width: "100%", boxSizing: "border-box", minHeight: "120px", padding: "10px", borderRadius: "8px", border: "1px solid #eddfc8", background: "#fdf8f3", fontSize: "15px", fontFamily: "'Georgia', serif", lineHeight: 1.6, marginBottom: "8px" };
+const time = { padding: "3px 10px", borderRadius: "999px", border: "none", background: "var(--color-fde8b8)", color: "var(--color-7a4f10)", fontSize: "12px", fontWeight: "600", cursor: "pointer", fontFamily: "sans-serif" };
+const speakerLabel = { fontSize: "12px", color: "var(--color-9b7040)", fontFamily: "sans-serif", fontWeight: "600" };
+const editedTag = { fontSize: "10px", padding: "1px 8px", borderRadius: "999px", background: "var(--color-dcfce7)", color: "var(--color-166534)", fontFamily: "sans-serif" };
+const paraText = { margin: 0, fontSize: "16px", lineHeight: 1.75, color: "var(--color-3d2200)" };
+const activeSeg = { background: "var(--color-fde8b8)", borderRadius: "4px" };
+const mark = { background: "var(--color-fde047)", color: "inherit", borderRadius: "3px" };
+const labelInput = { width: "100%", boxSizing: "border-box", padding: "8px 10px", borderRadius: "8px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fdf8f3)", fontSize: "13px", fontFamily: "sans-serif", marginBottom: "8px" };
+const editArea = { width: "100%", boxSizing: "border-box", minHeight: "120px", padding: "10px", borderRadius: "8px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fdf8f3)", fontSize: "15px", fontFamily: "'Georgia', serif", lineHeight: 1.6, marginBottom: "8px" };

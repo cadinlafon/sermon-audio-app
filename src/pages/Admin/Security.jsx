@@ -399,43 +399,43 @@ function ActionToggleRow({ icon, label, checked, onToggle }) {
 
 const page = { maxWidth: "600px" };
 const pageHeader = { marginBottom: "24px" };
-const pageTitle = { fontSize: "26px", fontWeight: "normal", color: "#3d2200", margin: "0 0 4px", fontFamily: "'Georgia', serif" };
-const pageSubtitle = { fontSize: "14px", color: "#9b7040", fontFamily: "sans-serif", margin: 0 };
-const loadingWrap = { padding: "40px", fontFamily: "sans-serif", color: "#9b7040" };
+const pageTitle = { fontSize: "26px", fontWeight: "normal", color: "var(--color-3d2200)", margin: "0 0 4px", fontFamily: "'Georgia', serif" };
+const pageSubtitle = { fontSize: "14px", color: "var(--color-9b7040)", fontFamily: "sans-serif", margin: 0 };
+const loadingWrap = { padding: "40px", fontFamily: "sans-serif", color: "var(--color-9b7040)" };
 
-const card = { background: "#fffdf9", border: "1px solid #eddfc8", borderRadius: "18px", padding: "24px", boxShadow: "0 2px 12px rgba(160,100,40,0.07)", display: "flex", flexDirection: "column", gap: "16px" };
-const sectionHeader = { display: "flex", alignItems: "center", gap: "10px", paddingBottom: "16px", borderBottom: "1px solid #eddfc8" };
+const card = { background: "var(--color-fffdf9)", border: "1px solid var(--color-eddfc8)", borderRadius: "18px", padding: "24px", boxShadow: "0 2px 12px rgba(160,100,40,0.07)", display: "flex", flexDirection: "column", gap: "16px" };
+const sectionHeader = { display: "flex", alignItems: "center", gap: "10px", paddingBottom: "16px", borderBottom: "1px solid var(--color-eddfc8)" };
 const sectionIcon = { fontSize: "20px" };
-const sectionTitle = { margin: 0, fontSize: "18px", fontWeight: "normal", color: "#3d2200", fontFamily: "'Georgia', serif" };
-const cardHint = { fontSize: "12px", fontFamily: "sans-serif", color: "#9b7040", margin: "-8px 0 0" };
+const sectionTitle = { margin: 0, fontSize: "18px", fontWeight: "normal", color: "var(--color-3d2200)", fontFamily: "'Georgia', serif" };
+const cardHint = { fontSize: "12px", fontFamily: "sans-serif", color: "var(--color-9b7040)", margin: "-8px 0 0" };
 
 const toggleRow = { display: "flex", justifyContent: "space-between", alignItems: "center", gap: "16px" };
-const toggleLabel = { fontSize: "14px", fontFamily: "sans-serif", color: "#3d2200", marginBottom: "3px" };
-const toggleHint = { fontSize: "12px", fontFamily: "sans-serif", color: "#9b7040" };
-const toggle = { width: "46px", height: "26px", borderRadius: "999px", background: "#eddfc8", border: "none", cursor: "pointer", position: "relative", flexShrink: 0, transition: "background 0.2s" };
-const toggleOn = { background: "linear-gradient(135deg, #c97c2e, #a85e18)" };
-const toggleKnob = { position: "absolute", top: "3px", left: "3px", width: "20px", height: "20px", borderRadius: "50%", background: "#fff", transition: "transform 0.2s", boxShadow: "0 1px 4px rgba(0,0,0,0.2)" };
+const toggleLabel = { fontSize: "14px", fontFamily: "sans-serif", color: "var(--color-3d2200)", marginBottom: "3px" };
+const toggleHint = { fontSize: "12px", fontFamily: "sans-serif", color: "var(--color-9b7040)" };
+const toggle = { width: "46px", height: "26px", borderRadius: "999px", background: "var(--color-eddfc8)", border: "none", cursor: "pointer", position: "relative", flexShrink: 0, transition: "background 0.2s" };
+const toggleOn = { background: "linear-gradient(135deg, var(--color-c97c2e), var(--color-a85e18))" };
+const toggleKnob = { position: "absolute", top: "3px", left: "3px", width: "20px", height: "20px", borderRadius: "50%", background: "var(--color-ffffff)", transition: "transform 0.2s", boxShadow: "0 1px 4px rgba(0,0,0,0.2)" };
 
 const statusRow = { display: "flex", alignItems: "center", gap: "8px" };
-const statusDotOn = { width: "9px", height: "9px", borderRadius: "50%", background: "#16a34a", display: "inline-block" };
-const statusDotOff = { width: "9px", height: "9px", borderRadius: "50%", background: "#d0b28a", display: "inline-block" };
-const statusText = { fontSize: "13px", fontFamily: "sans-serif", color: "#5c3a1e" };
+const statusDotOn = { width: "9px", height: "9px", borderRadius: "50%", background: "var(--color-16a34a)", display: "inline-block" };
+const statusDotOff = { width: "9px", height: "9px", borderRadius: "50%", background: "var(--color-d0b28a)", display: "inline-block" };
+const statusText = { fontSize: "13px", fontFamily: "sans-serif", color: "var(--color-5c3a1e)" };
 
 const btnRow = { display: "flex", gap: "10px", flexWrap: "wrap" };
-const secondaryBtn = { padding: "10px 18px", borderRadius: "10px", border: "1px solid #eddfc8", background: "#fdf8f3", color: "#7a4f10", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer", fontWeight: "600" };
-const dangerBtn = { padding: "10px 18px", borderRadius: "10px", border: "1px solid #f3c8ba", background: "#fff5f2", color: "#a33622", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer" };
-const dangerBtnSmall = { padding: "6px 12px", borderRadius: "8px", border: "1px solid #f3c8ba", background: "#fff5f2", color: "#a33622", fontSize: "12px", fontFamily: "sans-serif", cursor: "pointer" };
-const saveBtn = { padding: "10px 20px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, #c97c2e, #a85e18)", color: "#fff8ee", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer", fontWeight: "600" };
-const cancelBtn = { padding: "10px 18px", borderRadius: "10px", border: "1px solid #eddfc8", background: "transparent", color: "#9b7040", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer" };
+const secondaryBtn = { padding: "10px 18px", borderRadius: "10px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fdf8f3)", color: "var(--color-7a4f10)", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer", fontWeight: "600" };
+const dangerBtn = { padding: "10px 18px", borderRadius: "10px", border: "1px solid var(--color-f3c8ba)", background: "var(--color-fff5f2)", color: "var(--color-a33622)", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer" };
+const dangerBtnSmall = { padding: "6px 12px", borderRadius: "8px", border: "1px solid var(--color-f3c8ba)", background: "var(--color-fff5f2)", color: "var(--color-a33622)", fontSize: "12px", fontFamily: "sans-serif", cursor: "pointer" };
+const saveBtn = { padding: "10px 20px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, var(--color-c97c2e), var(--color-a85e18))", color: "var(--color-fff8ee)", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer", fontWeight: "600" };
+const cancelBtn = { padding: "10px 18px", borderRadius: "10px", border: "1px solid var(--color-eddfc8)", background: "transparent", color: "var(--color-9b7040)", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer" };
 
 const pinFormWrap = { display: "flex", flexDirection: "column", gap: "10px", maxWidth: "280px" };
-const pinFormInput = { padding: "10px 12px", borderRadius: "10px", border: "1px solid #eddfc8", background: "#fdf8f3", fontSize: "16px", letterSpacing: "0.2em", fontFamily: "monospace", color: "#3d2200", outline: "none" };
+const pinFormInput = { padding: "10px 12px", borderRadius: "10px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fdf8f3)", fontSize: "16px", letterSpacing: "0.2em", fontFamily: "monospace", color: "var(--color-3d2200)", outline: "none" };
 
 const actionList = { display: "flex", flexDirection: "column", gap: "4px" };
-const actionRow = { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 4px", borderBottom: "1px solid #f0e4d0", cursor: "pointer" };
-const actionLabel = { fontSize: "13px", fontFamily: "sans-serif", color: "#3d2200" };
+const actionRow = { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 4px", borderBottom: "1px solid var(--color-f0e4d0)", cursor: "pointer" };
+const actionLabel = { fontSize: "13px", fontFamily: "sans-serif", color: "var(--color-3d2200)" };
 
-const hintMuted = { fontSize: "13px", fontFamily: "sans-serif", color: "#b08050", fontStyle: "italic", margin: 0 };
+const hintMuted = { fontSize: "13px", fontFamily: "sans-serif", color: "var(--color-b08050)", fontStyle: "italic", margin: 0 };
 const passkeyList = { display: "flex", flexDirection: "column", gap: "8px" };
-const passkeyRow = { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", borderRadius: "10px", background: "#fdf8f3", border: "1px solid #f0e4d0" };
-const passkeyName = { fontSize: "13px", fontFamily: "sans-serif", color: "#3d2200" };
+const passkeyRow = { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", borderRadius: "10px", background: "var(--color-fdf8f3)", border: "1px solid var(--color-f0e4d0)" };
+const passkeyName = { fontSize: "13px", fontFamily: "sans-serif", color: "var(--color-3d2200)" };

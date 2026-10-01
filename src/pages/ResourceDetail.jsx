@@ -92,7 +92,7 @@ export default function ResourceDetail() {
   if (error === "load-failed") {
     return (
       <div style={page}>
-        <p style={{ ...stateText, color: "#b3432c" }}>Couldn't load this resource. Please try again.</p>
+        <p style={{ ...stateText, color: "var(--color-b3432c)" }}>Couldn't load this resource. Please try again.</p>
         <BackLink navigate={navigate} />
       </div>
     );
@@ -370,46 +370,46 @@ function BackLink({ navigate }) {
 // STYLES
 ////////////////////////////////////////////////
 
-const page = { padding: "24px 20px 60px", maxWidth: "760px", margin: "0 auto", background: "#fdf8f3", minHeight: "100vh" };
-const pageTitle = { textAlign: "center", fontFamily: "'Georgia', serif", fontWeight: "normal", color: "#3d2200" };
-const stateText = { textAlign: "center", color: "#b08050", fontFamily: "sans-serif", fontStyle: "italic", padding: "20px 0" };
-const errorText = { color: "#b3432c", fontSize: "13px", fontFamily: "sans-serif", margin: "8px 0 0" };
+const page = { padding: "24px 20px 60px", maxWidth: "760px", margin: "0 auto", background: "var(--color-fdf8f3)", minHeight: "100vh" };
+const pageTitle = { textAlign: "center", fontFamily: "'Georgia', serif", fontWeight: "normal", color: "var(--color-3d2200)" };
+const stateText = { textAlign: "center", color: "var(--color-b08050)", fontFamily: "sans-serif", fontStyle: "italic", padding: "20px 0" };
+const errorText = { color: "var(--color-b3432c)", fontSize: "13px", fontFamily: "sans-serif", margin: "8px 0 0" };
 
-const backLink = { border: "none", background: "transparent", color: "#a85e18", fontFamily: "sans-serif", fontSize: "13px", cursor: "pointer", padding: "0 0 16px", display: "block" };
+const backLink = { border: "none", background: "transparent", color: "var(--color-a85e18)", fontFamily: "sans-serif", fontSize: "13px", cursor: "pointer", padding: "0 0 16px", display: "block" };
 
-const draftBanner = { background: "#fef3c7", border: "1px solid #f6e4b0", color: "#7a5a10", padding: "10px 14px", borderRadius: "10px", fontFamily: "sans-serif", fontSize: "13px", marginBottom: "16px", textAlign: "center" };
+const draftBanner = { background: "var(--color-fef3c7)", border: "1px solid var(--color-f6e4b0)", color: "var(--color-7a5a10)", padding: "10px 14px", borderRadius: "10px", fontFamily: "sans-serif", fontSize: "13px", marginBottom: "16px", textAlign: "center" };
 
-const card = { background: "#fffdf9", border: "1px solid #eddfc8", borderRadius: "18px", overflow: "hidden", boxShadow: "0 2px 12px rgba(160,100,40,0.07)" };
+const card = { background: "var(--color-fffdf9)", border: "1px solid var(--color-eddfc8)", borderRadius: "18px", overflow: "hidden", boxShadow: "0 2px 12px rgba(160,100,40,0.07)" };
 const heroImage = { width: "100%", height: "260px", objectFit: "cover", display: "block" };
 const cardBody = { padding: "24px 22px" };
 
-const typeBadge = { display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: "600", padding: "4px 10px", borderRadius: "999px", background: "#fdf1de", color: "#7a4f10", fontFamily: "sans-serif", marginBottom: "12px" };
-const title = { fontSize: "24px", fontWeight: "normal", color: "#3d2200", fontFamily: "'Georgia', serif", margin: "0 0 10px" };
+const typeBadge = { display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: "600", padding: "4px 10px", borderRadius: "999px", background: "var(--color-fdf1de)", color: "var(--color-7a4f10)", fontFamily: "sans-serif", marginBottom: "12px" };
+const title = { fontSize: "24px", fontWeight: "normal", color: "var(--color-3d2200)", fontFamily: "'Georgia', serif", margin: "0 0 10px" };
 const metaRow = { display: "flex", flexWrap: "wrap", gap: "8px", alignItems: "center", marginBottom: "14px" };
-const metaItem = { fontSize: "12px", color: "#9b7040", fontFamily: "sans-serif" };
-const categoryTag = { fontSize: "11px", padding: "3px 9px", borderRadius: "999px", background: "#e8f0fe", color: "#2a5ab5", fontFamily: "sans-serif" };
-const description = { fontSize: "14px", color: "#5c3a1e", fontFamily: "sans-serif", lineHeight: 1.7, margin: "0 0 20px", whiteSpace: "pre-wrap" };
+const metaItem = { fontSize: "12px", color: "var(--color-9b7040)", fontFamily: "sans-serif" };
+const categoryTag = { fontSize: "11px", padding: "3px 9px", borderRadius: "999px", background: "var(--color-e8f0fe)", color: "var(--color-2a5ab5)", fontFamily: "sans-serif" };
+const description = { fontSize: "14px", color: "var(--color-5c3a1e)", fontFamily: "sans-serif", lineHeight: 1.7, margin: "0 0 20px", whiteSpace: "pre-wrap" };
 
-const contentArea = { borderTop: "1px solid #f0e4d0", paddingTop: "20px" };
+const contentArea = { borderTop: "1px solid var(--color-f0e4d0)", paddingTop: "20px" };
 const stackCol = { display: "flex", flexDirection: "column", gap: "12px" };
 
-const scriptureRef = { fontSize: "18px", fontFamily: "'Georgia', serif", color: "#3d2200", fontStyle: "italic", margin: 0 };
+const scriptureRef = { fontSize: "18px", fontFamily: "'Georgia', serif", color: "var(--color-3d2200)", fontStyle: "italic", margin: 0 };
 
-const primaryBtn = { padding: "12px 22px", borderRadius: "999px", border: "none", background: "linear-gradient(135deg, #c97c2e 0%, #a85e18 100%)", color: "#fff8ee", fontSize: "14px", fontWeight: "600", fontFamily: "sans-serif", cursor: "pointer", boxShadow: "0 3px 10px rgba(160,80,20,0.25)" };
-const primaryBtnLink = { display: "inline-block", padding: "12px 22px", borderRadius: "999px", border: "none", background: "linear-gradient(135deg, #c97c2e 0%, #a85e18 100%)", color: "#fff8ee", fontSize: "14px", fontWeight: "600", fontFamily: "sans-serif", textDecoration: "none", boxShadow: "0 3px 10px rgba(160,80,20,0.25)" };
-const secondaryLink = { fontSize: "13px", color: "#a85e18", fontFamily: "sans-serif", fontWeight: "600", textDecoration: "none" };
+const primaryBtn = { padding: "12px 22px", borderRadius: "999px", border: "none", background: "linear-gradient(135deg, var(--color-c97c2e) 0%, var(--color-a85e18) 100%)", color: "var(--color-fff8ee)", fontSize: "14px", fontWeight: "600", fontFamily: "sans-serif", cursor: "pointer", boxShadow: "0 3px 10px rgba(160,80,20,0.25)" };
+const primaryBtnLink = { display: "inline-block", padding: "12px 22px", borderRadius: "999px", border: "none", background: "linear-gradient(135deg, var(--color-c97c2e) 0%, var(--color-a85e18) 100%)", color: "var(--color-fff8ee)", fontSize: "14px", fontWeight: "600", fontFamily: "sans-serif", textDecoration: "none", boxShadow: "0 3px 10px rgba(160,80,20,0.25)" };
+const secondaryLink = { fontSize: "13px", color: "var(--color-a85e18)", fontFamily: "sans-serif", fontWeight: "600", textDecoration: "none" };
 
 const videoWrap = { position: "relative", paddingTop: "56.25%", borderRadius: "12px", overflow: "hidden", marginBottom: "10px" };
 const videoFrame = { position: "absolute", inset: 0, width: "100%", height: "100%", border: "none" };
 const spotifyFrame = { border: "none", borderRadius: "12px", marginBottom: "10px", display: "block" };
 
 const imageGrid = { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: "10px" };
-const galleryImg = { width: "100%", height: "110px", objectFit: "cover", borderRadius: "10px", border: "1px solid #eddfc8", cursor: "pointer" };
+const galleryImg = { width: "100%", height: "110px", objectFit: "cover", borderRadius: "10px", border: "1px solid var(--color-eddfc8)", cursor: "pointer" };
 
 const itemList = { margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: "8px" };
-const itemRow = { border: "1px solid #eddfc8", borderRadius: "10px", background: "#fdf8f3" };
-const itemLink = { display: "flex", alignItems: "center", gap: "10px", padding: "12px 14px", textDecoration: "none", color: "#3d2200", fontFamily: "sans-serif", fontSize: "14px" };
-const itemNumber = { color: "#9b7040", fontSize: "13px" };
+const itemRow = { border: "1px solid var(--color-eddfc8)", borderRadius: "10px", background: "var(--color-fdf8f3)" };
+const itemLink = { display: "flex", alignItems: "center", gap: "10px", padding: "12px 14px", textDecoration: "none", color: "var(--color-3d2200)", fontFamily: "sans-serif", fontSize: "14px" };
+const itemNumber = { color: "var(--color-9b7040)", fontSize: "13px" };
 
 const lightboxBg = { position: "fixed", inset: 0, background: "rgba(20,10,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 3000, padding: "20px", cursor: "zoom-out" };
 const lightboxImg = { maxWidth: "100%", maxHeight: "90vh", borderRadius: "10px" };

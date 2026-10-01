@@ -111,7 +111,7 @@ padding: "12px",
 width: "100%",
 maxWidth: "400px",
 borderRadius: "8px",
-border: "1px solid #ccc"
+border: "1px solid var(--color-cccccc)"
 };
 
 const cardContainer = {
@@ -122,7 +122,7 @@ marginTop: "20px"
 };
 
 const card = {
-background: "#f3f4f6",
+background: "var(--color-f3f4f6)",
 padding: "20px",
 borderRadius: "10px",
 cursor: "pointer"
@@ -130,8 +130,8 @@ cursor: "pointer"
 
 const aiButton = {
 padding: "12px 18px",
-background: "#2563eb",
-color: "white",
+background: "var(--color-2563eb)",
+color: "var(--color-ffffff)",
 border: "none",
 borderRadius: "8px",
 cursor: "pointer",
@@ -140,8 +140,8 @@ marginTop: "10px"
 
 const contactButton = {
 padding: "12px 18px",
-background: "#16a34a",
-color: "white",
+background: "var(--color-16a34a)",
+color: "var(--color-ffffff)",
 border: "none",
 borderRadius: "8px",
 cursor: "pointer",

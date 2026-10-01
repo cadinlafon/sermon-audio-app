@@ -421,20 +421,20 @@ const pageHeader = { marginBottom: "24px" };
 const pageTitle = {
   fontSize: "26px",
   fontWeight: "normal",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   margin: "0 0 4px",
   fontFamily: "'Georgia', serif",
 };
 const pageSubtitle = {
   fontSize: "14px",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   fontFamily: "sans-serif",
   margin: 0,
 };
 
 const card = {
-  background: "#fffdf9",
-  border: "1px solid #eddfc8",
+  background: "var(--color-fffdf9)",
+  border: "1px solid var(--color-eddfc8)",
   borderRadius: "18px",
   padding: "24px",
   marginBottom: "24px",
@@ -446,7 +446,7 @@ const card = {
 const cardTitle = {
   fontSize: "18px",
   fontWeight: "normal",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   fontFamily: "'Georgia', serif",
   margin: 0,
 };
@@ -458,35 +458,35 @@ const typeGrid = {
 const typeBtn = {
   padding: "10px",
   borderRadius: "10px",
-  border: "1px solid #eddfc8",
-  background: "#fdf8f3",
-  color: "#7a5530",
+  border: "1px solid var(--color-eddfc8)",
+  background: "var(--color-fdf8f3)",
+  color: "var(--color-7a5530)",
   fontSize: "13px",
   fontFamily: "sans-serif",
   cursor: "pointer",
 };
 const typeBtnActive = {
-  background: "linear-gradient(135deg, #c97c2e, #a85e18)",
-  border: "1px solid #c97c2e",
-  color: "#fff8ee",
+  background: "linear-gradient(135deg, var(--color-c97c2e), var(--color-a85e18))",
+  border: "1px solid var(--color-c97c2e)",
+  color: "var(--color-fff8ee)",
   boxShadow: "0 3px 10px rgba(160,80,20,0.18)",
 };
 const field = { display: "flex", flexDirection: "column", gap: "6px" };
 const fieldLabel = {
   fontSize: "11px",
   fontFamily: "sans-serif",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   letterSpacing: "0.06em",
   textTransform: "uppercase",
 };
 const input = {
   padding: "10px 12px",
   borderRadius: "10px",
-  border: "1px solid #eddfc8",
-  background: "#fdf8f3",
+  border: "1px solid var(--color-eddfc8)",
+  background: "var(--color-fdf8f3)",
   fontSize: "14px",
   fontFamily: "sans-serif",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   outline: "none",
   width: "100%",
   boxSizing: "border-box",
@@ -500,18 +500,18 @@ const textarea = {
 const adminTargetBox = {
   padding: "10px 12px",
   borderRadius: "10px",
-  background: "#f7ead7",
-  border: "1px solid #eddfc8",
-  color: "#6b421c",
+  background: "var(--color-f7ead7)",
+  border: "1px solid var(--color-eddfc8)",
+  color: "var(--color-6b421c)",
   fontSize: "13px",
   fontFamily: "sans-serif",
 };
 const previewBox = {
   padding: "12px",
   borderRadius: "10px",
-  background: "#fff8ee",
-  border: "1px dashed #d8b98c",
-  color: "#6b421c",
+  background: "var(--color-fff8ee)",
+  border: "1px dashed var(--color-d8b98c)",
+  color: "var(--color-6b421c)",
   fontSize: "13px",
   fontFamily: "sans-serif",
   lineHeight: 1.5,
@@ -519,9 +519,9 @@ const previewBox = {
 const statusBox = {
   padding: "10px 12px",
   borderRadius: "10px",
-  background: "#fdf8f3",
-  border: "1px solid #eddfc8",
-  color: "#7a5530",
+  background: "var(--color-fdf8f3)",
+  border: "1px solid var(--color-eddfc8)",
+  color: "var(--color-7a5530)",
   fontSize: "13px",
   fontFamily: "sans-serif",
 };
@@ -529,8 +529,8 @@ const sendBtn = {
   padding: "12px",
   borderRadius: "10px",
   border: "none",
-  background: "linear-gradient(135deg, #c97c2e, #a85e18)",
-  color: "#fff8ee",
+  background: "linear-gradient(135deg, var(--color-c97c2e), var(--color-a85e18))",
+  color: "var(--color-fff8ee)",
   fontSize: "14px",
   fontFamily: "sans-serif",
   cursor: "pointer",
@@ -541,41 +541,41 @@ const historySection = {};
 const historyTitle = {
   fontSize: "18px",
   fontWeight: "normal",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   fontFamily: "'Georgia', serif",
   margin: "0 0 14px",
 };
 const emptyState = {
-  background: "#fffdf9",
-  border: "1px dashed #eddfc8",
+  background: "var(--color-fffdf9)",
+  border: "1px dashed var(--color-eddfc8)",
   borderRadius: "12px",
   padding: "16px",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   fontFamily: "sans-serif",
   fontSize: "13px",
 };
 const historyCard = {
-  background: "#fffdf9",
-  border: "1px solid #eddfc8",
+  background: "var(--color-fffdf9)",
+  border: "1px solid var(--color-eddfc8)",
   borderRadius: "12px",
   padding: "14px 16px",
   marginBottom: "10px",
 };
 const historyCardTitle = {
   fontSize: "14px",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   fontFamily: "'Georgia', serif",
   marginBottom: "4px",
 };
 const historyCardBody = {
   fontSize: "13px",
-  color: "#7a5530",
+  color: "var(--color-7a5530)",
   fontFamily: "sans-serif",
   lineHeight: 1.5,
 };
 const historyMeta = {
   fontSize: "11px",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   fontFamily: "sans-serif",
   marginTop: "6px",
 };

@@ -87,7 +87,7 @@ const shell = {
 const sidebar = {
   width: "240px",
   flexShrink: 0,
-  background: "linear-gradient(180deg, #3d2000 0%, #2a1500 100%)",
+  background: "linear-gradient(180deg, var(--color-3d2000) 0%, var(--color-2a1500) 100%)",
   display: "flex",
   flexDirection: "column",
   padding: "0",
@@ -110,19 +110,19 @@ const brandMark = {
   width: "38px",
   height: "38px",
   borderRadius: "10px",
-  background: "linear-gradient(135deg, #e08930, #c97c2e)",
+  background: "linear-gradient(135deg, var(--color-e08930), var(--color-c97c2e))",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
   fontWeight: "bold",
   fontSize: "14px",
-  color: "#fff8ee",
+  color: "var(--color-fff8ee)",
   flexShrink: 0,
 };
 
 const brandName = {
   fontSize: "13px",
-  color: "#fff8ee",
+  color: "var(--color-fff8ee)",
   fontWeight: "normal",
   lineHeight: 1.2,
 };
@@ -159,7 +159,7 @@ const link = {
 
 const linkActive = {
   background: "rgba(224,137,48,0.18)",
-  color: "#fde8b8",
+  color: "var(--color-fde8b8)",
 };
 
 const linkDisabled = {
@@ -178,7 +178,7 @@ const activeDot = {
   width: "6px",
   height: "6px",
   borderRadius: "50%",
-  background: "#e08930",
+  background: "var(--color-e08930)",
 };
 
 const backToApp = {
@@ -209,7 +209,7 @@ const lockNowBtn = {
 
 const main = {
   flex: 1,
-  background: "#fdf8f3",
+  background: "var(--color-fdf8f3)",
   padding: "36px 40px 60px",
   overflowY: "auto",
 };

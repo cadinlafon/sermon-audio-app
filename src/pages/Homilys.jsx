@@ -121,8 +121,8 @@ export default function Homilies() {
 /* STYLES */
 
 const noticeBox = {
-  background: "#fff3cd",
-  border: "1px solid #ffeeba",
+  background: "var(--color-fff3cd)",
+  border: "1px solid var(--color-ffeeba)",
   padding: "15px",
   borderRadius: "10px",
   marginBottom: "15px",
@@ -132,7 +132,7 @@ const page = {
   padding: "32px 20px 60px",
   maxWidth: "860px",
   margin: "0 auto",
-  background: "#fdf8f3",
+  background: "var(--color-fdf8f3)",
   minHeight: "100vh",
 };
 

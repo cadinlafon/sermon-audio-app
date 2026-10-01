@@ -14,7 +14,7 @@ export default function Settings() {
 }
 
 const pageWrapper = {
-  background: "#fdf8f3",
+  background: "var(--color-fdf8f3)",
   minHeight: "100vh",
 };
 
@@ -25,4 +25,4 @@ const contentArea = {
 };
 
 const pageHeader = { marginBottom: "20px" };
-const pageTitle = { fontSize: "26px", fontWeight: "normal", color: "#3d2200", margin: 0, fontFamily: "'Georgia', serif" };
+const pageTitle = { fontSize: "26px", fontWeight: "normal", color: "var(--color-3d2200)", margin: 0, fontFamily: "'Georgia', serif" };

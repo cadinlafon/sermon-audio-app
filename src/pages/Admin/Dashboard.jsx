@@ -38,15 +38,15 @@ export default function Dashboard() {
       <PageHeader title="Dashboard" subtitle="Welcome back — here's what's happening." />
 
       <div style={grid}>
-        <StatCard icon="👥" label="Total Users" value={totalUsers} color="#c97c2e" />
-        <StatCard icon="✨" label="New Users Today" value={newUsersToday} color="#16a34a" />
-        <StatCard icon="🎙️" label="Audio Files" value={totalAudio} color="#2563eb" />
+        <StatCard icon="👥" label="Total Users" value={totalUsers} color="var(--color-c97c2e)" />
+        <StatCard icon="✨" label="New Users Today" value={newUsersToday} color="var(--color-16a34a)" />
+        <StatCard icon="🎙️" label="Audio Files" value={totalAudio} color="var(--color-2563eb)" />
         <StatCard
           icon="🕐"
           label="Latest Upload"
           value={latestUpload ? latestUpload.title : "None"}
           small
-          color="#7c3aed"
+          color="var(--color-7c3aed)"
         />
       </div>
 
@@ -95,8 +95,8 @@ function PageHeader({ title, subtitle }) {
 export { PageHeader };
 
 const pageHeader = { marginBottom: "28px" };
-const pageTitle = { fontSize: "26px", fontWeight: "normal", color: "#3d2200", margin: "0 0 4px" };
-const pageSubtitle = { fontSize: "14px", color: "#9b7040", fontFamily: "sans-serif", margin: 0 };
+const pageTitle = { fontSize: "26px", fontWeight: "normal", color: "var(--color-3d2200)", margin: "0 0 4px" };
+const pageSubtitle = { fontSize: "14px", color: "var(--color-9b7040)", fontFamily: "sans-serif", margin: 0 };
 
 const grid = {
   display: "grid",
@@ -106,8 +106,8 @@ const grid = {
 };
 
 const statCard = {
-  background: "#fffdf9",
-  border: "1px solid #eddfc8",
+  background: "var(--color-fffdf9)",
+  border: "1px solid var(--color-eddfc8)",
   borderRadius: "16px",
   padding: "20px",
   boxShadow: "0 2px 12px rgba(160,100,40,0.07)",
@@ -127,22 +127,22 @@ const statIconWrap = {
 const statLabel = {
   fontSize: "12px",
   fontFamily: "sans-serif",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   marginBottom: "4px",
   letterSpacing: "0.04em",
 };
 
 const statValue = {
   fontWeight: "bold",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   fontFamily: "sans-serif",
   lineHeight: 1.2,
   wordBreak: "break-word",
 };
 
 const quickLinks = {
-  background: "#fffdf9",
-  border: "1px solid #eddfc8",
+  background: "var(--color-fffdf9)",
+  border: "1px solid var(--color-eddfc8)",
   borderRadius: "16px",
   padding: "20px 24px",
 };
@@ -150,7 +150,7 @@ const quickLinks = {
 const quickLinksLabel = {
   fontSize: "11px",
   fontFamily: "sans-serif",
-  color: "#b08050",
+  color: "var(--color-b08050)",
   letterSpacing: "0.1em",
   textTransform: "uppercase",
   margin: "0 0 14px",
@@ -168,14 +168,14 @@ const quickLink = {
   gap: "8px",
   padding: "10px 16px",
   borderRadius: "10px",
-  border: "1px solid #eddfc8",
-  background: "#fdf8f3",
+  border: "1px solid var(--color-eddfc8)",
+  background: "var(--color-fdf8f3)",
   textDecoration: "none",
-  color: "#5c3a1e",
+  color: "var(--color-5c3a1e)",
 };
 
 const quickLinkLabel = {
   fontSize: "13px",
   fontFamily: "sans-serif",
-  color: "#5c3a1e",
+  color: "var(--color-5c3a1e)",
 };

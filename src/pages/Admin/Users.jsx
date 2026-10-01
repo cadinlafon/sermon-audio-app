@@ -804,34 +804,34 @@ function getReferralIcon(source) {
 function getReferralBadgeStyle(source) {
   const value = source.toLowerCase();
 
-  let background = "#f3eadc";
-  let color = "#7a5530";
+  let background = "var(--color-f3eadc)";
+  let color = "var(--color-7a5530)";
 
   if (value.includes("facebook")) {
-    background = "#e8f0fe";
-    color = "#2a5ab5";
+    background = "var(--color-e8f0fe)";
+    color = "var(--color-2a5ab5)";
   } else if (value.includes("instagram")) {
-    background = "#fce7f3";
-    color = "#a33b70";
+    background = "var(--color-fce7f3)";
+    color = "var(--color-a33b70)";
   } else if (value.includes("youtube")) {
-    background = "#fee2e2";
-    color = "#b42318";
+    background = "var(--color-fee2e2)";
+    color = "var(--color-b42318)";
   } else if (value.includes("google")) {
-    background = "#e8f5e9";
-    color = "#28743c";
+    background = "var(--color-e8f5e9)";
+    color = "var(--color-28743c)";
   } else if (
     value.includes("chatgpt") ||
     value.includes("claude") ||
     value.includes("gemini")
   ) {
-    background = "#eee8ff";
-    color = "#6547a5";
+    background = "var(--color-eee8ff)";
+    color = "var(--color-6547a5)";
   } else if (value.includes("qr")) {
-    background = "#f4e7d4";
-    color = "#8a5a16";
+    background = "var(--color-f4e7d4)";
+    color = "var(--color-8a5a16)";
   } else if (value.includes("email")) {
-    background = "#e8f0fe";
-    color = "#345b91";
+    background = "var(--color-e8f0fe)";
+    color = "var(--color-345b91)";
   }
 
   return {
@@ -863,14 +863,14 @@ const pageHeader = {
 const pageTitle = {
   fontSize: "26px",
   fontWeight: "normal",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   margin: "0 0 4px",
   fontFamily: "'Georgia', serif",
 };
 
 const pageSubtitle = {
   fontSize: "14px",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   fontFamily: "sans-serif",
   margin: 0,
 };
@@ -885,11 +885,11 @@ const toolbar = {
 const searchInput = {
   padding: "9px 14px",
   borderRadius: "10px",
-  border: "1px solid #eddfc8",
-  background: "#fffdf9",
+  border: "1px solid var(--color-eddfc8)",
+  background: "var(--color-fffdf9)",
   fontSize: "13px",
   fontFamily: "sans-serif",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   outline: "none",
   width: "280px",
   flexShrink: 0,
@@ -898,17 +898,17 @@ const searchInput = {
 const filterSelect = {
   padding: "9px 12px",
   borderRadius: "10px",
-  border: "1px solid #eddfc8",
-  background: "#fffdf9",
+  border: "1px solid var(--color-eddfc8)",
+  background: "var(--color-fffdf9)",
   fontSize: "13px",
   fontFamily: "sans-serif",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   cursor: "pointer",
 };
 
 const tableWrap = {
-  background: "#fffdf9",
-  border: "1px solid #eddfc8",
+  background: "var(--color-fffdf9)",
+  border: "1px solid var(--color-eddfc8)",
   borderRadius: "16px",
   overflow: "auto",
   boxShadow: "0 2px 12px rgba(160,100,40,0.07)",
@@ -925,15 +925,15 @@ const th = {
   textAlign: "left",
   fontSize: "11px",
   fontFamily: "sans-serif",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   letterSpacing: "0.08em",
   textTransform: "uppercase",
-  borderBottom: "1px solid #eddfc8",
-  background: "#fdf8f3",
+  borderBottom: "1px solid var(--color-eddfc8)",
+  background: "var(--color-fdf8f3)",
 };
 
 const tr = {
-  borderBottom: "1px solid #f0e4d0",
+  borderBottom: "1px solid var(--color-f0e4d0)",
 };
 
 const td = {
@@ -944,21 +944,21 @@ const td = {
 const nameText = {
   fontSize: "14px",
   fontFamily: "'Georgia', serif",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
 };
 
 const emailText = {
   fontSize: "13px",
   fontFamily: "sans-serif",
-  color: "#7a5530",
+  color: "var(--color-7a5530)",
 };
 
 const methodBadge = {
   fontSize: "11px",
   padding: "3px 8px",
   borderRadius: "999px",
-  background: "#e8f0fe",
-  color: "#2a5ab5",
+  background: "var(--color-e8f0fe)",
+  color: "var(--color-2a5ab5)",
   fontFamily: "sans-serif",
 };
 
@@ -966,8 +966,8 @@ const adminBadge = {
   fontSize: "11px",
   padding: "3px 8px",
   borderRadius: "999px",
-  background: "#dcfce7",
-  color: "#166534",
+  background: "var(--color-dcfce7)",
+  color: "var(--color-166534)",
   fontFamily: "sans-serif",
 };
 
@@ -975,8 +975,8 @@ const userBadge = {
   fontSize: "11px",
   padding: "3px 8px",
   borderRadius: "999px",
-  background: "#f6e4b0",
-  color: "#7a5a10",
+  background: "var(--color-f6e4b0)",
+  color: "var(--color-7a5a10)",
   fontFamily: "sans-serif",
 };
 
@@ -989,8 +989,8 @@ const saveBtn = {
   padding: "5px 10px",
   borderRadius: "6px",
   border: "none",
-  background: "linear-gradient(135deg, #c97c2e, #a85e18)",
-  color: "#fff8ee",
+  background: "linear-gradient(135deg, var(--color-c97c2e), var(--color-a85e18))",
+  color: "var(--color-fff8ee)",
   fontSize: "12px",
   fontFamily: "sans-serif",
   cursor: "pointer",
@@ -999,9 +999,9 @@ const saveBtn = {
 const cancelBtn = {
   padding: "5px 10px",
   borderRadius: "6px",
-  border: "1px solid #eddfc8",
+  border: "1px solid var(--color-eddfc8)",
   background: "transparent",
-  color: "#7a4f10",
+  color: "var(--color-7a4f10)",
   fontSize: "12px",
   fontFamily: "sans-serif",
   cursor: "pointer",
@@ -1010,20 +1010,20 @@ const cancelBtn = {
 const actionSelect = {
   padding: "6px 10px",
   borderRadius: "8px",
-  border: "1px solid #eddfc8",
-  background: "#fdf8f3",
+  border: "1px solid var(--color-eddfc8)",
+  background: "var(--color-fdf8f3)",
   fontSize: "12px",
   fontFamily: "sans-serif",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   cursor: "pointer",
 };
 
 const statsBtn = {
   padding: "6px 10px",
   borderRadius: "8px",
-  border: "1px solid #eddfc8",
-  background: "#fffdf9",
-  color: "#5c3a1e",
+  border: "1px solid var(--color-eddfc8)",
+  background: "var(--color-fffdf9)",
+  color: "var(--color-5c3a1e)",
   fontSize: "12px",
   fontFamily: "sans-serif",
   cursor: "pointer",
@@ -1033,16 +1033,16 @@ const statsBtn = {
 const inlineInput = {
   padding: "5px 8px",
   borderRadius: "6px",
-  border: "1px solid #eddfc8",
+  border: "1px solid var(--color-eddfc8)",
   fontSize: "13px",
   fontFamily: "sans-serif",
-  background: "#fdf8f3",
+  background: "var(--color-fdf8f3)",
   width: "100%",
 };
 
 const empty = {
   textAlign: "center",
-  color: "#b08050",
+  color: "var(--color-b08050)",
   fontFamily: "sans-serif",
   fontStyle: "italic",
   padding: "30px",
@@ -1052,8 +1052,8 @@ const restrictedBadge = {
   fontSize: "11px",
   padding: "3px 8px",
   borderRadius: "999px",
-  background: "#fde8d8",
-  color: "#a3551f",
+  background: "var(--color-fde8d8)",
+  color: "var(--color-a3551f)",
   fontFamily: "sans-serif",
 };
 
@@ -1062,15 +1062,15 @@ const disabledBadge = {
   fontSize: "11px",
   padding: "3px 8px",
   borderRadius: "999px",
-  background: "#fee2e2",
-  color: "#991b1b",
+  background: "var(--color-fee2e2)",
+  color: "var(--color-991b1b)",
   fontFamily: "sans-serif",
   marginLeft: "6px",
 };
 
 const exportingHint = {
   fontSize: "11px",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   fontFamily: "sans-serif",
   fontStyle: "italic",
 };
@@ -1087,8 +1087,8 @@ const modalBg = {
 };
 
 const modal = {
-  background: "#fffdf9",
-  border: "1px solid #eddfc8",
+  background: "var(--color-fffdf9)",
+  border: "1px solid var(--color-eddfc8)",
   borderRadius: "20px",
   padding: "28px",
   width: "100%",
@@ -1103,7 +1103,7 @@ const modal = {
 const modalTitle = {
   fontSize: "20px",
   fontWeight: "normal",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   fontFamily: "'Georgia', serif",
   margin: 0,
 };
@@ -1120,19 +1120,19 @@ const checkLabel = {
   gap: "6px",
   fontSize: "13px",
   fontFamily: "sans-serif",
-  color: "#5c3a1e",
+  color: "var(--color-5c3a1e)",
   cursor: "pointer",
 };
 
 const checkLabelLocked = {
-  color: "#b0a494",
+  color: "var(--color-b0a494)",
   cursor: "not-allowed",
 };
 
 const lockedHint = {
   fontSize: "12px",
   fontFamily: "sans-serif",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   fontStyle: "italic",
   margin: 0,
 };
@@ -1149,15 +1149,15 @@ const moduleRow = {
   gap: "6px",
   padding: "10px 12px",
   borderRadius: "10px",
-  border: "1px solid #eddfc8",
-  background: "#fdf8f3",
+  border: "1px solid var(--color-eddfc8)",
+  background: "var(--color-fdf8f3)",
 };
 
 const moduleLabel = {
   fontSize: "13px",
   fontFamily: "sans-serif",
   fontWeight: "600",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
 };
 
 const modalActions = {
@@ -1171,8 +1171,8 @@ const modalSaveBtn = {
   padding: "11px",
   borderRadius: "10px",
   border: "none",
-  background: "linear-gradient(135deg, #c97c2e, #a85e18)",
-  color: "#fff8ee",
+  background: "linear-gradient(135deg, var(--color-c97c2e), var(--color-a85e18))",
+  color: "var(--color-fff8ee)",
   fontSize: "14px",
   fontFamily: "sans-serif",
   cursor: "pointer",
@@ -1182,9 +1182,9 @@ const modalCancelBtn = {
   flex: 1,
   padding: "11px",
   borderRadius: "10px",
-  border: "1px solid #eddfc8",
+  border: "1px solid var(--color-eddfc8)",
   background: "transparent",
-  color: "#7a4f10",
+  color: "var(--color-7a4f10)",
   fontSize: "14px",
   fontFamily: "sans-serif",
   cursor: "pointer",

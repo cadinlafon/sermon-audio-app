@@ -155,7 +155,7 @@ zIndex:9999
 };
 
 const popup={
-background:"#fff",
+background:"var(--color-ffffff)",
 padding:"25px",
 borderRadius:"10px",
 width:"300px",
@@ -172,8 +172,8 @@ marginTop:"15px"
 };
 
 const installBtn={
-background:"#111",
-color:"#fff",
+background:"var(--color-111111)",
+color:"var(--color-ffffff)",
 border:"none",
 padding:"8px 16px",
 borderRadius:"6px",
@@ -181,7 +181,7 @@ cursor:"pointer"
 };
 
 const closeBtn={
-background:"#eee",
+background:"var(--color-eeeeee)",
 border:"none",
 padding:"8px 16px",
 borderRadius:"6px",

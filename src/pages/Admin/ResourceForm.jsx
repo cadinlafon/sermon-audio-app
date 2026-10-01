@@ -240,7 +240,7 @@ export default function ResourceForm({ resource, categories, sections, allResour
                 <img src={form.thumbnailUrl} alt="" style={thumbPreview} />
                 <div style={rowActions}>
                   <button type="button" style={smallBtn} onClick={() => thumbInputRef.current.click()} disabled={thumbUploading}>Replace</button>
-                  <button type="button" style={{ ...smallBtn, color: "#dc2626", borderColor: "#fca5a5" }} onClick={() => setForm((f) => ({ ...f, thumbnailUrl: "", thumbnailStorageKey: "" }))} disabled={thumbUploading}>Remove</button>
+                  <button type="button" style={{ ...smallBtn, color: "var(--color-dc2626)", borderColor: "var(--color-fca5a5)" }} onClick={() => setForm((f) => ({ ...f, thumbnailUrl: "", thumbnailStorageKey: "" }))} disabled={thumbUploading}>Remove</button>
                 </div>
               </div>
             ) : (
@@ -272,7 +272,7 @@ export default function ResourceForm({ resource, categories, sections, allResour
                   <span style={fileRowName}>🎵 {form.audioFileName || "Audio file"}</span>
                   <div style={rowActions}>
                     <button type="button" style={smallBtn} onClick={() => audioInputRef.current.click()} disabled={audioUploading}>Replace</button>
-                    <button type="button" style={{ ...smallBtn, color: "#dc2626", borderColor: "#fca5a5" }} onClick={() => setForm((f) => ({ ...f, audioStorageKey: "", audioFileName: "" }))} disabled={audioUploading}>Remove</button>
+                    <button type="button" style={{ ...smallBtn, color: "var(--color-dc2626)", borderColor: "var(--color-fca5a5)" }} onClick={() => setForm((f) => ({ ...f, audioStorageKey: "", audioFileName: "" }))} disabled={audioUploading}>Remove</button>
                   </div>
                 </div>
               ) : (
@@ -426,50 +426,50 @@ function Field({ label, hint, children }) {
 ////////////////////////////////////////////////
 
 const modalBg = { position: "fixed", inset: 0, background: "rgba(40,18,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 3000, padding: "16px" };
-const modal = { background: "#fffdf9", border: "1px solid #eddfc8", borderRadius: "20px", padding: "24px", width: "100%", maxWidth: "560px", maxHeight: "92vh", display: "flex", flexDirection: "column", gap: "14px" };
+const modal = { background: "var(--color-fffdf9)", border: "1px solid var(--color-eddfc8)", borderRadius: "20px", padding: "24px", width: "100%", maxWidth: "560px", maxHeight: "92vh", display: "flex", flexDirection: "column", gap: "14px" };
 const header = { display: "flex", justifyContent: "space-between", alignItems: "center" };
-const modalTitle = { fontSize: "20px", fontWeight: "normal", color: "#3d2200", fontFamily: "'Georgia', serif", margin: 0 };
-const closeX = { border: "none", background: "transparent", color: "#9b7040", fontSize: "16px", cursor: "pointer" };
+const modalTitle = { fontSize: "20px", fontWeight: "normal", color: "var(--color-3d2200)", fontFamily: "'Georgia', serif", margin: 0 };
+const closeX = { border: "none", background: "transparent", color: "var(--color-9b7040)", fontSize: "16px", cursor: "pointer" };
 
 const scrollArea = { overflowY: "auto", display: "flex", flexDirection: "column", gap: "14px", paddingRight: "4px" };
 
 const typeGrid = { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: "6px" };
-const typeChoice = { display: "flex", alignItems: "center", gap: "6px", padding: "8px 10px", borderRadius: "10px", border: "1px solid #eddfc8", background: "#fdf8f3", color: "#5c3a1e", fontSize: "12px", fontFamily: "sans-serif", cursor: "pointer" };
-const typeChoiceActive = { border: "2px solid #a85e18", background: "#fdf1de", fontWeight: "600" };
+const typeChoice = { display: "flex", alignItems: "center", gap: "6px", padding: "8px 10px", borderRadius: "10px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fdf8f3)", color: "var(--color-5c3a1e)", fontSize: "12px", fontFamily: "sans-serif", cursor: "pointer" };
+const typeChoiceActive = { border: "2px solid var(--color-a85e18)", background: "var(--color-fdf1de)", fontWeight: "600" };
 
-const fieldLabel = { fontSize: "11px", fontFamily: "sans-serif", color: "#9b7040", letterSpacing: "0.06em", textTransform: "uppercase" };
-const hintText = { fontSize: "11px", color: "#b08050", fontFamily: "sans-serif", margin: 0 };
-const input = { padding: "9px 12px", borderRadius: "10px", border: "1px solid #eddfc8", background: "#fdf8f3", fontSize: "14px", fontFamily: "sans-serif", color: "#3d2200", outline: "none", width: "100%", boxSizing: "border-box" };
+const fieldLabel = { fontSize: "11px", fontFamily: "sans-serif", color: "var(--color-9b7040)", letterSpacing: "0.06em", textTransform: "uppercase" };
+const hintText = { fontSize: "11px", color: "var(--color-b08050)", fontFamily: "sans-serif", margin: 0 };
+const input = { padding: "9px 12px", borderRadius: "10px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fdf8f3)", fontSize: "14px", fontFamily: "sans-serif", color: "var(--color-3d2200)", outline: "none", width: "100%", boxSizing: "border-box" };
 const row2 = { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" };
 
-const uploadBtn = { padding: "9px 14px", borderRadius: "10px", border: "1px dashed #eddfc8", background: "#fdf8f3", color: "#7a4f10", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer" };
-const smallBtn = { padding: "5px 10px", borderRadius: "8px", border: "1px solid #eddfc8", background: "#fffdf9", color: "#5c3a1e", fontSize: "11px", fontFamily: "sans-serif", cursor: "pointer" };
+const uploadBtn = { padding: "9px 14px", borderRadius: "10px", border: "1px dashed var(--color-eddfc8)", background: "var(--color-fdf8f3)", color: "var(--color-7a4f10)", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer" };
+const smallBtn = { padding: "5px 10px", borderRadius: "8px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fffdf9)", color: "var(--color-5c3a1e)", fontSize: "11px", fontFamily: "sans-serif", cursor: "pointer" };
 const rowActions = { display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "6px" };
-const thumbPreview = { width: "100%", height: "120px", objectFit: "cover", borderRadius: "10px", border: "1px solid #eddfc8" };
+const thumbPreview = { width: "100%", height: "120px", objectFit: "cover", borderRadius: "10px", border: "1px solid var(--color-eddfc8)" };
 
-const fileRow = { display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px", padding: "9px 12px", borderRadius: "10px", border: "1px solid #eddfc8", background: "#fdf8f3", flexWrap: "wrap" };
-const fileRowName = { fontSize: "13px", fontFamily: "sans-serif", color: "#3d2200" };
+const fileRow = { display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px", padding: "9px 12px", borderRadius: "10px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fdf8f3)", flexWrap: "wrap" };
+const fileRowName = { fontSize: "13px", fontFamily: "sans-serif", color: "var(--color-3d2200)" };
 
-const progressTrack = { height: "6px", background: "#eddfc8", borderRadius: "999px", overflow: "hidden", marginTop: "8px" };
-const progressFill = { height: "100%", background: "linear-gradient(to right, #e08930, #c97c2e)", borderRadius: "999px", transition: "width 0.2s ease-out" };
+const progressTrack = { height: "6px", background: "var(--color-eddfc8)", borderRadius: "999px", overflow: "hidden", marginTop: "8px" };
+const progressFill = { height: "100%", background: "linear-gradient(to right, var(--color-e08930), var(--color-c97c2e))", borderRadius: "999px", transition: "width 0.2s ease-out" };
 
 const imageGrid = { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(80px, 1fr))", gap: "8px", marginBottom: "8px" };
 const imageThumbWrap = { position: "relative" };
-const imageThumb = { width: "100%", height: "70px", objectFit: "cover", borderRadius: "8px", border: "1px solid #eddfc8" };
-const imageRemoveBtn = { position: "absolute", top: "2px", right: "2px", width: "18px", height: "18px", borderRadius: "50%", border: "none", background: "rgba(0,0,0,0.6)", color: "#fff", fontSize: "9px", cursor: "pointer" };
+const imageThumb = { width: "100%", height: "70px", objectFit: "cover", borderRadius: "8px", border: "1px solid var(--color-eddfc8)" };
+const imageRemoveBtn = { position: "absolute", top: "2px", right: "2px", width: "18px", height: "18px", borderRadius: "50%", border: "none", background: "rgba(0,0,0,0.6)", color: "var(--color-ffffff)", fontSize: "9px", cursor: "pointer" };
 
 const chipRow = { display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "8px" };
-const chip = { display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "11px", padding: "5px 9px", borderRadius: "999px", background: "#dcfce7", color: "#166534", fontFamily: "sans-serif" };
+const chip = { display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "11px", padding: "5px 9px", borderRadius: "999px", background: "var(--color-dcfce7)", color: "var(--color-166534)", fontFamily: "sans-serif" };
 const chipX = { border: "none", background: "transparent", cursor: "pointer", fontSize: "10px", color: "inherit" };
-const suggestBox = { border: "1px solid #eddfc8", borderRadius: "10px", marginTop: "4px", overflow: "hidden", background: "#fffdf9" };
-const suggestItem = { display: "flex", alignItems: "center", gap: "6px", width: "100%", textAlign: "left", padding: "8px 10px", border: "none", background: "transparent", fontSize: "12px", fontFamily: "sans-serif", color: "#5c3a1e", cursor: "pointer" };
+const suggestBox = { border: "1px solid var(--color-eddfc8)", borderRadius: "10px", marginTop: "4px", overflow: "hidden", background: "var(--color-fffdf9)" };
+const suggestItem = { display: "flex", alignItems: "center", gap: "6px", width: "100%", textAlign: "left", padding: "8px 10px", border: "none", background: "transparent", fontSize: "12px", fontFamily: "sans-serif", color: "var(--color-5c3a1e)", cursor: "pointer" };
 
 const toggleRow = { display: "flex", gap: "20px" };
 const sectionCheckRow = { display: "flex", gap: "14px", flexWrap: "wrap" };
-const sectionCheckLabel = { display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", fontFamily: "sans-serif", color: "#5c3a1e" };
-const toggleLabel = { display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", fontFamily: "sans-serif", color: "#5c3a1e" };
+const sectionCheckLabel = { display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", fontFamily: "sans-serif", color: "var(--color-5c3a1e)" };
+const toggleLabel = { display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", fontFamily: "sans-serif", color: "var(--color-5c3a1e)" };
 
-const errorText = { color: "#b3432c", fontSize: "12px", fontFamily: "sans-serif", margin: 0 };
-const footer = { display: "flex", justifyContent: "flex-end", gap: "10px", borderTop: "1px solid #eddfc8", paddingTop: "14px" };
-const cancelBtn = { padding: "10px 18px", borderRadius: "10px", border: "1px solid #eddfc8", background: "transparent", color: "#7a4f10", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer" };
-const saveBtn = { padding: "10px 20px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, #c97c2e, #a85e18)", color: "#fff8ee", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer" };
+const errorText = { color: "var(--color-b3432c)", fontSize: "12px", fontFamily: "sans-serif", margin: 0 };
+const footer = { display: "flex", justifyContent: "flex-end", gap: "10px", borderTop: "1px solid var(--color-eddfc8)", paddingTop: "14px" };
+const cancelBtn = { padding: "10px 18px", borderRadius: "10px", border: "1px solid var(--color-eddfc8)", background: "transparent", color: "var(--color-7a4f10)", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer" };
+const saveBtn = { padding: "10px 20px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, var(--color-c97c2e), var(--color-a85e18))", color: "var(--color-fff8ee)", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer" };

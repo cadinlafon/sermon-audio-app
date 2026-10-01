@@ -29,7 +29,7 @@ function inline(text, onSeek, keyBase) {
 export default function MarkdownText({ text, onSeek, onToggle }) {
   const lines = (text || "").split("\n");
   return (
-    <div style={{ fontFamily: "sans-serif", fontSize: "14px", lineHeight: 1.6, color: "#3d2200" }}>
+    <div style={{ fontFamily: "sans-serif", fontSize: "14px", lineHeight: 1.6, color: "var(--color-3d2200)" }}>
       {lines.map((line, idx) => {
         const key = `l${idx}`;
         const check = line.match(/^\s*[-*]\s+\[( |x|X)\]\s+(.*)$/);
@@ -38,14 +38,14 @@ export default function MarkdownText({ text, onSeek, onToggle }) {
           return (
             <label key={key} style={{ display: "flex", gap: "8px", alignItems: "flex-start", margin: "3px 0", cursor: onToggle ? "pointer" : "default" }}>
               <input type="checkbox" checked={done} disabled={!onToggle} onChange={() => onToggle?.(idx)} style={{ marginTop: "5px" }} />
-              <span style={{ textDecoration: done ? "line-through" : "none", color: done ? "#9b7040" : "inherit" }}>{inline(check[2], onSeek, key)}</span>
+              <span style={{ textDecoration: done ? "line-through" : "none", color: done ? "var(--color-9b7040)" : "inherit" }}>{inline(check[2], onSeek, key)}</span>
             </label>
           );
         }
         const bullet = line.match(/^\s*[-*]\s+(.*)$/);
         if (bullet) return <div key={key} style={{ display: "flex", gap: "8px", margin: "3px 0" }}><span aria-hidden="true">•</span><span>{inline(bullet[1], onSeek, key)}</span></div>;
         const h = line.match(/^(#{1,3})\s+(.*)$/);
-        if (h) return <div key={key} style={{ fontFamily: "'Georgia', serif", fontSize: h[1].length === 1 ? "18px" : "16px", margin: "10px 0 4px", color: "#3d2200" }}>{inline(h[2], onSeek, key)}</div>;
+        if (h) return <div key={key} style={{ fontFamily: "'Georgia', serif", fontSize: h[1].length === 1 ? "18px" : "16px", margin: "10px 0 4px", color: "var(--color-3d2200)" }}>{inline(h[2], onSeek, key)}</div>;
         if (!line.trim()) return <div key={key} style={{ height: "8px" }} />;
         return <Fragment key={key}><div style={{ margin: "2px 0" }}>{inline(line, onSeek, key)}</div></Fragment>;
       })}
@@ -62,6 +62,6 @@ export function toggleChecklistLine(text, lineIndex) {
 
 export { TIME_RE, formatTime };
 
-const chip = { display: "inline-block", padding: "1px 8px", margin: "0 2px", borderRadius: "999px", border: "none", background: "#fde8b8", color: "#7a4f10", fontSize: "12px", fontWeight: "600", cursor: "pointer", fontFamily: "sans-serif" };
+const chip = { display: "inline-block", padding: "1px 8px", margin: "0 2px", borderRadius: "999px", border: "none", background: "var(--color-fde8b8)", color: "var(--color-7a4f10)", fontSize: "12px", fontWeight: "600", cursor: "pointer", fontFamily: "sans-serif" };
 const chipStatic = { ...chip, cursor: "default" };
-const code = { background: "#f4e7d4", padding: "1px 5px", borderRadius: "4px", fontSize: "12px" };
+const code = { background: "var(--color-f4e7d4)", padding: "1px 5px", borderRadius: "4px", fontSize: "12px" };

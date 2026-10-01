@@ -266,7 +266,7 @@ export default function DoctrineAdmin() {
                 <button type="button" style={smallBtn} onClick={() => imageInputRef.current.click()} disabled={imageUploading}>
                   Replace
                 </button>
-                <button type="button" style={{ ...smallBtn, color: "#dc2626", borderColor: "#fca5a5" }} onClick={handleImageRemove} disabled={imageUploading}>
+                <button type="button" style={{ ...smallBtn, color: "var(--color-dc2626)", borderColor: "var(--color-fca5a5)" }} onClick={handleImageRemove} disabled={imageUploading}>
                   Remove
                 </button>
               </div>
@@ -380,7 +380,7 @@ export default function DoctrineAdmin() {
                     </button>
                     <button type="button" style={smallBtn} onClick={() => moveAudioFile(a.id, -1)} disabled={i === 0}>↑</button>
                     <button type="button" style={smallBtn} onClick={() => moveAudioFile(a.id, 1)} disabled={i === form.audioFiles.length - 1}>↓</button>
-                    <button type="button" style={{ ...smallBtn, color: "#dc2626", borderColor: "#fca5a5" }} onClick={() => removeAudioFile(a.id)} disabled={isUploading}>
+                    <button type="button" style={{ ...smallBtn, color: "var(--color-dc2626)", borderColor: "var(--color-fca5a5)" }} onClick={() => removeAudioFile(a.id)} disabled={isUploading}>
                       Remove
                     </button>
                   </div>
@@ -451,12 +451,12 @@ function Field({ label, children }) {
 
 const page = { maxWidth: "640px" };
 const topRow = { marginBottom: "24px" };
-const pageTitle = { fontSize: "26px", fontWeight: "normal", color: "#3d2200", margin: "0 0 4px", fontFamily: "'Georgia', serif" };
-const pageSubtitle = { fontSize: "14px", color: "#9b7040", fontFamily: "sans-serif", margin: 0 };
+const pageTitle = { fontSize: "26px", fontWeight: "normal", color: "var(--color-3d2200)", margin: "0 0 4px", fontFamily: "'Georgia', serif" };
+const pageSubtitle = { fontSize: "14px", color: "var(--color-9b7040)", fontFamily: "sans-serif", margin: 0 };
 
 const card = {
-  background: "#fffdf9",
-  border: "1px solid #eddfc8",
+  background: "var(--color-fffdf9)",
+  border: "1px solid var(--color-eddfc8)",
   borderRadius: "18px",
   padding: "28px",
   boxShadow: "0 2px 14px rgba(160,100,40,0.07)",
@@ -465,33 +465,33 @@ const card = {
   gap: "18px",
 };
 
-const fieldLabel = { fontSize: "11px", fontFamily: "sans-serif", color: "#9b7040", letterSpacing: "0.06em", textTransform: "uppercase" };
-const input = { padding: "9px 12px", borderRadius: "10px", border: "1px solid #eddfc8", background: "#fdf8f3", fontSize: "14px", fontFamily: "sans-serif", color: "#3d2200", outline: "none", width: "100%", boxSizing: "border-box" };
+const fieldLabel = { fontSize: "11px", fontFamily: "sans-serif", color: "var(--color-9b7040)", letterSpacing: "0.06em", textTransform: "uppercase" };
+const input = { padding: "9px 12px", borderRadius: "10px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fdf8f3)", fontSize: "14px", fontFamily: "sans-serif", color: "var(--color-3d2200)", outline: "none", width: "100%", boxSizing: "border-box" };
 
-const uploadBtn = { padding: "10px 14px", borderRadius: "10px", border: "1px dashed #eddfc8", background: "#fdf8f3", color: "#7a4f10", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer", textAlign: "center" };
-const fileRow = { display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px", padding: "10px 12px", borderRadius: "10px", border: "1px solid #eddfc8", background: "#fdf8f3", flexWrap: "wrap" };
-const fileRowName = { fontSize: "13px", fontFamily: "sans-serif", color: "#3d2200", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" };
+const uploadBtn = { padding: "10px 14px", borderRadius: "10px", border: "1px dashed var(--color-eddfc8)", background: "var(--color-fdf8f3)", color: "var(--color-7a4f10)", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer", textAlign: "center" };
+const fileRow = { display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px", padding: "10px 12px", borderRadius: "10px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fdf8f3)", flexWrap: "wrap" };
+const fileRowName = { fontSize: "13px", fontFamily: "sans-serif", color: "var(--color-3d2200)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" };
 const rowActions = { display: "flex", gap: "6px", flexShrink: 0, marginTop: "8px" };
-const smallBtn = { padding: "5px 10px", borderRadius: "8px", border: "1px solid #eddfc8", background: "#fffdf9", color: "#5c3a1e", fontSize: "11px", fontFamily: "sans-serif", cursor: "pointer" };
-const progressTrack = { height: "6px", background: "#eddfc8", borderRadius: "999px", overflow: "hidden", marginTop: "8px" };
-const progressFill = { height: "100%", background: "linear-gradient(to right, #e08930, #c97c2e)", borderRadius: "999px", transition: "width 0.2s ease-out" };
+const smallBtn = { padding: "5px 10px", borderRadius: "8px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fffdf9)", color: "var(--color-5c3a1e)", fontSize: "11px", fontFamily: "sans-serif", cursor: "pointer" };
+const progressTrack = { height: "6px", background: "var(--color-eddfc8)", borderRadius: "999px", overflow: "hidden", marginTop: "8px" };
+const progressFill = { height: "100%", background: "linear-gradient(to right, var(--color-e08930), var(--color-c97c2e))", borderRadius: "999px", transition: "width 0.2s ease-out" };
 
-const imagePreview = { width: "100%", height: "160px", objectFit: "cover", borderRadius: "10px", border: "1px solid #eddfc8", marginBottom: "8px", display: "block" };
+const imagePreview = { width: "100%", height: "160px", objectFit: "cover", borderRadius: "10px", border: "1px solid var(--color-eddfc8)", marginBottom: "8px", display: "block" };
 
 const audioFilesStack = { display: "flex", flexDirection: "column", gap: "10px", marginBottom: "10px" };
-const audioFileCard = { display: "flex", flexDirection: "column", gap: "8px", padding: "12px", borderRadius: "12px", border: "1px solid #eddfc8", background: "#fdf8f3" };
+const audioFileCard = { display: "flex", flexDirection: "column", gap: "8px", padding: "12px", borderRadius: "12px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fdf8f3)" };
 const audioFileHeader = { display: "flex", alignItems: "center", gap: "8px" };
-const audioFileIndex = { fontSize: "13px", fontFamily: "sans-serif", color: "#9b7040", flexShrink: 0, width: "16px", textAlign: "right" };
+const audioFileIndex = { fontSize: "13px", fontFamily: "sans-serif", color: "var(--color-9b7040)", flexShrink: 0, width: "16px", textAlign: "right" };
 
 const questionsStack = { display: "flex", flexDirection: "column", gap: "8px", marginBottom: "8px" };
 const questionRow = { display: "flex", alignItems: "center", gap: "8px" };
-const questionNumber = { fontSize: "13px", fontFamily: "sans-serif", color: "#9b7040", flexShrink: 0, width: "18px", textAlign: "right" };
-const questionRemoveBtn = { border: "none", background: "transparent", color: "#b3432c", fontSize: "13px", cursor: "pointer", padding: "4px 6px", flexShrink: 0 };
-const addQuestionBtn = { padding: "8px 14px", borderRadius: "10px", border: "1px dashed #eddfc8", background: "#fdf8f3", color: "#7a4f10", fontSize: "12px", fontFamily: "sans-serif", cursor: "pointer", alignSelf: "flex-start" };
+const questionNumber = { fontSize: "13px", fontFamily: "sans-serif", color: "var(--color-9b7040)", flexShrink: 0, width: "18px", textAlign: "right" };
+const questionRemoveBtn = { border: "none", background: "transparent", color: "var(--color-b3432c)", fontSize: "13px", cursor: "pointer", padding: "4px 6px", flexShrink: 0 };
+const addQuestionBtn = { padding: "8px 14px", borderRadius: "10px", border: "1px dashed var(--color-eddfc8)", background: "var(--color-fdf8f3)", color: "var(--color-7a4f10)", fontSize: "12px", fontFamily: "sans-serif", cursor: "pointer", alignSelf: "flex-start" };
 
-const saveBtn = { padding: "13px", borderRadius: "12px", border: "none", background: "linear-gradient(135deg, #c97c2e 0%, #a85e18 100%)", color: "#fff8ee", fontSize: "15px", fontFamily: "sans-serif", cursor: "pointer", boxShadow: "0 3px 12px rgba(160,80,20,0.28)" };
+const saveBtn = { padding: "13px", borderRadius: "12px", border: "none", background: "linear-gradient(135deg, var(--color-c97c2e) 0%, var(--color-a85e18) 100%)", color: "var(--color-fff8ee)", fontSize: "15px", fontFamily: "sans-serif", cursor: "pointer", boxShadow: "0 3px 12px rgba(160,80,20,0.28)" };
 
-const hintText = { fontSize: "13px", color: "#b08050", fontFamily: "sans-serif" };
+const hintText = { fontSize: "13px", color: "var(--color-b08050)", fontFamily: "sans-serif" };
 
-const toastBox = { position: "fixed", bottom: "24px", right: "24px", background: "#166534", color: "#fff", padding: "12px 18px", borderRadius: "10px", fontSize: "13px", fontFamily: "sans-serif", boxShadow: "0 4px 16px rgba(0,0,0,0.2)", zIndex: 4000 };
-const toastError = { background: "#991b1b" };
+const toastBox = { position: "fixed", bottom: "24px", right: "24px", background: "var(--color-166534)", color: "var(--color-ffffff)", padding: "12px 18px", borderRadius: "10px", fontSize: "13px", fontFamily: "sans-serif", boxShadow: "0 4px 16px rgba(0,0,0,0.2)", zIndex: 4000 };
+const toastError = { background: "var(--color-991b1b)" };

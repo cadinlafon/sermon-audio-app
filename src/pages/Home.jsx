@@ -239,7 +239,7 @@ export default function Home() {
 //////////////////////////////////////////////////
 
 const pageWrapper = {
-  background: "#fdf8f3",
+  background: "var(--color-fdf8f3)",
   minHeight: "100vh",
   fontFamily: "'Georgia', serif",
 };
@@ -283,7 +283,7 @@ const heroTitle = {
   margin: 0,
   fontSize: "clamp(22px, 5vw, 34px)",
   fontWeight: "normal",
-  color: "#fff8ee",
+  color: "var(--color-fff8ee)",
   fontFamily: "'Georgia', serif",
   lineHeight: 1.2,
 };
@@ -295,11 +295,11 @@ const contentArea = {
 };
 
 const card = {
-  backgroundColor: "#fffdf9",
+  backgroundColor: "var(--color-fffdf9)",
   borderRadius: "18px",
   padding: "24px 24px 20px",
   marginBottom: "24px",
-  border: "1px solid #eddfc8",
+  border: "1px solid var(--color-eddfc8)",
   boxShadow: "0 2px 16px rgba(160,100,40,0.07)",
 };
 
@@ -308,7 +308,7 @@ const cardHeader = {
   alignItems: "center",
   gap: "10px",
   marginBottom: "18px",
-  borderBottom: "1px solid #eddfc8",
+  borderBottom: "1px solid var(--color-eddfc8)",
   paddingBottom: "14px",
 };
 
@@ -321,14 +321,14 @@ const cardTitle = {
   margin: 0,
   fontSize: "17px",
   fontWeight: "normal",
-  color: "#5c3a1e",
+  color: "var(--color-5c3a1e)",
   fontFamily: "'Georgia', serif",
   letterSpacing: "0.01em",
 };
 
 const noticeItem = {
-  background: "#fffbee",
-  border: "1px solid #f0d898",
+  background: "var(--color-fffbee)",
+  border: "1px solid var(--color-f0d898)",
   padding: "14px 16px",
   borderRadius: "12px",
   marginBottom: "10px",
@@ -338,8 +338,8 @@ const pinnedBadge = {
   display: "inline-block",
   fontSize: "11px",
   fontFamily: "sans-serif",
-  background: "#f6e4b0",
-  color: "#7a5a10",
+  background: "var(--color-f6e4b0)",
+  color: "var(--color-7a5a10)",
   borderRadius: "99px",
   padding: "2px 8px",
   marginBottom: "6px",
@@ -350,14 +350,14 @@ const noticeTitle = {
   margin: "0 0 5px",
   fontSize: "15px",
   fontWeight: "bold",
-  color: "#3d2600",
+  color: "var(--color-3d2600)",
   fontFamily: "'Georgia', serif",
 };
 
 const noticeBody = {
   margin: "0 0 4px",
   fontSize: "14px",
-  color: "#6b4c20",
+  color: "var(--color-6b4c20)",
   lineHeight: 1.6,
   whiteSpace: "pre-line",
   fontFamily: "sans-serif",
@@ -367,9 +367,9 @@ const noticeButton = {
   marginTop: "10px",
   padding: "7px 14px",
   borderRadius: "8px",
-  border: "1px solid #c8922a",
+  border: "1px solid var(--color-c8922a)",
   background: "transparent",
-  color: "#8a5f10",
+  color: "var(--color-8a5f10)",
   cursor: "pointer",
   fontSize: "13px",
   fontFamily: "sans-serif",
@@ -384,7 +384,7 @@ const sermonTitle = {
   margin: "0 0 6px",
   fontSize: "20px",
   fontWeight: "normal",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   fontFamily: "'Georgia', serif",
   lineHeight: 1.3,
 };
@@ -392,7 +392,7 @@ const sermonTitle = {
 const sermonSpeaker = {
   margin: "0 0 20px",
   fontSize: "14px",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   fontFamily: "sans-serif",
   letterSpacing: "0.04em",
 };
@@ -404,8 +404,8 @@ const playButton = {
   padding: "12px 28px",
   borderRadius: "999px",
   border: "none",
-  background: "linear-gradient(135deg, #c97c2e 0%, #a85e18 100%)",
-  color: "#fff8ee",
+  background: "linear-gradient(135deg, var(--color-c97c2e) 0%, var(--color-a85e18) 100%)",
+  color: "var(--color-fff8ee)",
   cursor: "pointer",
   fontSize: "15px",
   fontFamily: "sans-serif",
@@ -418,7 +418,7 @@ const playIcon = {
 };
 
 const emptyText = {
-  color: "#b08050",
+  color: "var(--color-b08050)",
   fontSize: "14px",
   fontFamily: "sans-serif",
   textAlign: "center",
@@ -441,9 +441,9 @@ const navButton = {
   padding: "18px 20px",
   fontSize: "16px",
   borderRadius: "14px",
-  border: "1px solid #eddfc8",
-  backgroundColor: "#fffdf9",
-  color: "#3d2200",
+  border: "1px solid var(--color-eddfc8)",
+  backgroundColor: "var(--color-fffdf9)",
+  color: "var(--color-3d2200)",
   cursor: "pointer",
   fontFamily: "'Georgia', serif",
   boxShadow: "0 1px 6px rgba(160,100,40,0.06)",
@@ -457,7 +457,7 @@ const navButtonIcon = {
 
 const navArrow = {
   marginLeft: "auto",
-  color: "#c08040",
+  color: "var(--color-c08040)",
   fontSize: "18px",
 };
 
@@ -468,7 +468,7 @@ const footerLink = {
 
 const footerAnchor = {
   fontSize: "11px",
-  color: "#b08050",
+  color: "var(--color-b08050)",
   opacity: 0.7,
   textDecoration: "none",
   fontFamily: "sans-serif",

@@ -466,11 +466,11 @@ export default function EntrancePoints() {
                   style={{
                     ...status,
                     background: point.active
-                      ? "#e7f6e9"
-                      : "#f3e5e5",
+                      ? "var(--color-e7f6e9)"
+                      : "var(--color-f3e5e5)",
                     color: point.active
-                      ? "#286a31"
-                      : "#8a3d3d",
+                      ? "var(--color-286a31)"
+                      : "var(--color-8a3d3d)",
                   }}
                 >
                   {point.active
@@ -971,7 +971,7 @@ function Field({
         {label}
 
         {required && (
-          <span style={{ color: "#b34a35" }}>
+          <span style={{ color: "var(--color-b34a35)" }}>
             {" "}
             *
           </span>
@@ -1016,13 +1016,13 @@ const header = {
 const title = {
   fontSize: "28px",
   fontWeight: "normal",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   margin: 0,
   fontFamily: "'Georgia', serif",
 };
 
 const subtitle = {
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   margin: "5px 0 0",
   fontFamily: "sans-serif",
 };
@@ -1033,8 +1033,8 @@ const addButton = {
   borderRadius: "50%",
   border: "none",
   background:
-    "linear-gradient(135deg, #c97c2e, #a85e18)",
-  color: "white",
+    "linear-gradient(135deg, var(--color-c97c2e), var(--color-a85e18))",
+  color: "var(--color-ffffff)",
   fontSize: "30px",
   cursor: "pointer",
   boxShadow:
@@ -1049,8 +1049,8 @@ const grid = {
 };
 
 const card = {
-  background: "#fffdf9",
-  border: "1px solid #eddfc8",
+  background: "var(--color-fffdf9)",
+  border: "1px solid var(--color-eddfc8)",
   borderRadius: "16px",
   padding: "18px",
 };
@@ -1066,15 +1066,15 @@ const typeBadge = {
   fontSize: "11px",
   padding: "4px 9px",
   borderRadius: "999px",
-  background: "#f4e7d4",
-  color: "#7a4f10",
+  background: "var(--color-f4e7d4)",
+  color: "var(--color-7a4f10)",
   fontFamily: "sans-serif",
   marginBottom: "8px",
 };
 
 const cardTitle = {
   margin: 0,
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   fontFamily: "'Georgia', serif",
 };
 
@@ -1082,7 +1082,7 @@ const sourceText = {
   marginTop: "5px",
   fontFamily: "monospace",
   fontSize: "12px",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
 };
 
 const status = {
@@ -1114,7 +1114,7 @@ const cardDetails = {
   gap: "12px",
   marginTop: "18px",
   paddingTop: "15px",
-  borderTop: "1px solid #eddfc8",
+  borderTop: "1px solid var(--color-eddfc8)",
 };
 
 const cardActions = {
@@ -1129,31 +1129,31 @@ const primaryButton = {
   borderRadius: "9px",
   padding: "9px 15px",
   background:
-    "linear-gradient(135deg, #c97c2e, #a85e18)",
-  color: "#fff",
+    "linear-gradient(135deg, var(--color-c97c2e), var(--color-a85e18))",
+  color: "var(--color-ffffff)",
   cursor: "pointer",
   fontFamily: "sans-serif",
 };
 
 const secondaryButton = {
-  border: "1px solid #eddfc8",
+  border: "1px solid var(--color-eddfc8)",
   borderRadius: "9px",
   padding: "8px 12px",
-  background: "#fffdf9",
-  color: "#7a4f10",
+  background: "var(--color-fffdf9)",
+  color: "var(--color-7a4f10)",
   cursor: "pointer",
   fontFamily: "sans-serif",
 };
 
 const dangerButton = {
   ...secondaryButton,
-  color: "#a33d32",
+  color: "var(--color-a33d32)",
 };
 
 const empty = {
   textAlign: "center",
   padding: "80px 20px",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
 };
 
 const emptyIcon = {
@@ -1172,7 +1172,7 @@ const overlay = {
 };
 
 const modal = {
-  background: "#fffdf9",
+  background: "var(--color-fffdf9)",
   borderRadius: "18px",
   width: "100%",
   maxWidth: "650px",
@@ -1193,12 +1193,12 @@ const modalHeader = {
 const modalTitle = {
   margin: 0,
   fontFamily: "'Georgia', serif",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
 };
 
 const modalSubtitle = {
   margin: "5px 0 0",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
 };
 
 const closeButton = {
@@ -1206,7 +1206,7 @@ const closeButton = {
   background: "transparent",
   fontSize: "30px",
   cursor: "pointer",
-  color: "#7a4f10",
+  color: "var(--color-7a4f10)",
 };
 
 const form = {
@@ -1224,7 +1224,7 @@ const field = {
 const labelStyle = {
   fontSize: "13px",
   fontWeight: "600",
-  color: "#5c3a1e",
+  color: "var(--color-5c3a1e)",
   fontFamily: "sans-serif",
 };
 
@@ -1233,23 +1233,23 @@ const label = labelStyle;
 const input = {
   padding: "10px 12px",
   borderRadius: "9px",
-  border: "1px solid #eddfc8",
-  background: "#fff",
-  color: "#3d2200",
+  border: "1px solid var(--color-eddfc8)",
+  background: "var(--color-ffffff)",
+  color: "var(--color-3d2200)",
   fontSize: "14px",
   outline: "none",
   fontFamily: "sans-serif",
 };
 
 const urlPreview = {
-  background: "#f8f1e8",
+  background: "var(--color-f8f1e8)",
   borderRadius: "10px",
   padding: "12px",
   display: "flex",
   flexDirection: "column",
   gap: "8px",
   fontSize: "12px",
-  color: "#7a4f10",
+  color: "var(--color-7a4f10)",
 };
 
 const formActions = {
@@ -1260,14 +1260,14 @@ const formActions = {
 };
 
 const detailSection = {
-  borderTop: "1px solid #eddfc8",
+  borderTop: "1px solid var(--color-eddfc8)",
   paddingTop: "18px",
   marginTop: "18px",
 };
 
 const sectionTitle = {
   fontFamily: "'Georgia', serif",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   margin: "0 0 12px",
 };
 
@@ -1276,16 +1276,16 @@ const detail = {
   justifyContent: "space-between",
   gap: "20px",
   padding: "8px 0",
-  borderBottom: "1px solid #f1e7d9",
+  borderBottom: "1px solid var(--color-f1e7d9)",
   fontFamily: "sans-serif",
 };
 
 const trackingUrl = {
-  background: "#f8f1e8",
+  background: "var(--color-f8f1e8)",
   padding: "12px",
   borderRadius: "8px",
   wordBreak: "break-all",
   fontFamily: "monospace",
   fontSize: "12px",
-  color: "#5c3a1e",
+  color: "var(--color-5c3a1e)",
 };

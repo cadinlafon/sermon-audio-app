@@ -89,9 +89,9 @@ export default function Suggest() {
   // STATUS
   //////////////////////////////////////////////
   const statusConfig = {
-    planned:     { label: "Planned",     bg: "#fce8e8", color: "#a32d2d" },
-    "in progress": { label: "In Progress", bg: "#fffbee", color: "#7a5a10" },
-    complete:    { label: "Complete",    bg: "#eaf3de", color: "#3b6d11" },
+    planned:     { label: "Planned",     bg: "var(--color-fce8e8)", color: "var(--color-a32d2d)" },
+    "in progress": { label: "In Progress", bg: "var(--color-fffbee)", color: "var(--color-7a5a10)" },
+    complete:    { label: "Complete",    bg: "var(--color-eaf3de)", color: "var(--color-3b6d11)" },
   };
 
   //////////////////////////////////////////////
@@ -226,7 +226,7 @@ const page = {
   padding: "32px 20px 60px",
   maxWidth: "680px",
   margin: "0 auto",
-  background: "#fdf8f3",
+  background: "var(--color-fdf8f3)",
   minHeight: "100vh",
   fontFamily: "'Georgia', serif",
 };
@@ -235,13 +235,13 @@ const pageTitle = {
   textAlign: "center",
   fontSize: "28px",
   fontWeight: "normal",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   marginBottom: "6px",
 };
 
 const pageSubtitle = {
   textAlign: "center",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   fontFamily: "sans-serif",
   fontSize: "15px",
   marginBottom: "28px",
@@ -265,26 +265,26 @@ const filterPills = {
 const filterBtn = {
   padding: "8px 16px",
   borderRadius: "999px",
-  border: "1px solid #eddfc8",
-  background: "#fffdf9",
-  color: "#7a4f10",
+  border: "1px solid var(--color-eddfc8)",
+  background: "var(--color-fffdf9)",
+  color: "var(--color-7a4f10)",
   cursor: "pointer",
   fontSize: "13px",
   fontFamily: "sans-serif",
 };
 
 const filterBtnActive = {
-  background: "linear-gradient(135deg, #6b3a10 0%, #3d2200 100%)",
+  background: "linear-gradient(135deg, var(--color-6b3a10) 0%, var(--color-3d2200) 100%)",
   border: "1px solid transparent",
-  color: "#fff8ee",
+  color: "var(--color-fff8ee)",
 };
 
 const addButton = {
   padding: "9px 20px",
   borderRadius: "999px",
   border: "none",
-  background: "linear-gradient(135deg, #c97c2e 0%, #a85e18 100%)",
-  color: "#fff8ee",
+  background: "linear-gradient(135deg, var(--color-c97c2e) 0%, var(--color-a85e18) 100%)",
+  color: "var(--color-fff8ee)",
   cursor: "pointer",
   fontSize: "13px",
   fontFamily: "sans-serif",
@@ -304,8 +304,8 @@ const overlayWrapper = {
 };
 
 const modal = {
-  background: "#fffdf9",
-  border: "1px solid #eddfc8",
+  background: "var(--color-fffdf9)",
+  border: "1px solid var(--color-eddfc8)",
   borderRadius: "20px",
   padding: "28px 24px",
   width: "100%",
@@ -320,35 +320,35 @@ const modalTitle = {
   margin: 0,
   fontSize: "20px",
   fontWeight: "normal",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
 };
 
 const modalSubtitle = {
   margin: 0,
   fontSize: "14px",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   fontFamily: "sans-serif",
 };
 
 const inputStyle = {
   padding: "11px 14px",
   borderRadius: "10px",
-  border: "1px solid #eddfc8",
+  border: "1px solid var(--color-eddfc8)",
   fontSize: "14px",
   fontFamily: "sans-serif",
-  background: "#fdf8f3",
-  color: "#3d2200",
+  background: "var(--color-fdf8f3)",
+  color: "var(--color-3d2200)",
   outline: "none",
 };
 
 const textareaStyle = {
   padding: "11px 14px",
   borderRadius: "10px",
-  border: "1px solid #eddfc8",
+  border: "1px solid var(--color-eddfc8)",
   fontSize: "14px",
   fontFamily: "sans-serif",
-  background: "#fdf8f3",
-  color: "#3d2200",
+  background: "var(--color-fdf8f3)",
+  color: "var(--color-3d2200)",
   outline: "none",
   minHeight: "90px",
   resize: "vertical",
@@ -364,8 +364,8 @@ const submitBtn = {
   padding: "12px",
   borderRadius: "10px",
   border: "none",
-  background: "linear-gradient(135deg, #c97c2e 0%, #a85e18 100%)",
-  color: "#fff8ee",
+  background: "linear-gradient(135deg, var(--color-c97c2e) 0%, var(--color-a85e18) 100%)",
+  color: "var(--color-fff8ee)",
   cursor: "pointer",
   fontSize: "14px",
   fontFamily: "sans-serif",
@@ -376,20 +376,20 @@ const cancelBtn = {
   flex: 1,
   padding: "12px",
   borderRadius: "10px",
-  border: "1px solid #eddfc8",
-  background: "#fdf8f3",
-  color: "#7a4f10",
+  border: "1px solid var(--color-eddfc8)",
+  background: "var(--color-fdf8f3)",
+  color: "var(--color-7a4f10)",
   cursor: "pointer",
   fontSize: "14px",
   fontFamily: "sans-serif",
 };
 
 const emptyCard = {
-  background: "#fffdf9",
+  background: "var(--color-fffdf9)",
   borderRadius: "18px",
   padding: "40px 24px",
   textAlign: "center",
-  border: "1px solid #eddfc8",
+  border: "1px solid var(--color-eddfc8)",
 };
 
 const emptyIcon = {
@@ -399,18 +399,18 @@ const emptyIcon = {
 };
 
 const emptyText = {
-  color: "#b08050",
+  color: "var(--color-b08050)",
   fontFamily: "sans-serif",
   fontSize: "14px",
   margin: 0,
 };
 
 const card = {
-  background: "#fffdf9",
+  background: "var(--color-fffdf9)",
   borderRadius: "18px",
   padding: "20px 22px 16px",
   marginBottom: "14px",
-  border: "1px solid #eddfc8",
+  border: "1px solid var(--color-eddfc8)",
   boxShadow: "0 2px 12px rgba(160,100,40,0.07)",
 };
 
@@ -426,7 +426,7 @@ const cardTitle = {
   margin: 0,
   fontSize: "16px",
   fontWeight: "normal",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   flex: 1,
 };
 
@@ -441,7 +441,7 @@ const statusBadge = {
 
 const detailsText = {
   fontSize: "14px",
-  color: "#7a5530",
+  color: "var(--color-7a5530)",
   lineHeight: 1.65,
   fontFamily: "sans-serif",
   margin: "0 0 14px",
@@ -458,9 +458,9 @@ const actionsRow = {
 const viewBtn = {
   padding: "7px 14px",
   borderRadius: "8px",
-  border: "1px solid #eddfc8",
+  border: "1px solid var(--color-eddfc8)",
   background: "transparent",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   cursor: "pointer",
   fontSize: "12px",
   fontFamily: "sans-serif",
@@ -469,9 +469,9 @@ const viewBtn = {
 const voteBtn = {
   padding: "7px 16px",
   borderRadius: "999px",
-  border: "1px solid #c8922a",
+  border: "1px solid var(--color-c8922a)",
   background: "transparent",
-  color: "#7a4f10",
+  color: "var(--color-7a4f10)",
   cursor: "pointer",
   fontSize: "13px",
   fontFamily: "sans-serif",
@@ -481,8 +481,8 @@ const unvoteBtn = {
   padding: "7px 16px",
   borderRadius: "999px",
   border: "none",
-  background: "linear-gradient(135deg, #c97c2e 0%, #a85e18 100%)",
-  color: "#fff8ee",
+  background: "linear-gradient(135deg, var(--color-c97c2e) 0%, var(--color-a85e18) 100%)",
+  color: "var(--color-fff8ee)",
   cursor: "pointer",
   fontSize: "13px",
   fontFamily: "sans-serif",
@@ -491,6 +491,6 @@ const unvoteBtn = {
 
 const finalVoteCount = {
   fontSize: "12px",
-  color: "#b08050",
+  color: "var(--color-b08050)",
   fontFamily: "sans-serif",
 };

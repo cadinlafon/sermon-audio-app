@@ -221,7 +221,7 @@ const page = {
   padding: "32px 20px 60px",
   maxWidth: "680px",
   margin: "0 auto",
-  background: "#fdf8f3",
+  background: "var(--color-fdf8f3)",
   minHeight: "100vh",
   fontFamily: "'Georgia', serif",
 };
@@ -230,21 +230,21 @@ const pageTitle = {
   textAlign: "center",
   fontSize: "28px",
   fontWeight: "normal",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   marginBottom: "6px",
 };
 
 const pageSubtitle = {
   textAlign: "center",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   fontFamily: "sans-serif",
   fontSize: "15px",
   marginBottom: "32px",
 };
 
 const captchaCard = {
-  background: "#fffbee",
-  border: "1px solid #f0d898",
+  background: "var(--color-fffbee)",
+  border: "1px solid var(--color-f0d898)",
   borderRadius: "18px",
   padding: "26px 24px",
   marginBottom: "20px",
@@ -261,14 +261,14 @@ const captchaTitle = {
   margin: "0 0 6px",
   fontSize: "17px",
   fontWeight: "normal",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   fontFamily: "'Georgia', serif",
 };
 
 const captchaBody = {
   margin: 0,
   fontSize: "13px",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   fontFamily: "sans-serif",
   lineHeight: 1.6,
 };
@@ -282,7 +282,7 @@ const widgetHost = {
 const captchaHint = {
   margin: "10px 0 0",
   fontSize: "12px",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   fontStyle: "italic",
   fontFamily: "sans-serif",
 };
@@ -290,16 +290,16 @@ const captchaHint = {
 const captchaError = {
   margin: "10px 0 0",
   fontSize: "13px",
-  color: "#a33622",
+  color: "var(--color-a33622)",
   fontFamily: "sans-serif",
 };
 
 const card = {
-  background: "#fffdf9",
+  background: "var(--color-fffdf9)",
   borderRadius: "18px",
   padding: "22px 24px 18px",
   marginBottom: "20px",
-  border: "1px solid #eddfc8",
+  border: "1px solid var(--color-eddfc8)",
   boxShadow: "0 2px 14px rgba(160,100,40,0.07)",
 };
 
@@ -309,7 +309,7 @@ const cardHeader = {
   gap: "10px",
   marginBottom: "18px",
   paddingBottom: "14px",
-  borderBottom: "1px solid #eddfc8",
+  borderBottom: "1px solid var(--color-eddfc8)",
 };
 
 const cardIcon = {
@@ -320,7 +320,7 @@ const cardTitle = {
   margin: 0,
   fontSize: "17px",
   fontWeight: "normal",
-  color: "#5c3a1e",
+  color: "var(--color-5c3a1e)",
 };
 
 const row = {
@@ -334,7 +334,7 @@ const row = {
 
 const divider = {
   height: "1px",
-  background: "#f0e4d0",
+  background: "var(--color-f0e4d0)",
 };
 
 const label = {
@@ -342,13 +342,13 @@ const label = {
   fontSize: "12px",
   letterSpacing: "0.06em",
   textTransform: "uppercase",
-  color: "#b08050",
+  color: "var(--color-b08050)",
   flexShrink: 0,
   paddingTop: "1px",
 };
 
 const value = {
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   fontFamily: "sans-serif",
   fontSize: "14px",
   textAlign: "right",
@@ -361,7 +361,7 @@ const copyValueBtn = {
   background: "none",
   border: "none",
   padding: 0,
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   fontFamily: "sans-serif",
   fontSize: "14px",
   cursor: "pointer",
@@ -374,7 +374,7 @@ const copyIcon = {
 
 const copyIconDone = {
   opacity: 1,
-  color: "#16a34a",
+  color: "var(--color-16a34a)",
 };
 
 const actionRow = {
@@ -388,8 +388,8 @@ const emailButton = {
   padding: "10px",
   borderRadius: "10px",
   border: "none",
-  background: "linear-gradient(135deg, #c97c2e 0%, #a85e18 100%)",
-  color: "#fff8ee",
+  background: "linear-gradient(135deg, var(--color-c97c2e) 0%, var(--color-a85e18) 100%)",
+  color: "var(--color-fff8ee)",
   cursor: "pointer",
   fontSize: "13px",
   fontFamily: "sans-serif",
@@ -401,9 +401,9 @@ const textButton = {
   flex: 1,
   padding: "10px",
   borderRadius: "10px",
-  border: "1px solid #c8922a",
+  border: "1px solid var(--color-c8922a)",
   background: "transparent",
-  color: "#7a4f10",
+  color: "var(--color-7a4f10)",
   cursor: "pointer",
   fontSize: "13px",
   fontFamily: "sans-serif",
@@ -413,7 +413,7 @@ const textButton = {
 const footerNote = {
   textAlign: "center",
   fontSize: "12px",
-  color: "#b08050",
+  color: "var(--color-b08050)",
   fontFamily: "sans-serif",
   lineHeight: 1.6,
   marginTop: "10px",

@@ -238,7 +238,7 @@ export default function Downloads() {
               <div style={rowMain}>
                 <div style={rowTitle}>{r.title || "Download"}</div>
                 <div style={rowSub}>{formatDate(r.downloadedAt)}</div>
-                <div style={{ ...availability, color: "#8a7860" }}><span style={{ ...dot, background: "#c9b79c" }} aria-hidden="true" /> Not on this device</div>
+                <div style={{ ...availability, color: "var(--color-8a7860)" }}><span style={{ ...dot, background: "var(--color-c9b79c)" }} aria-hidden="true" /> Not on this device</div>
               </div>
               <button style={ghost} onClick={() => releaseRemote(r)}>Free slot</button>
             </div>
@@ -259,38 +259,38 @@ function Stat({ label, value, hint }) {
   );
 }
 
-const page = { padding: "32px 20px 60px", maxWidth: "760px", margin: "0 auto", background: "#fdf8f3", minHeight: "100vh", fontFamily: "'Georgia', serif" };
-const title = { textAlign: "center", margin: "0 0 6px", fontSize: "28px", fontWeight: "normal", color: "#3d2200" };
-const subtitle = { textAlign: "center", margin: "0 0 22px", fontSize: "14px", color: "#9b7040", fontFamily: "sans-serif" };
-const card = { background: "#fffdf9", border: "1px solid #eddfc8", borderRadius: "16px", padding: "16px", marginBottom: "14px" };
+const page = { padding: "32px 20px 60px", maxWidth: "760px", margin: "0 auto", background: "var(--color-fdf8f3)", minHeight: "100vh", fontFamily: "'Georgia', serif" };
+const title = { textAlign: "center", margin: "0 0 6px", fontSize: "28px", fontWeight: "normal", color: "var(--color-3d2200)" };
+const subtitle = { textAlign: "center", margin: "0 0 22px", fontSize: "14px", color: "var(--color-9b7040)", fontFamily: "sans-serif" };
+const card = { background: "var(--color-fffdf9)", border: "1px solid var(--color-eddfc8)", borderRadius: "16px", padding: "16px", marginBottom: "14px" };
 const statsGrid = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "12px" };
-const stat = { background: "#fdf8f3", borderRadius: "12px", padding: "12px" };
-const statLabel = { fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em", color: "#9b7040", fontFamily: "sans-serif" };
-const statValue = { fontSize: "22px", color: "#3d2200", margin: "4px 0 2px" };
-const statHint = { fontSize: "12px", color: "#9b7040", fontFamily: "sans-serif" };
-const barTrack = { height: "8px", background: "#eddfc8", borderRadius: "999px", overflow: "hidden" };
-const barFill = { height: "100%", background: "linear-gradient(to right, #e08930, #c97c2e)", borderRadius: "999px" };
-const h2 = { margin: "0 0 10px", fontSize: "16px", fontWeight: "600", color: "#3d2200", fontFamily: "sans-serif" };
+const stat = { background: "var(--color-fdf8f3)", borderRadius: "12px", padding: "12px" };
+const statLabel = { fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--color-9b7040)", fontFamily: "sans-serif" };
+const statValue = { fontSize: "22px", color: "var(--color-3d2200)", margin: "4px 0 2px" };
+const statHint = { fontSize: "12px", color: "var(--color-9b7040)", fontFamily: "sans-serif" };
+const barTrack = { height: "8px", background: "var(--color-eddfc8)", borderRadius: "999px", overflow: "hidden" };
+const barFill = { height: "100%", background: "linear-gradient(to right, var(--color-e08930), var(--color-c97c2e))", borderRadius: "999px" };
+const h2 = { margin: "0 0 10px", fontSize: "16px", fontWeight: "600", color: "var(--color-3d2200)", fontFamily: "sans-serif" };
 const btnRow = { display: "flex", flexWrap: "wrap", gap: "8px" };
-const note = { margin: "10px 0 0", fontSize: "12px", color: "#9b7040", fontFamily: "sans-serif" };
+const note = { margin: "10px 0 0", fontSize: "12px", color: "var(--color-9b7040)", fontFamily: "sans-serif" };
 const rowBetween = { display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px", flexWrap: "wrap", marginBottom: "6px" };
 const tabsRow = { display: "flex", flexWrap: "wrap", gap: "8px", alignItems: "center", margin: "18px 0 12px" };
-const tabBtn = { padding: "8px 14px", borderRadius: "999px", border: "1px solid #eddfc8", background: "#fffdf9", color: "#7a4f10", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer" };
-const tabOn = { background: "#fde8b8", borderColor: "#e5c27a", fontWeight: "600" };
-const toggle = { display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", fontFamily: "sans-serif", color: "#5c3a1e", marginLeft: "auto" };
-const row = { display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap", background: "#fffdf9", border: "1px solid #eddfc8", borderRadius: "14px", padding: "14px", marginBottom: "10px" };
+const tabBtn = { padding: "8px 14px", borderRadius: "999px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fffdf9)", color: "var(--color-7a4f10)", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer" };
+const tabOn = { background: "var(--color-fde8b8)", borderColor: "var(--color-e5c27a)", fontWeight: "600" };
+const toggle = { display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", fontFamily: "sans-serif", color: "var(--color-5c3a1e)", marginLeft: "auto" };
+const row = { display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap", background: "var(--color-fffdf9)", border: "1px solid var(--color-eddfc8)", borderRadius: "14px", padding: "14px", marginBottom: "10px" };
 const rowMain = { minWidth: 0, flex: "1 1 240px" };
-const rowTitle = { fontSize: "15px", color: "#3d2200", marginBottom: "3px" };
-const rowSub = { fontSize: "12px", color: "#9b7040", fontFamily: "sans-serif" };
+const rowTitle = { fontSize: "15px", color: "var(--color-3d2200)", marginBottom: "3px" };
+const rowSub = { fontSize: "12px", color: "var(--color-9b7040)", fontFamily: "sans-serif" };
 const rowActions = { display: "flex", gap: "8px" };
-const typePill = { padding: "1px 8px", borderRadius: "999px", background: "#f6e4b0", color: "#7a5a10", fontSize: "11px" };
-const availability = { display: "flex", alignItems: "center", gap: "6px", marginTop: "6px", fontSize: "12px", color: "#2f8a4a", fontFamily: "sans-serif", fontWeight: "600" };
-const dot = { width: "8px", height: "8px", borderRadius: "50%", background: "#2f8a4a", display: "inline-block" };
-const primary = { padding: "10px 16px", borderRadius: "999px", border: "none", background: "linear-gradient(135deg, #c97c2e, #a85e18)", color: "#fff8ee", fontSize: "13px", fontFamily: "sans-serif", fontWeight: "600", cursor: "pointer" };
+const typePill = { padding: "1px 8px", borderRadius: "999px", background: "var(--color-f6e4b0)", color: "var(--color-7a5a10)", fontSize: "11px" };
+const availability = { display: "flex", alignItems: "center", gap: "6px", marginTop: "6px", fontSize: "12px", color: "var(--color-2f8a4a)", fontFamily: "sans-serif", fontWeight: "600" };
+const dot = { width: "8px", height: "8px", borderRadius: "50%", background: "var(--color-2f8a4a)", display: "inline-block" };
+const primary = { padding: "10px 16px", borderRadius: "999px", border: "none", background: "linear-gradient(135deg, var(--color-c97c2e), var(--color-a85e18))", color: "var(--color-fff8ee)", fontSize: "13px", fontFamily: "sans-serif", fontWeight: "600", cursor: "pointer" };
 const smallPrimary = { ...primary, padding: "8px 14px" };
-const secondary = { padding: "10px 14px", borderRadius: "999px", border: "1px solid #eddfc8", background: "#fdf8f3", color: "#7a4f10", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer" };
+const secondary = { padding: "10px 14px", borderRadius: "999px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fdf8f3)", color: "var(--color-7a4f10)", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer" };
 const ghost = { ...secondary, padding: "8px 12px" };
-const dangerGhost = { padding: "8px 12px", borderRadius: "999px", border: "1px solid #f3c8ba", background: "#fff5f2", color: "#a33622", fontSize: "12px", fontFamily: "sans-serif", cursor: "pointer" };
+const dangerGhost = { padding: "8px 12px", borderRadius: "999px", border: "1px solid var(--color-f3c8ba)", background: "var(--color-fff5f2)", color: "var(--color-a33622)", fontSize: "12px", fontFamily: "sans-serif", cursor: "pointer" };
 const empty = { textAlign: "center", padding: "36px 10px" };
-const emptyTitle = { margin: "8px 0 4px", fontSize: "18px", fontWeight: "normal", color: "#3d2200" };
-const emptyText = { margin: "0 0 12px", color: "#9b7040", fontFamily: "sans-serif", fontSize: "14px" };
+const emptyTitle = { margin: "8px 0 4px", fontSize: "18px", fontWeight: "normal", color: "var(--color-3d2200)" };
+const emptyText = { margin: "0 0 12px", color: "var(--color-9b7040)", fontFamily: "sans-serif", fontSize: "14px" };

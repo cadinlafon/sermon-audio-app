@@ -126,7 +126,7 @@ const page = {
   padding: "32px 20px 60px",
   maxWidth: "680px",
   margin: "0 auto",
-  background: "#fdf8f3",
+  background: "var(--color-fdf8f3)",
   minHeight: "100vh",
   fontFamily: "'Georgia', serif",
 };
@@ -135,13 +135,13 @@ const pageTitle = {
   textAlign: "center",
   fontSize: "28px",
   fontWeight: "normal",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   marginBottom: "6px",
 };
 
 const pageSubtitle = {
   textAlign: "center",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   fontFamily: "sans-serif",
   fontSize: "15px",
   marginBottom: "32px",
@@ -149,18 +149,18 @@ const pageSubtitle = {
 
 const loadingText = {
   textAlign: "center",
-  color: "#b08050",
+  color: "var(--color-b08050)",
   fontStyle: "italic",
   fontFamily: "sans-serif",
   padding: "30px 0",
 };
 
 const emptyCard = {
-  background: "#fffdf9",
+  background: "var(--color-fffdf9)",
   borderRadius: "20px",
   padding: "48px 32px",
   textAlign: "center",
-  border: "1px solid #eddfc8",
+  border: "1px solid var(--color-eddfc8)",
   boxShadow: "0 2px 14px rgba(160,100,40,0.07)",
   maxWidth: "480px",
   margin: "0 auto",
@@ -175,13 +175,13 @@ const emptyIcon = {
 const emptyTitle = {
   fontSize: "20px",
   fontWeight: "normal",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   marginBottom: "10px",
 };
 
 const emptyBody = {
   fontSize: "15px",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   lineHeight: 1.7,
   fontFamily: "sans-serif",
   margin: 0,

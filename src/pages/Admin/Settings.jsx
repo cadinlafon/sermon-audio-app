@@ -159,8 +159,8 @@ export default function Settings() {
         </div>
 
         {shutdown && (
-          <div style={{ ...statusBanner, background: "#fee2e2", border: "1px solid #fca5a5" }}>
-            <span style={{ color: "#dc2626" }}>⚠️ Maintenance mode is ON — the app is currently unavailable to users.</span>
+          <div style={{ ...statusBanner, background: "var(--color-fee2e2)", border: "1px solid var(--color-fca5a5)" }}>
+            <span style={{ color: "var(--color-dc2626)" }}>⚠️ Maintenance mode is ON — the app is currently unavailable to users.</span>
           </div>
         )}
 
@@ -238,7 +238,7 @@ export default function Settings() {
             {aiLogsLoading ? (
               <div style={logsEmpty}>Loading…</div>
             ) : aiLogsError ? (
-              <div style={{ ...logsEmpty, color: "#dc2626" }}>{aiLogsError}</div>
+              <div style={{ ...logsEmpty, color: "var(--color-dc2626)" }}>{aiLogsError}</div>
             ) : aiLogs && aiLogs.length > 0 ? (
               <div style={logsList}>
                 {aiLogs.map((log) => (
@@ -279,8 +279,8 @@ export default function Settings() {
         </div>
 
         {!registrationEnabled && (
-          <div style={{ ...statusBanner, background: "#fee2e2", border: "1px solid #fca5a5" }}>
-            <span style={{ color: "#dc2626" }}>⚠️ Sign-ups are OFF — new visitors can't create an account right now.</span>
+          <div style={{ ...statusBanner, background: "var(--color-fee2e2)", border: "1px solid var(--color-fca5a5)" }}>
+            <span style={{ color: "var(--color-dc2626)" }}>⚠️ Sign-ups are OFF — new visitors can't create an account right now.</span>
           </div>
         )}
 
@@ -323,36 +323,36 @@ function formatLogTime(createdAt) {
 
 const page = { maxWidth: "600px" };
 const pageHeader = { marginBottom: "24px" };
-const pageTitle = { fontSize: "26px", fontWeight: "normal", color: "#3d2200", margin: "0 0 4px", fontFamily: "'Georgia', serif" };
-const pageSubtitle = { fontSize: "14px", color: "#9b7040", fontFamily: "sans-serif", margin: 0 };
-const loadingWrap = { padding: "40px", fontFamily: "sans-serif", color: "#9b7040" };
+const pageTitle = { fontSize: "26px", fontWeight: "normal", color: "var(--color-3d2200)", margin: "0 0 4px", fontFamily: "'Georgia', serif" };
+const pageSubtitle = { fontSize: "14px", color: "var(--color-9b7040)", fontFamily: "sans-serif", margin: 0 };
+const loadingWrap = { padding: "40px", fontFamily: "sans-serif", color: "var(--color-9b7040)" };
 
-const card = { background: "#fffdf9", border: "1px solid #eddfc8", borderRadius: "18px", padding: "24px", boxShadow: "0 2px 12px rgba(160,100,40,0.07)", display: "flex", flexDirection: "column", gap: "20px" };
-const sectionHeader = { display: "flex", alignItems: "center", gap: "10px", paddingBottom: "16px", borderBottom: "1px solid #eddfc8" };
+const card = { background: "var(--color-fffdf9)", border: "1px solid var(--color-eddfc8)", borderRadius: "18px", padding: "24px", boxShadow: "0 2px 12px rgba(160,100,40,0.07)", display: "flex", flexDirection: "column", gap: "20px" };
+const sectionHeader = { display: "flex", alignItems: "center", gap: "10px", paddingBottom: "16px", borderBottom: "1px solid var(--color-eddfc8)" };
 const sectionIcon = { fontSize: "20px" };
-const sectionTitle = { margin: 0, fontSize: "18px", fontWeight: "normal", color: "#3d2200", fontFamily: "'Georgia', serif" };
+const sectionTitle = { margin: 0, fontSize: "18px", fontWeight: "normal", color: "var(--color-3d2200)", fontFamily: "'Georgia', serif" };
 
 const toggleRow = { display: "flex", justifyContent: "space-between", alignItems: "center", gap: "16px" };
-const toggleLabel = { fontSize: "14px", fontFamily: "sans-serif", color: "#3d2200", marginBottom: "3px" };
-const toggleHint = { fontSize: "12px", fontFamily: "sans-serif", color: "#9b7040" };
-const toggle = { width: "46px", height: "26px", borderRadius: "999px", background: "#eddfc8", border: "none", cursor: "pointer", position: "relative", flexShrink: 0, transition: "background 0.2s" };
-const toggleOn = { background: "linear-gradient(135deg, #c97c2e, #a85e18)" };
-const toggleKnob = { position: "absolute", top: "3px", left: "3px", width: "20px", height: "20px", borderRadius: "50%", background: "#fff", transition: "transform 0.2s", boxShadow: "0 1px 4px rgba(0,0,0,0.2)" };
+const toggleLabel = { fontSize: "14px", fontFamily: "sans-serif", color: "var(--color-3d2200)", marginBottom: "3px" };
+const toggleHint = { fontSize: "12px", fontFamily: "sans-serif", color: "var(--color-9b7040)" };
+const toggle = { width: "46px", height: "26px", borderRadius: "999px", background: "var(--color-eddfc8)", border: "none", cursor: "pointer", position: "relative", flexShrink: 0, transition: "background 0.2s" };
+const toggleOn = { background: "linear-gradient(135deg, var(--color-c97c2e), var(--color-a85e18))" };
+const toggleKnob = { position: "absolute", top: "3px", left: "3px", width: "20px", height: "20px", borderRadius: "50%", background: "var(--color-ffffff)", transition: "transform 0.2s", boxShadow: "0 1px 4px rgba(0,0,0,0.2)" };
 const statusBanner = { padding: "10px 14px", borderRadius: "10px", fontSize: "13px", fontFamily: "sans-serif" };
 
-const fieldLabel = { fontSize: "11px", fontFamily: "sans-serif", color: "#9b7040", letterSpacing: "0.06em", textTransform: "uppercase" };
-const logsDivider = { borderTop: "1px solid #eddfc8", margin: "4px 0" };
-const logsToggleBtn = { padding: "8px 14px", borderRadius: "8px", border: "1px solid #eddfc8", background: "#fdf8f3", color: "#3d2200", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer", whiteSpace: "nowrap" };
-const logsBox = { background: "#fdf8f3", border: "1px solid #eddfc8", borderRadius: "12px", padding: "14px 16px" };
-const logsHeading = { fontSize: "13px", fontFamily: "sans-serif", color: "#3d2200", fontWeight: "600", marginBottom: "10px" };
+const fieldLabel = { fontSize: "11px", fontFamily: "sans-serif", color: "var(--color-9b7040)", letterSpacing: "0.06em", textTransform: "uppercase" };
+const logsDivider = { borderTop: "1px solid var(--color-eddfc8)", margin: "4px 0" };
+const logsToggleBtn = { padding: "8px 14px", borderRadius: "8px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fdf8f3)", color: "var(--color-3d2200)", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer", whiteSpace: "nowrap" };
+const logsBox = { background: "var(--color-fdf8f3)", border: "1px solid var(--color-eddfc8)", borderRadius: "12px", padding: "14px 16px" };
+const logsHeading = { fontSize: "13px", fontFamily: "sans-serif", color: "var(--color-3d2200)", fontWeight: "600", marginBottom: "10px" };
 const logsList = { display: "flex", flexDirection: "column", gap: "8px", maxHeight: "320px", overflowY: "auto" };
-const logRow = { display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: "10px", padding: "8px 10px", background: "#fffdf9", border: "1px solid #eddfc8", borderRadius: "8px" };
-const logRowText = { fontSize: "13px", fontFamily: "sans-serif", color: "#3d2200", lineHeight: "1.4" };
-const logRowTime = { fontSize: "11px", fontFamily: "sans-serif", color: "#9b7040", whiteSpace: "nowrap", flexShrink: 0 };
-const logsEmpty = { fontSize: "13px", fontFamily: "sans-serif", color: "#9b7040" };
+const logRow = { display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: "10px", padding: "8px 10px", background: "var(--color-fffdf9)", border: "1px solid var(--color-eddfc8)", borderRadius: "8px" };
+const logRowText = { fontSize: "13px", fontFamily: "sans-serif", color: "var(--color-3d2200)", lineHeight: "1.4" };
+const logRowTime = { fontSize: "11px", fontFamily: "sans-serif", color: "var(--color-9b7040)", whiteSpace: "nowrap", flexShrink: 0 };
+const logsEmpty = { fontSize: "13px", fontFamily: "sans-serif", color: "var(--color-9b7040)" };
 const checkRow = { display: "flex", gap: "16px", flexWrap: "wrap" };
-const checkLabel = { display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", fontFamily: "sans-serif", color: "#5c3a1e", cursor: "pointer" };
-const input = { padding: "10px 12px", borderRadius: "10px", border: "1px solid #eddfc8", background: "#fdf8f3", fontSize: "14px", fontFamily: "sans-serif", color: "#3d2200", outline: "none", width: "100%", boxSizing: "border-box" };
+const checkLabel = { display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", fontFamily: "sans-serif", color: "var(--color-5c3a1e)", cursor: "pointer" };
+const input = { padding: "10px 12px", borderRadius: "10px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fdf8f3)", fontSize: "14px", fontFamily: "sans-serif", color: "var(--color-3d2200)", outline: "none", width: "100%", boxSizing: "border-box" };
 const saveRow = { display: "flex", alignItems: "center", gap: "14px", marginTop: "20px" };
-const saveBtn = { padding: "12px 24px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, #c97c2e, #a85e18)", color: "#fff8ee", fontSize: "14px", fontFamily: "sans-serif", cursor: "pointer", boxShadow: "0 3px 10px rgba(160,80,20,0.25)" };
-const savedMsg = { fontSize: "13px", fontFamily: "sans-serif", color: "#16a34a", fontWeight: "600" };
+const saveBtn = { padding: "12px 24px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, var(--color-c97c2e), var(--color-a85e18))", color: "var(--color-fff8ee)", fontSize: "14px", fontFamily: "sans-serif", cursor: "pointer", boxShadow: "0 3px 10px rgba(160,80,20,0.25)" };
+const savedMsg = { fontSize: "13px", fontFamily: "sans-serif", color: "var(--color-16a34a)", fontWeight: "600" };

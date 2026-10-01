@@ -75,7 +75,7 @@ const page = {
   padding: "32px 20px 60px",
   maxWidth: "720px",
   margin: "0 auto",
-  background: "#fdf8f3",
+  background: "var(--color-fdf8f3)",
   minHeight: "100vh",
 };
 
@@ -85,12 +85,12 @@ const pageTitle = {
   fontFamily: "'Georgia', serif",
   fontWeight: "normal",
   fontSize: "28px",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
 };
 
 const pageSubtitle = {
   textAlign: "center",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   fontFamily: "sans-serif",
   fontSize: "14px",
   marginBottom: "32px",
@@ -105,8 +105,8 @@ const list = {
 const card = {
   display: "flex",
   gap: "18px",
-  background: "#fffdf9",
-  border: "1px solid #eddfc8",
+  background: "var(--color-fffdf9)",
+  border: "1px solid var(--color-eddfc8)",
   borderRadius: "18px",
   padding: "20px 22px",
   boxShadow: "0 2px 10px rgba(160,100,40,0.06)",
@@ -126,13 +126,13 @@ const dateMonth = {
   fontFamily: "sans-serif",
   fontWeight: "700",
   letterSpacing: "0.06em",
-  color: "#c97c2e",
+  color: "var(--color-c97c2e)",
 };
 
 const dateDay = {
   fontSize: "24px",
   fontFamily: "'Georgia', serif",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   lineHeight: 1.15,
 };
 
@@ -146,13 +146,13 @@ const title = {
   fontSize: "18px",
   fontWeight: "normal",
   fontFamily: "'Georgia', serif",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
 };
 
 const details = {
   margin: 0,
   fontSize: "14px",
-  color: "#5c3a1e",
+  color: "var(--color-5c3a1e)",
   fontFamily: "sans-serif",
   lineHeight: 1.7,
 };
@@ -171,7 +171,7 @@ const minorToggle = {
   cursor: "pointer",
   fontSize: "12.5px",
   fontFamily: "sans-serif",
-  color: "#a85e18",
+  color: "var(--color-a85e18)",
   fontWeight: "600",
 };
 
@@ -185,7 +185,7 @@ const minorChevron = (expanded) => ({
 const minorList = {
   margin: "10px 0 0",
   padding: "12px 16px",
-  background: "#fdf1de",
+  background: "var(--color-fdf1de)",
   borderRadius: "10px",
   display: "flex",
   flexDirection: "column",
@@ -197,12 +197,12 @@ const minorItem = {
   display: "flex",
   gap: "8px",
   fontSize: "13px",
-  color: "#6b4c20",
+  color: "var(--color-6b4c20)",
   fontFamily: "sans-serif",
   lineHeight: 1.6,
 };
 
 const minorBullet = {
   flexShrink: 0,
-  color: "#c97c2e",
+  color: "var(--color-c97c2e)",
 };

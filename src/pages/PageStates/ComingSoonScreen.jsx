@@ -8,7 +8,7 @@ export default function ComingSoonScreen({ config }) {
 
   return (
     <div style={s.page}>
-      <div style={s.iconRing({ background: "linear-gradient(135deg, #8b6fd6 0%, #6547a5 100%)" })}>
+      <div style={s.iconRing({ background: "linear-gradient(135deg, var(--color-8b6fd6) 0%, var(--color-6547a5) 100%)" })}>
         <span style={s.icon}>🚀</span>
       </div>
 
@@ -26,8 +26,8 @@ export default function ComingSoonScreen({ config }) {
               fontSize: "11px",
               padding: "4px 10px",
               borderRadius: "999px",
-              background: "#eee8ff",
-              color: "#6547a5",
+              background: "var(--color-eee8ff)",
+              color: "var(--color-6547a5)",
               fontFamily: "sans-serif",
               fontWeight: "600",
               letterSpacing: "0.04em",

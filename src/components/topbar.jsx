@@ -20,6 +20,7 @@ import { auth, db, googleProvider } from "../firebase";
 import { logEvent } from "../utils/logEvent";
 import { usePages } from "../context/PagesContext";
 import { getDisplayName, isVisibleInNav, sortForNavigation, BADGE_COLORS } from "../lib/pageManager";
+import ThemeToggle from "./ThemeToggle";
 
 import googleLogo from "../assets/auth/google-logo.png";
 
@@ -224,6 +225,8 @@ export default function TopBar() {
           🔍
         </button>
 
+        <ThemeToggle />
+
         <div ref={profileRef} style={rightSide}>
         <div
           style={{ cursor: "pointer" }}
@@ -335,8 +338,8 @@ const topBar = {
   justifyContent: "space-between",
   alignItems: "center",
   padding: "14px 24px",
-  borderBottom: "1px solid #eddfc8",
-  background: "#fffdf9",
+  borderBottom: "1px solid var(--color-eddfc8)",
+  background: "var(--color-fffdf9)",
   position: "sticky",
   top: 0,
   zIndex: 1000,
@@ -347,7 +350,7 @@ const title = {
   fontWeight: "normal",
   fontSize: "17px",
   fontFamily: "'Georgia', serif",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   letterSpacing: "0.01em"
 };
 
@@ -359,8 +362,8 @@ const profileCircle = {
   width: "36px",
   height: "36px",
   borderRadius: "50%",
-  background: "linear-gradient(135deg, #c97c2e 0%, #a85e18 100%)",
-  color: "#fff8ee",
+  background: "linear-gradient(135deg, var(--color-c97c2e) 0%, var(--color-a85e18) 100%)",
+  color: "var(--color-fff8ee)",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
@@ -375,8 +378,8 @@ const guestCircle = {
   width: "36px",
   height: "36px",
   borderRadius: "50%",
-  background: "#fdf1e2",
-  border: "1px solid #eddfc8",
+  background: "var(--color-fdf1e2)",
+  border: "1px solid var(--color-eddfc8)",
   display: "flex",
   alignItems: "center",
   justifyContent: "center"
@@ -392,8 +395,8 @@ const dropdown = {
   position: "absolute",
   right: 0,
   top: "50px",
-  background: "#fffdf9",
-  border: "1px solid #eddfc8",
+  background: "var(--color-fffdf9)",
+  border: "1px solid var(--color-eddfc8)",
   padding: "20px",
   display: "flex",
   flexDirection: "column",
@@ -409,23 +412,23 @@ const dropdownHeading = {
   margin: "0 0 4px",
   fontFamily: "'Georgia', serif",
   fontSize: "16px",
-  color: "#3d2200"
+  color: "var(--color-3d2200)"
 };
 
 const inputStyle = {
-  border: "1px solid #eddfc8",
+  border: "1px solid var(--color-eddfc8)",
   borderRadius: "8px",
   padding: "10px 12px",
   fontSize: "13px",
   fontFamily: "sans-serif",
-  background: "#fffdf9",
-  color: "#3d2200",
+  background: "var(--color-fffdf9)",
+  color: "var(--color-3d2200)",
   outline: "none"
 };
 
 const loginButton = {
-  background: "linear-gradient(135deg, #c97c2e 0%, #a85e18 100%)",
-  color: "#fff8ee",
+  background: "linear-gradient(135deg, var(--color-c97c2e) 0%, var(--color-a85e18) 100%)",
+  color: "var(--color-fff8ee)",
   border: "none",
   padding: "11px",
   cursor: "pointer",
@@ -442,14 +445,14 @@ const googleButton = {
   alignItems: "center",
   justifyContent: "center",
   gap: "10px",
-  border: "1px solid #eddfc8",
-  background: "#fffdf9",
+  border: "1px solid var(--color-eddfc8)",
+  background: "var(--color-fffdf9)",
   padding: "10px",
   cursor: "pointer",
   borderRadius: "8px",
   fontSize: "13px",
   fontFamily: "sans-serif",
-  color: "#7a4f10"
+  color: "var(--color-7a4f10)"
 };
 
 const googleLogoStyle = {
@@ -461,12 +464,12 @@ const signupText = {
   textAlign: "center",
   cursor: "pointer",
   fontFamily: "sans-serif",
-  color: "#b08050",
+  color: "var(--color-b08050)",
   margin: "2px 0 0"
 };
 
 const signupLink = {
-  color: "#c97c2e",
+  color: "var(--color-c97c2e)",
   fontWeight: "600"
 };
 
@@ -476,26 +479,26 @@ const orDivider = {
   gap: "10px",
   textAlign: "center",
   fontSize: "11px",
-  color: "#b08050",
+  color: "var(--color-b08050)",
   fontFamily: "sans-serif"
 };
 
 const orLine = {
   flex: 1,
   height: "1px",
-  background: "#eddfc8"
+  background: "var(--color-eddfc8)"
 };
 
 const userName = {
   fontWeight: "normal",
   fontFamily: "'Georgia', serif",
   fontSize: "15px",
-  color: "#3d2200"
+  color: "var(--color-3d2200)"
 };
 
 const divider = {
   height: "1px",
-  background: "#eddfc8",
+  background: "var(--color-eddfc8)",
   margin: "2px 0"
 };
 
@@ -503,22 +506,22 @@ const accountButton = {
   display: "flex",
   alignItems: "center",
   gap: "10px",
-  background: "#fdf8f3",
-  border: "1px solid #eddfc8",
+  background: "var(--color-fdf8f3)",
+  border: "1px solid var(--color-eddfc8)",
   padding: "10px 12px",
   cursor: "pointer",
   borderRadius: "8px",
   fontSize: "13px",
   fontFamily: "sans-serif",
-  color: "#7a4f10",
+  color: "var(--color-7a4f10)",
   textAlign: "left"
 };
 
 const adminButton = {
   ...accountButton,
-  background: "#fdf1e2",
-  border: "1px solid #e0a458",
-  color: "#a85e18",
+  background: "var(--color-fdf1e2)",
+  border: "1px solid var(--color-e0a458)",
+  color: "var(--color-a85e18)",
   fontWeight: "600"
 };
 
@@ -545,8 +548,8 @@ const miniBadge = (color) => {
 
 const logoutButton = {
   background: "transparent",
-  color: "#a85e18",
-  border: "1px solid #e0a458",
+  color: "var(--color-a85e18)",
+  border: "1px solid var(--color-e0a458)",
   padding: "10px",
   cursor: "pointer",
   borderRadius: "8px",
@@ -557,7 +560,7 @@ const logoutButton = {
 };
 
 const errorText = {
-  color: "#b3432c",
+  color: "var(--color-b3432c)",
   fontSize: "12px",
   fontFamily: "sans-serif",
   margin: "2px 0 0"
@@ -573,9 +576,9 @@ const searchIconBtn = {
   width: "36px",
   height: "36px",
   borderRadius: "50%",
-  border: "1px solid #eddfc8",
-  background: "#fdf8f3",
-  color: "#7a4f10",
+  border: "1px solid var(--color-eddfc8)",
+  background: "var(--color-fdf8f3)",
+  color: "var(--color-7a4f10)",
   fontSize: "15px",
   cursor: "pointer",
   display: "flex",
@@ -594,8 +597,8 @@ const searchOverlay = {
 };
 
 const searchPanel = {
-  background: "#fffdf9",
-  border: "1px solid #eddfc8",
+  background: "var(--color-fffdf9)",
+  border: "1px solid var(--color-eddfc8)",
   borderRadius: "18px",
   padding: "20px",
   width: "92%",
@@ -610,11 +613,11 @@ const searchPanel = {
 const searchInput = {
   padding: "12px 16px",
   borderRadius: "12px",
-  border: "1px solid #eddfc8",
-  background: "#fdf8f3",
+  border: "1px solid var(--color-eddfc8)",
+  background: "var(--color-fdf8f3)",
   fontSize: "15px",
   fontFamily: "sans-serif",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   outline: "none",
 };
 
@@ -627,7 +630,7 @@ const searchResults = {
 
 const searchHint = {
   textAlign: "center",
-  color: "#b08050",
+  color: "var(--color-b08050)",
   fontStyle: "italic",
   fontFamily: "sans-serif",
   fontSize: "13px",
@@ -641,8 +644,8 @@ const searchResultRow = {
   gap: "10px",
   padding: "10px 12px",
   borderRadius: "10px",
-  border: "1px solid #f0e4d0",
-  background: "#fdf8f3",
+  border: "1px solid var(--color-f0e4d0)",
+  background: "var(--color-fdf8f3)",
   cursor: "pointer",
   textAlign: "left",
 };
@@ -651,15 +654,15 @@ const searchResultTag = {
   fontSize: "10px",
   padding: "2px 8px",
   borderRadius: "999px",
-  background: "#f6e4b0",
-  color: "#7a5a10",
+  background: "var(--color-f6e4b0)",
+  color: "var(--color-7a5a10)",
   fontFamily: "sans-serif",
   flexShrink: 0,
 };
 
 const searchResultTitle = {
   fontSize: "13px",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   fontFamily: "sans-serif",
   fontWeight: "600",
   flex: 1,
@@ -670,7 +673,7 @@ const searchResultTitle = {
 
 const searchResultMeta = {
   fontSize: "11px",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   fontFamily: "sans-serif",
   flexShrink: 0,
 };
@@ -678,9 +681,9 @@ const searchResultMeta = {
 const searchCloseBtn = {
   padding: "10px",
   borderRadius: "10px",
-  border: "1px solid #eddfc8",
+  border: "1px solid var(--color-eddfc8)",
   background: "transparent",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   fontFamily: "sans-serif",
   fontSize: "13px",
   cursor: "pointer",

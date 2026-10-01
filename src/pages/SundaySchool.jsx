@@ -81,12 +81,12 @@ export default function SundaySchool() {
   );
 }
 
-const page = { padding: "32px 20px 60px", maxWidth: "860px", margin: "0 auto", background: "#fdf8f3", minHeight: "100vh", fontFamily: "'Georgia', serif" };
-const pageTitle = { textAlign: "center", marginBottom: "28px", fontSize: "28px", fontWeight: "normal", color: "#3d2200" };
+const page = { padding: "32px 20px 60px", maxWidth: "860px", margin: "0 auto", background: "var(--color-fdf8f3)", minHeight: "100vh", fontFamily: "'Georgia', serif" };
+const pageTitle = { textAlign: "center", marginBottom: "28px", fontSize: "28px", fontWeight: "normal", color: "var(--color-3d2200)" };
 const controls = { display: "flex", gap: "10px", marginBottom: "20px", flexWrap: "wrap", justifyContent: "center" };
-const pillButton = { padding: "9px 18px", borderRadius: "999px", border: "1px solid #c8922a", background: "transparent", color: "#7a4f10", cursor: "pointer", fontSize: "13px", fontFamily: "sans-serif" };
-const inputStyle = { padding: "9px 16px", borderRadius: "999px", border: "1px solid #eddfc8", fontSize: "13px", fontFamily: "sans-serif", background: "#fffdf9", color: "#3d2200", outline: "none" };
-const noticeBox = { background: "#fffbee", border: "1px solid #f0d898", borderRadius: "14px", padding: "14px 18px", marginBottom: "14px" };
-const noticeTitle = { fontSize: "15px", color: "#3d2200", fontFamily: "'Georgia', serif" };
-const noticeMsg = { fontSize: "13px", color: "#7a5530", fontFamily: "sans-serif", lineHeight: 1.6, margin: "4px 0 0" };
-const emptyText = { textAlign: "center", color: "#b08050", fontStyle: "italic", fontFamily: "sans-serif", padding: "30px 0" };
+const pillButton = { padding: "9px 18px", borderRadius: "999px", border: "1px solid var(--color-c8922a)", background: "transparent", color: "var(--color-7a4f10)", cursor: "pointer", fontSize: "13px", fontFamily: "sans-serif" };
+const inputStyle = { padding: "9px 16px", borderRadius: "999px", border: "1px solid var(--color-eddfc8)", fontSize: "13px", fontFamily: "sans-serif", background: "var(--color-fffdf9)", color: "var(--color-3d2200)", outline: "none" };
+const noticeBox = { background: "var(--color-fffbee)", border: "1px solid var(--color-f0d898)", borderRadius: "14px", padding: "14px 18px", marginBottom: "14px" };
+const noticeTitle = { fontSize: "15px", color: "var(--color-3d2200)", fontFamily: "'Georgia', serif" };
+const noticeMsg = { fontSize: "13px", color: "var(--color-7a5530)", fontFamily: "sans-serif", lineHeight: 1.6, margin: "4px 0 0" };
+const emptyText = { textAlign: "center", color: "var(--color-b08050)", fontStyle: "italic", fontFamily: "sans-serif", padding: "30px 0" };

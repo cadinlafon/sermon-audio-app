@@ -56,7 +56,7 @@ export default function NotFound() {
 }
 
 const page = {
-  background: "#fdf8f3",
+  background: "var(--color-fdf8f3)",
   minHeight: "100vh",
   display: "flex",
   flexDirection: "column",
@@ -77,7 +77,7 @@ const numberRow = {
 
 const sharedFour = {
   fontSize: "clamp(72px, 18vw, 120px)",
-  color: "#c97c2e",
+  color: "var(--color-c97c2e)",
   fontWeight: "normal",
   lineHeight: 1,
 };
@@ -95,14 +95,14 @@ const zeroMiddle = {
 const title = {
   fontSize: "clamp(18px, 4vw, 26px)",
   fontWeight: "normal",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   marginBottom: "10px",
   minWidth: "260px",
 };
 
 const subtitle = {
   fontSize: "15px",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   fontFamily: "sans-serif",
   maxWidth: "380px",
   lineHeight: 1.6,
@@ -110,8 +110,8 @@ const subtitle = {
 };
 
 const verseCard = {
-  background: "#fffdf9",
-  border: "1px solid #eddfc8",
+  background: "var(--color-fffdf9)",
+  border: "1px solid var(--color-eddfc8)",
   borderRadius: "16px",
   padding: "22px 26px",
   maxWidth: "440px",
@@ -121,7 +121,7 @@ const verseCard = {
 
 const verseText = {
   fontSize: "15px",
-  color: "#5c3a1e",
+  color: "var(--color-5c3a1e)",
   lineHeight: 1.7,
   fontStyle: "italic",
   margin: "0 0 10px",
@@ -129,7 +129,7 @@ const verseText = {
 
 const verseRef = {
   fontSize: "12px",
-  color: "#b08050",
+  color: "var(--color-b08050)",
   fontFamily: "sans-serif",
   letterSpacing: "0.06em",
   margin: 0,
@@ -146,8 +146,8 @@ const homeButton = {
   padding: "12px 24px",
   borderRadius: "999px",
   border: "none",
-  background: "linear-gradient(135deg, #c97c2e 0%, #a85e18 100%)",
-  color: "#fff8ee",
+  background: "linear-gradient(135deg, var(--color-c97c2e) 0%, var(--color-a85e18) 100%)",
+  color: "var(--color-fff8ee)",
   cursor: "pointer",
   fontSize: "14px",
   fontFamily: "sans-serif",
@@ -157,9 +157,9 @@ const homeButton = {
 const reportButton = {
   padding: "12px 24px",
   borderRadius: "999px",
-  border: "1px solid #c8922a",
+  border: "1px solid var(--color-c8922a)",
   background: "transparent",
-  color: "#7a4f10",
+  color: "var(--color-7a4f10)",
   cursor: "pointer",
   fontSize: "14px",
   fontFamily: "sans-serif",

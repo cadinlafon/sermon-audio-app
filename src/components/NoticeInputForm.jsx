@@ -77,9 +77,9 @@ export default function NoticeInputForm({ notice, user }) {
 }
 
 const wrap = { marginTop: "12px" };
-const message = { margin: "0 0 8px", fontSize: "13px", color: "#6b4c20", lineHeight: 1.6, fontFamily: "sans-serif" };
+const message = { margin: "0 0 8px", fontSize: "13px", color: "var(--color-6b4c20)", lineHeight: 1.6, fontFamily: "sans-serif" };
 const row = { display: "flex", gap: "8px", flexWrap: "wrap" };
-const input = { flex: "1 1 180px", padding: "9px 12px", borderRadius: "8px", border: "1px solid #eddfc8", background: "#fffdf9", fontSize: "14px", fontFamily: "sans-serif", color: "#3d2200", outline: "none", minWidth: 0 };
-const submitBtn = { padding: "9px 16px", borderRadius: "8px", border: "none", background: "linear-gradient(135deg, #c97c2e, #a85e18)", color: "#fff8ee", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer", whiteSpace: "nowrap" };
-const errorText = { margin: "6px 0 0", fontSize: "12px", color: "#b91c1c", fontFamily: "sans-serif" };
-const successBox = { marginTop: "12px", display: "flex", alignItems: "center", gap: "6px", padding: "10px 14px", borderRadius: "8px", background: "#dcfce7", color: "#166534", fontSize: "13px", fontFamily: "sans-serif" };
+const input = { flex: "1 1 180px", padding: "9px 12px", borderRadius: "8px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fffdf9)", fontSize: "14px", fontFamily: "sans-serif", color: "var(--color-3d2200)", outline: "none", minWidth: 0 };
+const submitBtn = { padding: "9px 16px", borderRadius: "8px", border: "none", background: "linear-gradient(135deg, var(--color-c97c2e), var(--color-a85e18))", color: "var(--color-fff8ee)", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer", whiteSpace: "nowrap" };
+const errorText = { margin: "6px 0 0", fontSize: "12px", color: "var(--color-b91c1c)", fontFamily: "sans-serif" };
+const successBox = { marginTop: "12px", display: "flex", alignItems: "center", gap: "6px", padding: "10px 14px", borderRadius: "8px", background: "var(--color-dcfce7)", color: "var(--color-166534)", fontSize: "13px", fontFamily: "sans-serif" };

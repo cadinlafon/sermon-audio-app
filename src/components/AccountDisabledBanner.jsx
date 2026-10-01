@@ -31,24 +31,24 @@ const overlay = {
 };
 
 const card = {
-  background: "#fffdf9",
+  background: "var(--color-fffdf9)",
   borderRadius: "18px",
   padding: "32px 28px",
   maxWidth: "380px",
   width: "100%",
   textAlign: "center",
-  border: "1px solid #eddfc8",
+  border: "1px solid var(--color-eddfc8)",
   fontFamily: "'Georgia', serif",
 };
 
-const title = { fontSize: "19px", fontWeight: "normal", color: "#3d2200", margin: "10px 0 8px" };
-const body = { fontSize: "13px", color: "#9b7040", fontFamily: "sans-serif", lineHeight: 1.6, margin: "0 0 20px" };
+const title = { fontSize: "19px", fontWeight: "normal", color: "var(--color-3d2200)", margin: "10px 0 8px" };
+const body = { fontSize: "13px", color: "var(--color-9b7040)", fontFamily: "sans-serif", lineHeight: 1.6, margin: "0 0 20px" };
 const btn = {
   padding: "11px 24px",
   borderRadius: "10px",
   border: "none",
-  background: "linear-gradient(135deg, #c97c2e 0%, #a85e18 100%)",
-  color: "#fff8ee",
+  background: "linear-gradient(135deg, var(--color-c97c2e) 0%, var(--color-a85e18) 100%)",
+  color: "var(--color-fff8ee)",
   fontSize: "14px",
   fontFamily: "sans-serif",
   cursor: "pointer",

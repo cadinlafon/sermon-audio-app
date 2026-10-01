@@ -329,10 +329,10 @@ export default function BulkUploadAudio({ speakers }) {
 }
 
 function StatusPill({ item }) {
-  if (item.status === "done") return <span style={{ ...statusPill, background: "#dcfce7", color: "#166534" }}>Done</span>;
-  if (item.status === "uploading") return <span style={{ ...statusPill, background: "#e8f0fe", color: "#2a5ab5" }}>{item.progress ?? 0}%</span>;
-  if (item.status === "error") return <span style={{ ...statusPill, background: "#fee2e2", color: "#991b1b" }}>Failed</span>;
-  return <span style={{ ...statusPill, background: "#f6e4b0", color: "#7a5a10" }}>Ready</span>;
+  if (item.status === "done") return <span style={{ ...statusPill, background: "var(--color-dcfce7)", color: "var(--color-166534)" }}>Done</span>;
+  if (item.status === "uploading") return <span style={{ ...statusPill, background: "var(--color-e8f0fe)", color: "var(--color-2a5ab5)" }}>{item.progress ?? 0}%</span>;
+  if (item.status === "error") return <span style={{ ...statusPill, background: "var(--color-fee2e2)", color: "var(--color-991b1b)" }}>Failed</span>;
+  return <span style={{ ...statusPill, background: "var(--color-f6e4b0)", color: "var(--color-7a5a10)" }}>Ready</span>;
 }
 
 ////////////////////////////////////////////////////////////////
@@ -340,8 +340,8 @@ function StatusPill({ item }) {
 ////////////////////////////////////////////////////////////////
 
 const card = {
-  background: "#fffdf9",
-  border: "1px solid #eddfc8",
+  background: "var(--color-fffdf9)",
+  border: "1px solid var(--color-eddfc8)",
   borderRadius: "18px",
   padding: "28px",
   boxShadow: "0 2px 14px rgba(160,100,40,0.07)",
@@ -351,48 +351,48 @@ const card = {
 };
 
 const dropZone = {
-  border: "2px dashed #eddfc8",
+  border: "2px dashed var(--color-eddfc8)",
   borderRadius: "14px",
   padding: "32px 20px",
-  background: "#fdf8f3",
+  background: "var(--color-fdf8f3)",
   transition: "border-color 0.2s",
   textAlign: "center",
 };
 
-const dropZoneActive = { borderColor: "#c97c2e", background: "#fef3e2" };
+const dropZoneActive = { borderColor: "var(--color-c97c2e)", background: "var(--color-fef3e2)" };
 const dropIcon = { fontSize: "30px", marginBottom: "8px" };
-const dropText = { fontSize: "14px", fontFamily: "sans-serif", color: "#5c3a1e", marginBottom: "4px" };
-const dropHint = { fontSize: "12px", fontFamily: "sans-serif", color: "#b08050", marginBottom: "16px" };
+const dropText = { fontSize: "14px", fontFamily: "sans-serif", color: "var(--color-5c3a1e)", marginBottom: "4px" };
+const dropHint = { fontSize: "12px", fontFamily: "sans-serif", color: "var(--color-b08050)", marginBottom: "16px" };
 
 const browseRow = { display: "flex", gap: "10px", justifyContent: "center" };
-const browseBtn = { padding: "9px 16px", borderRadius: "10px", border: "1px solid #eddfc8", background: "#fffdf9", color: "#7a4f10", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer" };
+const browseBtn = { padding: "9px 16px", borderRadius: "10px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fffdf9)", color: "var(--color-7a4f10)", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer" };
 
-const bulkApplyBar = { display: "flex", gap: "12px", flexWrap: "wrap", alignItems: "center", borderTop: "1px solid #eddfc8", borderBottom: "1px solid #eddfc8", padding: "14px 0" };
+const bulkApplyBar = { display: "flex", gap: "12px", flexWrap: "wrap", alignItems: "center", borderTop: "1px solid var(--color-eddfc8)", borderBottom: "1px solid var(--color-eddfc8)", padding: "14px 0" };
 const bulkApplyGroup = { display: "flex", gap: "6px" };
-const selectSm = { padding: "7px 10px", borderRadius: "8px", border: "1px solid #eddfc8", background: "#fdf8f3", fontSize: "12px", fontFamily: "sans-serif", color: "#3d2200" };
-const applyBtn = { padding: "7px 12px", borderRadius: "8px", border: "1px solid #eddfc8", background: "#fdf8f3", color: "#7a4f10", fontSize: "12px", fontFamily: "sans-serif", cursor: "pointer" };
+const selectSm = { padding: "7px 10px", borderRadius: "8px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fdf8f3)", fontSize: "12px", fontFamily: "sans-serif", color: "var(--color-3d2200)" };
+const applyBtn = { padding: "7px 12px", borderRadius: "8px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fdf8f3)", color: "var(--color-7a4f10)", fontSize: "12px", fontFamily: "sans-serif", cursor: "pointer" };
 
 const tableWrap = { display: "flex", flexDirection: "column", gap: "10px", maxHeight: "480px", overflowY: "auto" };
 
-const row = { border: "1px solid #eddfc8", borderRadius: "12px", padding: "12px 14px", background: "#fdf8f3" };
+const row = { border: "1px solid var(--color-eddfc8)", borderRadius: "12px", padding: "12px 14px", background: "var(--color-fdf8f3)" };
 const rowMain = { display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" };
-const rowInput = { flex: "2 1 180px", padding: "8px 10px", borderRadius: "8px", border: "1px solid #eddfc8", background: "#fffdf9", fontSize: "13px", fontFamily: "sans-serif", color: "#3d2200" };
-const rowSelect = { flex: "1 1 130px", padding: "8px 10px", borderRadius: "8px", border: "1px solid #eddfc8", background: "#fffdf9", fontSize: "12px", fontFamily: "sans-serif", color: "#3d2200" };
-const rowDuration = { fontSize: "12px", fontFamily: "sans-serif", color: "#9b7040", minWidth: "40px" };
-const rowRemoveBtn = { border: "none", background: "transparent", color: "#b3432c", fontSize: "13px", cursor: "pointer", padding: "4px 6px" };
-const rowFileName = { fontSize: "11px", fontFamily: "sans-serif", color: "#b08050", marginTop: "6px" };
+const rowInput = { flex: "2 1 180px", padding: "8px 10px", borderRadius: "8px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fffdf9)", fontSize: "13px", fontFamily: "sans-serif", color: "var(--color-3d2200)" };
+const rowSelect = { flex: "1 1 130px", padding: "8px 10px", borderRadius: "8px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fffdf9)", fontSize: "12px", fontFamily: "sans-serif", color: "var(--color-3d2200)" };
+const rowDuration = { fontSize: "12px", fontFamily: "sans-serif", color: "var(--color-9b7040)", minWidth: "40px" };
+const rowRemoveBtn = { border: "none", background: "transparent", color: "var(--color-b3432c)", fontSize: "13px", cursor: "pointer", padding: "4px 6px" };
+const rowFileName = { fontSize: "11px", fontFamily: "sans-serif", color: "var(--color-b08050)", marginTop: "6px" };
 
 const statusPill = { fontSize: "11px", fontWeight: "700", padding: "3px 9px", borderRadius: "999px", fontFamily: "sans-serif", whiteSpace: "nowrap" };
 
-const rowProgressTrack = { height: "5px", background: "#eddfc8", borderRadius: "999px", overflow: "hidden", marginTop: "8px" };
-const rowProgressFill = { height: "100%", background: "linear-gradient(to right, #e08930, #c97c2e)", borderRadius: "999px", transition: "width 0.2s ease-out" };
-const rowErrorText = { fontSize: "11px", fontFamily: "sans-serif", color: "#b3432c", marginTop: "6px" };
+const rowProgressTrack = { height: "5px", background: "var(--color-eddfc8)", borderRadius: "999px", overflow: "hidden", marginTop: "8px" };
+const rowProgressFill = { height: "100%", background: "linear-gradient(to right, var(--color-e08930), var(--color-c97c2e))", borderRadius: "999px", transition: "width 0.2s ease-out" };
+const rowErrorText = { fontSize: "11px", fontFamily: "sans-serif", color: "var(--color-b3432c)", marginTop: "6px" };
 
 const footerRow = { display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" };
-const footerCounts = { display: "flex", gap: "12px", alignItems: "center", fontSize: "12px", fontFamily: "sans-serif", color: "#9b7040" };
-const doneCountText = { color: "#166534", fontWeight: "600" };
-const ghostBtn = { padding: "6px 10px", borderRadius: "8px", border: "1px solid #eddfc8", background: "transparent", color: "#7a4f10", fontSize: "11px", fontFamily: "sans-serif", cursor: "pointer" };
+const footerCounts = { display: "flex", gap: "12px", alignItems: "center", fontSize: "12px", fontFamily: "sans-serif", color: "var(--color-9b7040)" };
+const doneCountText = { color: "var(--color-166534)", fontWeight: "600" };
+const ghostBtn = { padding: "6px 10px", borderRadius: "8px", border: "1px solid var(--color-eddfc8)", background: "transparent", color: "var(--color-7a4f10)", fontSize: "11px", fontFamily: "sans-serif", cursor: "pointer" };
 
-const uploadAllBtn = { padding: "13px 22px", borderRadius: "12px", border: "none", background: "linear-gradient(135deg, #c97c2e 0%, #a85e18 100%)", color: "#fff8ee", fontSize: "15px", fontFamily: "sans-serif", cursor: "pointer", boxShadow: "0 3px 12px rgba(160,80,20,0.28)" };
+const uploadAllBtn = { padding: "13px 22px", borderRadius: "12px", border: "none", background: "linear-gradient(135deg, var(--color-c97c2e) 0%, var(--color-a85e18) 100%)", color: "var(--color-fff8ee)", fontSize: "15px", fontFamily: "sans-serif", cursor: "pointer", boxShadow: "0 3px 12px rgba(160,80,20,0.28)" };
 
-const summaryText = { fontSize: "13px", fontFamily: "sans-serif", color: "#5c3a1e", textAlign: "center", margin: 0 };
+const summaryText = { fontSize: "13px", fontFamily: "sans-serif", color: "var(--color-5c3a1e)", textAlign: "center", margin: 0 };

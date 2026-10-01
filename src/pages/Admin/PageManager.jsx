@@ -235,13 +235,13 @@ export default function PageManager() {
 
       {/* STATS */}
       <div style={statsGrid}>
-        <StatTile label="Total Pages" value={stats.total} icon="🧭" color="#c97c2e" />
-        <StatTile label="Active" value={stats.active} icon="✅" color="#16a34a" />
-        <StatTile label="Locked" value={stats.locked} icon="🔒" color="#b45309" />
-        <StatTile label="Hidden" value={stats.hidden} icon="🙈" color="#6b7280" />
-        <StatTile label="Coming Soon" value={stats.comingSoon} icon="🚀" color="#6547a5" />
-        <StatTile label="Maintenance" value={stats.maintenance} icon="🔧" color="#b91c1c" />
-        <StatTile label="Beta" value={stats.beta} icon="🧪" color="#2563eb" />
+        <StatTile label="Total Pages" value={stats.total} icon="🧭" color="var(--color-c97c2e)" />
+        <StatTile label="Active" value={stats.active} icon="✅" color="var(--color-16a34a)" />
+        <StatTile label="Locked" value={stats.locked} icon="🔒" color="var(--color-b45309)" />
+        <StatTile label="Hidden" value={stats.hidden} icon="🙈" color="var(--color-6b7280)" />
+        <StatTile label="Coming Soon" value={stats.comingSoon} icon="🚀" color="var(--color-6547a5)" />
+        <StatTile label="Maintenance" value={stats.maintenance} icon="🔧" color="var(--color-b91c1c)" />
+        <StatTile label="Beta" value={stats.beta} icon="🧪" color="var(--color-2563eb)" />
       </div>
 
       {/* TOOLBAR */}
@@ -479,61 +479,61 @@ function StatTile({ label, value, icon, color }) {
 
 const page = { maxWidth: "1200px" };
 const pageHeader = { marginBottom: "24px" };
-const pageTitle = { fontSize: "26px", fontWeight: "normal", color: "#3d2200", margin: "0 0 4px", fontFamily: "'Georgia', serif" };
-const pageSubtitle = { fontSize: "14px", color: "#9b7040", fontFamily: "sans-serif", margin: 0 };
+const pageTitle = { fontSize: "26px", fontWeight: "normal", color: "var(--color-3d2200)", margin: "0 0 4px", fontFamily: "'Georgia', serif" };
+const pageSubtitle = { fontSize: "14px", color: "var(--color-9b7040)", fontFamily: "sans-serif", margin: 0 };
 
 const statsGrid = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "14px", marginBottom: "24px" };
-const statCard = { background: "#fffdf9", border: "1px solid #eddfc8", borderRadius: "14px", padding: "16px", boxShadow: "0 2px 10px rgba(160,100,40,0.06)" };
+const statCard = { background: "var(--color-fffdf9)", border: "1px solid var(--color-eddfc8)", borderRadius: "14px", padding: "16px", boxShadow: "0 2px 10px rgba(160,100,40,0.06)" };
 const statIconWrap = { width: "34px", height: "34px", borderRadius: "9px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "16px", marginBottom: "8px" };
-const statLabel = { fontSize: "11px", fontFamily: "sans-serif", color: "#9b7040", marginBottom: "4px" };
-const statValue = { fontSize: "24px", fontWeight: "bold", color: "#3d2200", fontFamily: "sans-serif" };
+const statLabel = { fontSize: "11px", fontFamily: "sans-serif", color: "var(--color-9b7040)", marginBottom: "4px" };
+const statValue = { fontSize: "24px", fontWeight: "bold", color: "var(--color-3d2200)", fontFamily: "sans-serif" };
 
 const toolbar = { display: "flex", flexDirection: "column", gap: "12px", marginBottom: "16px" };
-const searchInput = { padding: "9px 14px", borderRadius: "10px", border: "1px solid #eddfc8", background: "#fffdf9", fontSize: "13px", fontFamily: "sans-serif", color: "#3d2200", outline: "none", width: "320px", maxWidth: "100%" };
+const searchInput = { padding: "9px 14px", borderRadius: "10px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fffdf9)", fontSize: "13px", fontFamily: "sans-serif", color: "var(--color-3d2200)", outline: "none", width: "320px", maxWidth: "100%" };
 const filterRow = { display: "flex", gap: "8px", flexWrap: "wrap" };
-const filterPill = { padding: "6px 14px", borderRadius: "999px", border: "1px solid #eddfc8", background: "#fdf8f3", color: "#7a4f10", fontSize: "12px", fontFamily: "sans-serif", cursor: "pointer" };
-const filterPillActive = { background: "linear-gradient(135deg, #c97c2e, #a85e18)", color: "#fff8ee", border: "none" };
+const filterPill = { padding: "6px 14px", borderRadius: "999px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fdf8f3)", color: "var(--color-7a4f10)", fontSize: "12px", fontFamily: "sans-serif", cursor: "pointer" };
+const filterPillActive = { background: "linear-gradient(135deg, var(--color-c97c2e), var(--color-a85e18))", color: "var(--color-fff8ee)", border: "none" };
 
-const bulkBar = { display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px", background: "#fdf1de", border: "1px solid #e0a458", borderRadius: "12px", padding: "10px 16px", marginBottom: "16px" };
-const bulkLabel = { fontSize: "13px", fontFamily: "sans-serif", color: "#7a4f10", fontWeight: "600" };
+const bulkBar = { display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px", background: "var(--color-fdf1de)", border: "1px solid var(--color-e0a458)", borderRadius: "12px", padding: "10px 16px", marginBottom: "16px" };
+const bulkLabel = { fontSize: "13px", fontFamily: "sans-serif", color: "var(--color-7a4f10)", fontWeight: "600" };
 const bulkActions = { display: "flex", gap: "6px", flexWrap: "wrap" };
-const bulkBtn = { padding: "6px 12px", borderRadius: "8px", border: "1px solid #e0a458", background: "#fffdf9", color: "#7a4f10", fontSize: "11px", fontFamily: "sans-serif", cursor: "pointer" };
+const bulkBtn = { padding: "6px 12px", borderRadius: "8px", border: "1px solid var(--color-e0a458)", background: "var(--color-fffdf9)", color: "var(--color-7a4f10)", fontSize: "11px", fontFamily: "sans-serif", cursor: "pointer" };
 
-const tableWrap = { background: "#fffdf9", border: "1px solid #eddfc8", borderRadius: "16px", overflow: "auto", boxShadow: "0 2px 12px rgba(160,100,40,0.07)" };
+const tableWrap = { background: "var(--color-fffdf9)", border: "1px solid var(--color-eddfc8)", borderRadius: "16px", overflow: "auto", boxShadow: "0 2px 12px rgba(160,100,40,0.07)" };
 const table = { width: "100%", borderCollapse: "collapse", minWidth: "1000px" };
-const th = { padding: "12px 16px", textAlign: "left", fontSize: "11px", fontFamily: "sans-serif", color: "#9b7040", letterSpacing: "0.08em", textTransform: "uppercase", borderBottom: "1px solid #eddfc8", background: "#fdf8f3" };
-const tr = { borderBottom: "1px solid #f0e4d0", cursor: "grab" };
+const th = { padding: "12px 16px", textAlign: "left", fontSize: "11px", fontFamily: "sans-serif", color: "var(--color-9b7040)", letterSpacing: "0.08em", textTransform: "uppercase", borderBottom: "1px solid var(--color-eddfc8)", background: "var(--color-fdf8f3)" };
+const tr = { borderBottom: "1px solid var(--color-f0e4d0)", cursor: "grab" };
 const td = { padding: "12px 16px", verticalAlign: "middle" };
 
 const pageCell = { display: "flex", alignItems: "center", gap: "10px" };
-const dragHandle = { color: "#d8c4a5", fontSize: "12px", cursor: "grab" };
+const dragHandle = { color: "var(--color-d8c4a5)", fontSize: "12px", cursor: "grab" };
 const pageIcon = { fontSize: "16px", display: "inline-flex", alignItems: "center" };
-const pageName = { fontSize: "14px", fontFamily: "'Georgia', serif", color: "#3d2200" };
-const pageRoute = { fontSize: "11px", fontFamily: "sans-serif", color: "#b08050" };
+const pageName = { fontSize: "14px", fontFamily: "'Georgia', serif", color: "var(--color-3d2200)" };
+const pageRoute = { fontSize: "11px", fontFamily: "sans-serif", color: "var(--color-b08050)" };
 
 const statusBadge = { fontSize: "11px", padding: "3px 9px", borderRadius: "999px", fontFamily: "sans-serif", whiteSpace: "nowrap" };
-const disabledTag = { fontSize: "10px", color: "#991b1b", fontFamily: "sans-serif", marginTop: "4px" };
-const navYes = { fontSize: "12px", color: "#166534", fontFamily: "sans-serif" };
-const navNo = { fontSize: "12px", color: "#9b7040", fontFamily: "sans-serif" };
+const disabledTag = { fontSize: "10px", color: "var(--color-991b1b)", fontFamily: "sans-serif", marginTop: "4px" };
+const navYes = { fontSize: "12px", color: "var(--color-166534)", fontFamily: "sans-serif" };
+const navNo = { fontSize: "12px", color: "var(--color-9b7040)", fontFamily: "sans-serif" };
 const miniBadge = { fontSize: "10px", fontWeight: "700", padding: "2px 8px", borderRadius: "999px", fontFamily: "sans-serif" };
-const mutedText = { fontSize: "12px", color: "#9b7040", fontFamily: "sans-serif" };
+const mutedText = { fontSize: "12px", color: "var(--color-9b7040)", fontFamily: "sans-serif" };
 
 const orderCell = { display: "flex", alignItems: "center", gap: "6px" };
-const moveBtn = { width: "22px", height: "22px", display: "flex", alignItems: "center", justifyContent: "center", padding: 0, borderRadius: "6px", border: "1px solid #eddfc8", background: "#fdf8f3", color: "#7a4f10", fontSize: "9px", cursor: "pointer" };
+const moveBtn = { width: "22px", height: "22px", display: "flex", alignItems: "center", justifyContent: "center", padding: 0, borderRadius: "6px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fdf8f3)", color: "var(--color-7a4f10)", fontSize: "9px", cursor: "pointer" };
 
 const actionRow = { display: "flex", gap: "6px", flexWrap: "wrap" };
-const actionBtn = { padding: "5px 10px", borderRadius: "8px", border: "1px solid #eddfc8", background: "transparent", color: "#5c3a1e", fontSize: "11px", fontFamily: "sans-serif", cursor: "pointer" };
+const actionBtn = { padding: "5px 10px", borderRadius: "8px", border: "1px solid var(--color-eddfc8)", background: "transparent", color: "var(--color-5c3a1e)", fontSize: "11px", fontFamily: "sans-serif", cursor: "pointer" };
 
-const empty = { textAlign: "center", color: "#b08050", fontFamily: "sans-serif", fontStyle: "italic", padding: "30px" };
-const hintText = { fontSize: "12px", color: "#b08050", fontFamily: "sans-serif" };
+const empty = { textAlign: "center", color: "var(--color-b08050)", fontFamily: "sans-serif", fontStyle: "italic", padding: "30px" };
+const hintText = { fontSize: "12px", color: "var(--color-b08050)", fontFamily: "sans-serif" };
 
 const confirmOverlay = { position: "fixed", inset: 0, background: "rgba(40,18,0,0.55)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 3100, padding: "20px" };
-const confirmBox = { background: "#fffdf9", border: "1px solid #eddfc8", borderRadius: "16px", padding: "24px", maxWidth: "420px", width: "100%" };
-const confirmTitle = { fontSize: "16px", color: "#3d2200", fontFamily: "'Georgia', serif", margin: "0 0 10px" };
-const confirmText = { fontSize: "13px", color: "#7a5530", fontFamily: "sans-serif", lineHeight: 1.6, margin: "0 0 18px" };
+const confirmBox = { background: "var(--color-fffdf9)", border: "1px solid var(--color-eddfc8)", borderRadius: "16px", padding: "24px", maxWidth: "420px", width: "100%" };
+const confirmTitle = { fontSize: "16px", color: "var(--color-3d2200)", fontFamily: "'Georgia', serif", margin: "0 0 10px" };
+const confirmText = { fontSize: "13px", color: "var(--color-7a5530)", fontFamily: "sans-serif", lineHeight: 1.6, margin: "0 0 18px" };
 const confirmActions = { display: "flex", justifyContent: "flex-end", gap: "10px" };
-const cancelBtn = { padding: "9px 16px", borderRadius: "10px", border: "1px solid #eddfc8", background: "transparent", color: "#7a4f10", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer" };
-const dangerBtn = { padding: "9px 18px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, #d65f5f, #a83232)", color: "#fff8ee", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer" };
+const cancelBtn = { padding: "9px 16px", borderRadius: "10px", border: "1px solid var(--color-eddfc8)", background: "transparent", color: "var(--color-7a4f10)", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer" };
+const dangerBtn = { padding: "9px 18px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, var(--color-d65f5f), var(--color-a83232))", color: "var(--color-fff8ee)", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer" };
 
-const toastBox = { position: "fixed", bottom: "24px", right: "24px", background: "#166534", color: "#fff", padding: "12px 18px", borderRadius: "10px", fontSize: "13px", fontFamily: "sans-serif", boxShadow: "0 4px 16px rgba(0,0,0,0.2)", zIndex: 4000 };
-const toastError = { background: "#991b1b" };
+const toastBox = { position: "fixed", bottom: "24px", right: "24px", background: "var(--color-166534)", color: "var(--color-ffffff)", padding: "12px 18px", borderRadius: "10px", fontSize: "13px", fontFamily: "sans-serif", boxShadow: "0 4px 16px rgba(0,0,0,0.2)", zIndex: 4000 };
+const toastError = { background: "var(--color-991b1b)" };

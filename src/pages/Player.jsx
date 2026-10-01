@@ -217,7 +217,7 @@ export default function Player() {
   // Your notes and bookmarks that fall at (or just before) the current moment.
   const activeNotes = [
     ...notes.entries.map((e) => ({ id: `e${e.id}`, t: e.t, text: e.text, tag: categoryOf(e.category).label, color: categoryOf(e.category).color, tagText: categoryOf(e.category).text })),
-    ...notes.bookmarks.map((b) => ({ id: `b${b.id}`, t: b.t, text: b.label || "Bookmark", tag: "🔖", color: "#fde8b8", tagText: "#7a4f10" })),
+    ...notes.bookmarks.map((b) => ({ id: `b${b.id}`, t: b.t, text: b.label || "Bookmark", tag: "🔖", color: "var(--color-fde8b8)", tagText: "var(--color-7a4f10)" })),
   ].filter((n) => progress >= n.t && progress < n.t + 12).slice(0, 2);
   const remaining = duration ? duration - progress : 0;
 
@@ -290,8 +290,8 @@ export default function Player() {
           width: 16px;
           height: 16px;
           border-radius: 50%;
-          background: #ffffff;
-          border: 3px solid #c97c2e;
+          background: var(--color-ffffff);
+          border: 3px solid var(--color-c97c2e);
           box-shadow: 0 2px 8px rgba(160,80,20,0.4);
           cursor: pointer;
           transition: transform 0.15s ease;
@@ -303,14 +303,14 @@ export default function Player() {
           width: 16px;
           height: 16px;
           border-radius: 50%;
-          background: #ffffff;
-          border: 3px solid #c97c2e;
+          background: var(--color-ffffff);
+          border: 3px solid var(--color-c97c2e);
           box-shadow: 0 2px 8px rgba(160,80,20,0.4);
           cursor: pointer;
         }
         .pf-player button:focus-visible,
         .pf-player input:focus-visible {
-          outline: 2px solid #c97c2e;
+          outline: 2px solid var(--color-c97c2e);
           outline-offset: 3px;
         }
         .pf-player .pf-play-btn:hover {
@@ -325,18 +325,18 @@ export default function Player() {
           transform: scale(1.08);
         }
         .pf-player .pf-speed-btn:hover {
-          border-color: #c98d4e;
+          border-color: var(--color-c98d4e);
         }
         .pf-player .pf-share-btn:hover {
-          background: #fdf1e2;
+          background: var(--color-fdf1e2);
         }
         .pf-player .pf-back-btn:hover {
-          color: #c97c2e;
+          color: var(--color-c97c2e);
         }
         @keyframes pf-spin { to { transform: rotate(360deg); } }
         .pf-spinner {
           display: inline-block; width: 14px; height: 14px; border-radius: 50%;
-          border: 2px solid #eddfc8; border-top-color: #c97c2e; animation: pf-spin 0.8s linear infinite; vertical-align: -2px; margin-right: 6px;
+          border: 2px solid var(--color-eddfc8); border-top-color: var(--color-c97c2e); animation: pf-spin 0.8s linear infinite; vertical-align: -2px; margin-right: 6px;
         }
         @media (prefers-reduced-motion: reduce) {
           .pf-spinner, .pf-player * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
@@ -662,7 +662,7 @@ function Collapsible({ title, open, onToggle, children }) {
 
 const page = {
   minHeight: "100vh",
-  background: "#fdf8f3",
+  background: "var(--color-fdf8f3)",
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
@@ -675,7 +675,7 @@ const backBtn = {
   alignSelf: "flex-start",
   background: "none",
   border: "none",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   fontFamily: "sans-serif",
   fontSize: "14px",
   cursor: "pointer",
@@ -688,8 +688,8 @@ const backBtn = {
 const card = {
   width: "100%",
   maxWidth: "480px",
-  background: "#fffdf9",
-  border: "1px solid #f1e4cc",
+  background: "var(--color-fffdf9)",
+  border: "1px solid var(--color-f1e4cc)",
   borderRadius: "24px",
   padding: "32px 28px 28px",
   boxShadow: "0 16px 46px rgba(160,80,20,0.10)",
@@ -703,7 +703,7 @@ const artworkRing = {
   width: "190px",
   height: "190px",
   borderRadius: "50%",
-  background: "linear-gradient(135deg, #e08930 0%, #a85e18 100%)",
+  background: "linear-gradient(135deg, var(--color-e08930) 0%, var(--color-a85e18) 100%)",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
@@ -715,7 +715,7 @@ const artworkInner = {
   width: "162px",
   height: "162px",
   borderRadius: "50%",
-  background: "#fffdf9",
+  background: "var(--color-fffdf9)",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
@@ -739,7 +739,7 @@ const nowPlayingLabel = {
   fontSize: "10px",
   letterSpacing: "0.14em",
   textTransform: "uppercase",
-  color: "#c97c2e",
+  color: "var(--color-c97c2e)",
   fontFamily: "sans-serif",
   margin: "0 0 6px",
 };
@@ -747,13 +747,13 @@ const nowPlayingLabel = {
 const title = {
   fontSize: "clamp(18px, 4vw, 24px)",
   fontWeight: "normal",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   margin: "0 0 6px",
   lineHeight: 1.3,
 };
 
 const speaker = {
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   fontSize: "14px",
   fontFamily: "sans-serif",
   margin: 0,
@@ -768,7 +768,7 @@ const seekWrapper = {
 const seekTrackOuter = {
   position: "relative",
   height: "6px",
-  background: "#eddfc8",
+  background: "var(--color-eddfc8)",
   borderRadius: "999px",
   marginBottom: "10px",
 };
@@ -778,7 +778,7 @@ const seekFill = {
   top: 0,
   left: 0,
   height: "100%",
-  background: "linear-gradient(to right, #e08930, #c97c2e)",
+  background: "linear-gradient(to right, var(--color-e08930), var(--color-c97c2e))",
   borderRadius: "999px",
   pointerEvents: "none",
   transition: "width 0.1s linear",
@@ -806,7 +806,7 @@ const timeRow = {
 
 const timeLabel = {
   fontSize: "12px",
-  color: "#b08050",
+  color: "var(--color-b08050)",
   fontFamily: "sans-serif",
   fontVariantNumeric: "tabular-nums",
 };
@@ -841,7 +841,7 @@ const skipIcon = {
 const skipLabel = {
   fontSize: "9px",
   fontFamily: "sans-serif",
-  color: "#b08050",
+  color: "var(--color-b08050)",
   letterSpacing: "0.06em",
 };
 
@@ -850,8 +850,8 @@ const playBtn = {
   height: "82px",
   borderRadius: "50%",
   border: "none",
-  background: "linear-gradient(135deg, #c97c2e 0%, #a85e18 100%)",
-  color: "#fff8ee",
+  background: "linear-gradient(135deg, var(--color-c97c2e) 0%, var(--color-a85e18) 100%)",
+  color: "var(--color-fff8ee)",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
@@ -880,7 +880,7 @@ const speedRow = {
   display: "flex",
   alignItems: "center",
   gap: "6px",
-  background: "#fdf1e2",
+  background: "var(--color-fdf1e2)",
   padding: "5px",
   borderRadius: "999px",
 };
@@ -888,7 +888,7 @@ const speedRow = {
 const speedLabel = {
   fontSize: "11px",
   fontFamily: "sans-serif",
-  color: "#b08050",
+  color: "var(--color-b08050)",
   margin: "0 4px 0 6px",
   letterSpacing: "0.06em",
 };
@@ -898,7 +898,7 @@ const speedBtn = {
   borderRadius: "999px",
   border: "1px solid transparent",
   background: "transparent",
-  color: "#7a4f10",
+  color: "var(--color-7a4f10)",
   cursor: "pointer",
   fontSize: "12px",
   fontFamily: "sans-serif",
@@ -906,18 +906,18 @@ const speedBtn = {
 };
 
 const speedBtnActive = {
-  background: "linear-gradient(135deg, #c97c2e 0%, #a85e18 100%)",
+  background: "linear-gradient(135deg, var(--color-c97c2e) 0%, var(--color-a85e18) 100%)",
   border: "1px solid transparent",
-  color: "#fff8ee",
+  color: "var(--color-fff8ee)",
   boxShadow: "0 2px 8px rgba(160,80,20,0.28)",
 };
 
 const shareBtn = {
   padding: "8px 18px",
   borderRadius: "999px",
-  border: "1px solid #c8922a",
+  border: "1px solid var(--color-c8922a)",
   background: "transparent",
-  color: "#7a4f10",
+  color: "var(--color-7a4f10)",
   cursor: "pointer",
   fontSize: "13px",
   fontFamily: "sans-serif",
@@ -938,30 +938,30 @@ const extrasRow = {
   justifyContent: "center",
   marginTop: "22px",
   paddingTop: "20px",
-  borderTop: "1px solid #f0e4d0",
+  borderTop: "1px solid var(--color-f0e4d0)",
   width: "100%",
 };
 
 const extraBtn = {
   padding: "8px 14px",
   borderRadius: "999px",
-  border: "1px solid #eddfc8",
-  background: "#fdf8f3",
-  color: "#7a4f10",
+  border: "1px solid var(--color-eddfc8)",
+  background: "var(--color-fdf8f3)",
+  color: "var(--color-7a4f10)",
   cursor: "pointer",
   fontSize: "12px",
   fontFamily: "sans-serif",
 };
 
 const extraBtnActive = {
-  background: "linear-gradient(135deg, #c97c2e 0%, #a85e18 100%)",
-  color: "#fff8ee",
+  background: "linear-gradient(135deg, var(--color-c97c2e) 0%, var(--color-a85e18) 100%)",
+  color: "var(--color-fff8ee)",
   borderColor: "transparent",
 };
 
 const deviceStatusText = {
   fontSize: "12px",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   fontFamily: "sans-serif",
   textAlign: "center",
   marginTop: "10px",
@@ -980,7 +980,7 @@ const sheet = {
   bottom: 0,
   left: 0,
   right: 0,
-  background: "#fffdf9",
+  background: "var(--color-fffdf9)",
   borderTopLeftRadius: "22px",
   borderTopRightRadius: "22px",
   padding: "20px 22px calc(28px + env(safe-area-inset-bottom))",
@@ -1001,7 +1001,7 @@ const sheetHeader = {
 const sheetTitle = {
   fontSize: "17px",
   fontWeight: "normal",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   fontFamily: "'Georgia', serif",
   margin: "0 0 14px",
 };
@@ -1009,7 +1009,7 @@ const sheetTitle = {
 const sheetLinkBtn = {
   background: "none",
   border: "none",
-  color: "#c97c2e",
+  color: "var(--color-c97c2e)",
   fontFamily: "sans-serif",
   fontSize: "13px",
   cursor: "pointer",
@@ -1021,9 +1021,9 @@ const noteTextarea = {
   minHeight: "160px",
   padding: "14px",
   borderRadius: "12px",
-  border: "1px solid #eddfc8",
-  background: "#fdf8f3",
-  color: "#3d2200",
+  border: "1px solid var(--color-eddfc8)",
+  background: "var(--color-fdf8f3)",
+  color: "var(--color-3d2200)",
   fontSize: "14px",
   fontFamily: "sans-serif",
   lineHeight: 1.6,
@@ -1035,14 +1035,14 @@ const noteTextarea = {
 
 const noteStatusText = {
   fontSize: "12px",
-  color: "#16a34a",
+  color: "var(--color-16a34a)",
   fontFamily: "sans-serif",
   fontWeight: "600",
 };
 
 const sheetEmptyText = {
   fontSize: "13px",
-  color: "#b08050",
+  color: "var(--color-b08050)",
   fontStyle: "italic",
   fontFamily: "sans-serif",
   textAlign: "center",
@@ -1054,9 +1054,9 @@ const sheetCloseBtn = {
   marginTop: "16px",
   padding: "13px",
   borderRadius: "12px",
-  border: "1px solid #eddfc8",
+  border: "1px solid var(--color-eddfc8)",
   background: "transparent",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   fontFamily: "sans-serif",
   fontSize: "14px",
   cursor: "pointer",
@@ -1072,8 +1072,8 @@ const queueRow = {
   display: "flex",
   alignItems: "center",
   gap: "10px",
-  background: "#fdf8f3",
-  border: "1px solid #f0e4d0",
+  background: "var(--color-fdf8f3)",
+  border: "1px solid var(--color-f0e4d0)",
   borderRadius: "12px",
   padding: "10px 12px",
 };
@@ -1090,7 +1090,7 @@ const queueItemBtn = {
 
 const queueItemTitle = {
   fontSize: "13px",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   fontFamily: "sans-serif",
   fontWeight: "600",
   whiteSpace: "nowrap",
@@ -1100,7 +1100,7 @@ const queueItemTitle = {
 
 const queueItemSpeaker = {
   fontSize: "11px",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   fontFamily: "sans-serif",
   marginTop: "2px",
 };
@@ -1108,7 +1108,7 @@ const queueItemSpeaker = {
 const queueRemoveBtn = {
   background: "none",
   border: "none",
-  color: "#b08050",
+  color: "var(--color-b08050)",
   cursor: "pointer",
   fontSize: "14px",
   padding: "4px 6px",
@@ -1125,41 +1125,41 @@ const sleepGrid = {
 const sleepBtn = {
   padding: "12px 8px",
   borderRadius: "12px",
-  border: "1px solid #eddfc8",
-  background: "#fdf8f3",
-  color: "#7a4f10",
+  border: "1px solid var(--color-eddfc8)",
+  background: "var(--color-fdf8f3)",
+  color: "var(--color-7a4f10)",
   cursor: "pointer",
   fontSize: "13px",
   fontFamily: "sans-serif",
 };
 
 const sleepBtnActive = {
-  background: "linear-gradient(135deg, #c97c2e 0%, #a85e18 100%)",
-  color: "#fff8ee",
+  background: "linear-gradient(135deg, var(--color-c97c2e) 0%, var(--color-a85e18) 100%)",
+  color: "var(--color-fff8ee)",
   borderColor: "transparent",
 };
 
 const headerRow = { width: "100%", maxWidth: "480px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" };
-const gearBtn = { width: "44px", height: "44px", borderRadius: "50%", border: "1px solid #eddfc8", background: "#fffdf9", color: "#7a4f10", fontSize: "22px", lineHeight: 1, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", paddingBottom: "2px" };
-const trackBtn = { width: "44px", height: "44px", borderRadius: "50%", border: "none", background: "transparent", color: "#7a4f10", fontSize: "20px", cursor: "pointer", flexShrink: 0 };
+const gearBtn = { width: "44px", height: "44px", borderRadius: "50%", border: "1px solid var(--color-eddfc8)", background: "var(--color-fffdf9)", color: "var(--color-7a4f10)", fontSize: "22px", lineHeight: 1, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", paddingBottom: "2px" };
+const trackBtn = { width: "44px", height: "44px", borderRadius: "50%", border: "none", background: "transparent", color: "var(--color-7a4f10)", fontSize: "20px", cursor: "pointer", flexShrink: 0 };
 const volumeRow = { display: "flex", alignItems: "center", gap: "10px", width: "100%", margin: "4px 0 10px" };
-const muteBtn = { width: "40px", height: "40px", borderRadius: "50%", border: "1px solid #eddfc8", background: "#fdf8f3", fontSize: "18px", cursor: "pointer", flexShrink: 0 };
+const muteBtn = { width: "40px", height: "40px", borderRadius: "50%", border: "1px solid var(--color-eddfc8)", background: "var(--color-fdf8f3)", fontSize: "18px", cursor: "pointer", flexShrink: 0 };
 const stampRow = { display: "flex", flexWrap: "wrap", gap: "8px", justifyContent: "center", width: "100%", marginBottom: "8px" };
-const flashText = { margin: "0 0 8px", fontSize: "12px", color: "#166534", fontFamily: "sans-serif", textAlign: "center" };
-const errorBanner = { width: "100%", boxSizing: "border-box", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px", flexWrap: "wrap", background: "#fff5f2", border: "1px solid #f3c8ba", color: "#a33622", borderRadius: "12px", padding: "10px 12px", fontSize: "13px", fontFamily: "sans-serif", marginBottom: "12px" };
-const retryBtn = { padding: "8px 14px", borderRadius: "999px", border: "none", background: "#b3432c", color: "#fff", fontSize: "12px", fontFamily: "sans-serif", cursor: "pointer", fontWeight: "600" };
+const flashText = { margin: "0 0 8px", fontSize: "12px", color: "var(--color-166534)", fontFamily: "sans-serif", textAlign: "center" };
+const errorBanner = { width: "100%", boxSizing: "border-box", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px", flexWrap: "wrap", background: "var(--color-fff5f2)", border: "1px solid var(--color-f3c8ba)", color: "var(--color-a33622)", borderRadius: "12px", padding: "10px 12px", fontSize: "13px", fontFamily: "sans-serif", marginBottom: "12px" };
+const retryBtn = { padding: "8px 14px", borderRadius: "999px", border: "none", background: "var(--color-b3432c)", color: "var(--color-ffffff)", fontSize: "12px", fontFamily: "sans-serif", cursor: "pointer", fontWeight: "600" };
 const sectionsWrap = { width: "100%", maxWidth: "480px", marginTop: "16px", display: "flex", flexDirection: "column", gap: "10px" };
-const collapsible = { background: "#fffdf9", border: "1px solid #f1e4cc", borderRadius: "16px", overflow: "hidden" };
-const collapsibleHead = { width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 16px", background: "transparent", border: "none", fontSize: "14px", fontWeight: "600", color: "#5c3a1e", fontFamily: "sans-serif", cursor: "pointer" };
+const collapsible = { background: "var(--color-fffdf9)", border: "1px solid var(--color-f1e4cc)", borderRadius: "16px", overflow: "hidden" };
+const collapsibleHead = { width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 16px", background: "transparent", border: "none", fontSize: "14px", fontWeight: "600", color: "var(--color-5c3a1e)", fontFamily: "sans-serif", cursor: "pointer" };
 const collapsibleBody = { padding: "0 14px 14px", display: "flex", flexDirection: "column", gap: "8px" };
-const mutedText = { margin: 0, fontSize: "13px", color: "#b08050", fontFamily: "sans-serif", fontStyle: "italic" };
+const mutedText = { margin: 0, fontSize: "13px", color: "var(--color-b08050)", fontFamily: "sans-serif", fontStyle: "italic" };
 const bookmarkRow = { display: "flex", alignItems: "center", gap: "8px" };
-const bookmarkTime = { padding: "8px 12px", borderRadius: "999px", border: "none", background: "#fde8b8", color: "#7a4f10", fontSize: "13px", fontWeight: "600", fontFamily: "sans-serif", cursor: "pointer", flexShrink: 0 };
-const bookmarkInput = { flex: 1, minWidth: 0, padding: "8px 10px", borderRadius: "8px", border: "1px solid #eddfc8", background: "#fdf8f3", fontSize: "13px", fontFamily: "sans-serif", color: "#3d2200" };
-const recentRow = { display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "2px", textAlign: "left", background: "#fdf8f3", border: "1px solid #f1e4cc", borderRadius: "10px", padding: "10px 12px", cursor: "pointer" };
+const bookmarkTime = { padding: "8px 12px", borderRadius: "999px", border: "none", background: "var(--color-fde8b8)", color: "var(--color-7a4f10)", fontSize: "13px", fontWeight: "600", fontFamily: "sans-serif", cursor: "pointer", flexShrink: 0 };
+const bookmarkInput = { flex: 1, minWidth: 0, padding: "8px 10px", borderRadius: "8px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fdf8f3)", fontSize: "13px", fontFamily: "sans-serif", color: "var(--color-3d2200)" };
+const recentRow = { display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "2px", textAlign: "left", background: "var(--color-fdf8f3)", border: "1px solid var(--color-f1e4cc)", borderRadius: "10px", padding: "10px 12px", cursor: "pointer" };
 
-const notePeek = { width: "100%", boxSizing: "border-box", background: "#fdf1de", border: "1px solid #eddfc8", borderRadius: "12px", padding: "10px 12px", marginBottom: "12px", display: "flex", flexDirection: "column", gap: "6px" };
+const notePeek = { width: "100%", boxSizing: "border-box", background: "var(--color-fdf1de)", border: "1px solid var(--color-eddfc8)", borderRadius: "12px", padding: "10px 12px", marginBottom: "12px", display: "flex", flexDirection: "column", gap: "6px" };
 const notePeekRow = { display: "flex", alignItems: "baseline", gap: "8px", flexWrap: "wrap", fontFamily: "sans-serif" };
 const notePeekTag = { fontSize: "10px", fontWeight: "600", padding: "2px 8px", borderRadius: "999px" };
-const notePeekTime = { fontSize: "11px", color: "#9b7040" };
-const notePeekText = { fontSize: "13px", color: "#3d2200", flex: 1, minWidth: 0 };
+const notePeekTime = { fontSize: "11px", color: "var(--color-9b7040)" };
+const notePeekText = { fontSize: "13px", color: "var(--color-3d2200)", flex: 1, minWidth: 0 };

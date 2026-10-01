@@ -139,7 +139,7 @@ const page = {
   padding: "32px 20px 60px",
   maxWidth: "680px",
   margin: "0 auto",
-  background: "#fdf8f3",
+  background: "var(--color-fdf8f3)",
   minHeight: "100vh",
   fontFamily: "'Georgia', serif",
 };
@@ -148,24 +148,24 @@ const pageTitle = {
   textAlign: "center",
   fontSize: "28px",
   fontWeight: "normal",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   marginBottom: "6px",
 };
 
 const pageSubtitle = {
   textAlign: "center",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   fontFamily: "sans-serif",
   fontSize: "15px",
   marginBottom: "32px",
 };
 
 const card = {
-  background: "#fffdf9",
+  background: "var(--color-fffdf9)",
   borderRadius: "18px",
   padding: "22px 24px 18px",
   marginBottom: "16px",
-  border: "1px solid #eddfc8",
+  border: "1px solid var(--color-eddfc8)",
   boxShadow: "0 2px 12px rgba(160,100,40,0.07)",
 };
 
@@ -175,7 +175,7 @@ const cardHeader = {
   gap: "10px",
   marginBottom: "16px",
   paddingBottom: "12px",
-  borderBottom: "1px solid #eddfc8",
+  borderBottom: "1px solid var(--color-eddfc8)",
 };
 
 const cardIcon = { fontSize: "18px" };
@@ -184,7 +184,7 @@ const cardTitle = {
   margin: 0,
   fontSize: "17px",
   fontWeight: "normal",
-  color: "#5c3a1e",
+  color: "var(--color-5c3a1e)",
 };
 
 const infoRow = {
@@ -192,18 +192,18 @@ const infoRow = {
   justifyContent: "space-between",
   alignItems: "center",
   padding: "8px 0",
-  borderBottom: "1px solid #f0e4d0",
+  borderBottom: "1px solid var(--color-f0e4d0)",
   fontFamily: "sans-serif",
 };
 
 const infoLabel = {
   fontSize: "13px",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
 };
 
 const infoValue = {
   fontSize: "13px",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   fontWeight: "600",
   textAlign: "right",
 };
@@ -220,9 +220,9 @@ const linkBtn = {
   textAlign: "center",
   padding: "11px 16px",
   borderRadius: "12px",
-  border: "1px solid #eddfc8",
-  background: "#fdf8f3",
-  color: "#7a4f10",
+  border: "1px solid var(--color-eddfc8)",
+  background: "var(--color-fdf8f3)",
+  color: "var(--color-7a4f10)",
   fontFamily: "sans-serif",
   fontSize: "13px",
   fontWeight: "600",
@@ -236,7 +236,7 @@ const stackGroup = {
 const stackGroupLabel = {
   fontSize: "11px",
   fontFamily: "sans-serif",
-  color: "#b08050",
+  color: "var(--color-b08050)",
   textTransform: "uppercase",
   letterSpacing: "0.06em",
   margin: "0 0 8px",
@@ -251,8 +251,8 @@ const chipRow = {
 const chip = {
   padding: "6px 12px",
   borderRadius: "999px",
-  background: "#fbeeda",
-  color: "#7a4f10",
+  background: "var(--color-fbeeda)",
+  color: "var(--color-7a4f10)",
   fontFamily: "sans-serif",
   fontSize: "12px",
   fontWeight: "500",
@@ -270,8 +270,8 @@ const featureTile = {
   gap: "8px",
   padding: "10px 12px",
   borderRadius: "12px",
-  background: "#fdf8f3",
-  border: "1px solid #f0e4d0",
+  background: "var(--color-fdf8f3)",
+  border: "1px solid var(--color-f0e4d0)",
 };
 
 const featureIcon = { fontSize: "16px" };
@@ -279,7 +279,7 @@ const featureIcon = { fontSize: "16px" };
 const featureLabel = {
   fontSize: "12px",
   fontFamily: "sans-serif",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
 };
 
 const fnRow = (isLast) => ({
@@ -287,32 +287,32 @@ const fnRow = (isLast) => ({
   flexDirection: "column",
   gap: "2px",
   padding: "10px 0",
-  borderBottom: isLast ? "none" : "1px solid #f0e4d0",
+  borderBottom: isLast ? "none" : "1px solid var(--color-f0e4d0)",
 });
 
 const fnName = {
   fontFamily: "monospace",
   fontSize: "13px",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   fontWeight: "600",
 };
 
 const fnDesc = {
   fontFamily: "sans-serif",
   fontSize: "12px",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
 };
 
 const supportText = {
   fontFamily: "sans-serif",
   fontSize: "14px",
-  color: "#5c3a1e",
+  color: "var(--color-5c3a1e)",
   lineHeight: 1.7,
   margin: 0,
 };
 
 const inlineLink = {
-  color: "#c97c2e",
+  color: "var(--color-c97c2e)",
   fontWeight: "600",
   textDecoration: "none",
 };

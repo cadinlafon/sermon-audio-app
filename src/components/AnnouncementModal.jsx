@@ -84,7 +84,7 @@ const overlayStyle = {
 };
 
 const modalStyle = {
-  background: "#fff",
+  background: "var(--color-ffffff)",
   padding: "30px",
   width: "90%",
   maxWidth: "420px",
@@ -96,8 +96,8 @@ const modalStyle = {
 const buttonStyle = {
   display: "inline-block",
   padding: "10px 18px",
-  background: "#000",
-  color: "#fff",
+  background: "var(--color-000000)",
+  color: "var(--color-ffffff)",
   textDecoration: "none",
   marginBottom: "15px",
   borderRadius: "6px"
@@ -108,7 +108,7 @@ const closeStyle = {
   margin: "0 auto",
   padding: "6px 14px",
   background: "transparent",
-  border: "1px solid #ccc",
+  border: "1px solid var(--color-cccccc)",
   cursor: "pointer",
   borderRadius: "6px"
 };

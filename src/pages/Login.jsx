@@ -281,14 +281,14 @@ export default function Login() {
 //////////////////////////////////////////////////
 
 const page = {
-  background: "#fdf8f3",
+  background: "var(--color-fdf8f3)",
   minHeight: "100vh",
   fontFamily: "'Georgia', serif",
 };
 
 const heroBand = {
   background:
-    "linear-gradient(135deg, #6b3a10 0%, #3d2200 100%)",
+    "linear-gradient(135deg, var(--color-6b3a10) 0%, var(--color-3d2200) 100%)",
   padding: "48px 24px 42px",
   textAlign: "center",
 };
@@ -306,7 +306,7 @@ const heroTitle = {
   margin: "0 0 8px",
   fontSize: "30px",
   fontWeight: "normal",
-  color: "#fff8ee",
+  color: "var(--color-fff8ee)",
 };
 
 const heroSub = {
@@ -324,10 +324,10 @@ const contentArea = {
 };
 
 const card = {
-  background: "#fffdf9",
+  background: "var(--color-fffdf9)",
   borderRadius: "20px",
   padding: "28px 24px",
-  border: "1px solid #eddfc8",
+  border: "1px solid var(--color-eddfc8)",
   boxShadow: "0 4px 20px rgba(160,100,40,0.08)",
   marginBottom: "18px",
 };
@@ -340,9 +340,9 @@ const googleButton = {
   gap: "10px",
   padding: "12px",
   borderRadius: "12px",
-  border: "1px solid #eddfc8",
-  background: "#fdf8f3",
-  color: "#3d2200",
+  border: "1px solid var(--color-eddfc8)",
+  background: "var(--color-fdf8f3)",
+  color: "var(--color-3d2200)",
   cursor: "pointer",
   fontSize: "14px",
   fontFamily: "sans-serif",
@@ -364,12 +364,12 @@ const dividerRow = {
 const dividerLine = {
   flex: 1,
   height: "1px",
-  background: "#eddfc8",
+  background: "var(--color-eddfc8)",
 };
 
 const dividerText = {
   fontSize: "12px",
-  color: "#b08050",
+  color: "var(--color-b08050)",
   fontFamily: "sans-serif",
 };
 
@@ -389,18 +389,18 @@ const fieldLabel = {
   fontSize: "11px",
   letterSpacing: "0.08em",
   textTransform: "uppercase",
-  color: "#b08050",
+  color: "var(--color-b08050)",
   fontFamily: "sans-serif",
 };
 
 const inputStyle = {
   padding: "12px 14px",
   borderRadius: "10px",
-  border: "1px solid #eddfc8",
+  border: "1px solid var(--color-eddfc8)",
   fontSize: "14px",
   fontFamily: "sans-serif",
-  background: "#fdf8f3",
-  color: "#3d2200",
+  background: "var(--color-fdf8f3)",
+  color: "var(--color-3d2200)",
   outline: "none",
   boxSizing: "border-box",
   width: "100%",
@@ -409,9 +409,9 @@ const inputStyle = {
 const errorBox = {
   padding: "10px 12px",
   borderRadius: "9px",
-  background: "#fbeaea",
-  border: "1px solid #efcaca",
-  color: "#a32d2d",
+  background: "var(--color-fbeaea)",
+  border: "1px solid var(--color-efcaca)",
+  color: "var(--color-a32d2d)",
   fontSize: "13px",
   fontFamily: "sans-serif",
   lineHeight: 1.4,
@@ -423,8 +423,8 @@ const primaryButton = {
   borderRadius: "12px",
   border: "none",
   background:
-    "linear-gradient(135deg, #c97c2e 0%, #a85e18 100%)",
-  color: "#fff8ee",
+    "linear-gradient(135deg, var(--color-c97c2e) 0%, var(--color-a85e18) 100%)",
+  color: "var(--color-fff8ee)",
   cursor: "pointer",
   fontSize: "15px",
   fontFamily: "sans-serif",
@@ -440,14 +440,14 @@ const signupSection = {
   gap: "5px",
   marginTop: "22px",
   fontSize: "13px",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   fontFamily: "sans-serif",
 };
 
 const signupButton = {
   border: "none",
   background: "transparent",
-  color: "#c97c2e",
+  color: "var(--color-c97c2e)",
   fontWeight: "bold",
   cursor: "pointer",
   fontSize: "13px",
@@ -460,7 +460,7 @@ const backButton = {
   margin: "0 auto",
   border: "none",
   background: "transparent",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   cursor: "pointer",
   fontSize: "13px",
   fontFamily: "sans-serif",

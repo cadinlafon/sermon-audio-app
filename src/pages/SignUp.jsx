@@ -312,14 +312,14 @@ export default function SignUp() {
 //////////////////////////////////////////////////
 
 const page = {
-  background: "#fdf8f3",
+  background: "var(--color-fdf8f3)",
   minHeight: "100vh",
   fontFamily: "'Georgia', serif",
 };
 
 const heroBand = {
   background:
-    "linear-gradient(135deg, #6b3a10 0%, #3d2200 100%)",
+    "linear-gradient(135deg, var(--color-6b3a10) 0%, var(--color-3d2200) 100%)",
   padding: "40px 24px 36px",
   textAlign: "center",
 };
@@ -337,7 +337,7 @@ const heroTitle = {
   margin: "0 0 8px",
   fontSize: "28px",
   fontWeight: "normal",
-  color: "#fff8ee",
+  color: "var(--color-fff8ee)",
 };
 
 const heroSub = {
@@ -354,10 +354,10 @@ const contentArea = {
 };
 
 const card = {
-  background: "#fffdf9",
+  background: "var(--color-fffdf9)",
   borderRadius: "20px",
   padding: "28px 24px",
-  border: "1px solid #eddfc8",
+  border: "1px solid var(--color-eddfc8)",
   boxShadow: "0 4px 20px rgba(160,100,40,0.08)",
   display: "flex",
   flexDirection: "column",
@@ -372,9 +372,9 @@ const googleButton = {
   gap: "10px",
   padding: "12px",
   borderRadius: "12px",
-  border: "1px solid #eddfc8",
-  background: "#fdf8f3",
-  color: "#3d2200",
+  border: "1px solid var(--color-eddfc8)",
+  background: "var(--color-fdf8f3)",
+  color: "var(--color-3d2200)",
   cursor: "pointer",
   fontSize: "14px",
   fontFamily: "sans-serif",
@@ -389,12 +389,12 @@ const dividerRow = {
 const dividerLine = {
   flex: 1,
   height: "1px",
-  background: "#eddfc8",
+  background: "var(--color-eddfc8)",
 };
 
 const dividerText = {
   fontSize: "12px",
-  color: "#b08050",
+  color: "var(--color-b08050)",
   fontFamily: "sans-serif",
 };
 
@@ -408,18 +408,18 @@ const fieldLabel = {
   fontSize: "11px",
   letterSpacing: "0.08em",
   textTransform: "uppercase",
-  color: "#b08050",
+  color: "var(--color-b08050)",
   fontFamily: "sans-serif",
 };
 
 const inputStyle = {
   padding: "12px 14px",
   borderRadius: "10px",
-  border: "1px solid #eddfc8",
+  border: "1px solid var(--color-eddfc8)",
   fontSize: "14px",
   fontFamily: "sans-serif",
-  background: "#fdf8f3",
-  color: "#3d2200",
+  background: "var(--color-fdf8f3)",
+  color: "var(--color-3d2200)",
   outline: "none",
 };
 
@@ -431,7 +431,7 @@ const selectStyle = {
 
 const errorText = {
   fontSize: "13px",
-  color: "#a32d2d",
+  color: "var(--color-a32d2d)",
   fontFamily: "sans-serif",
   margin: 0,
 };
@@ -441,8 +441,8 @@ const primaryButton = {
   borderRadius: "12px",
   border: "none",
   background:
-    "linear-gradient(135deg, #c97c2e 0%, #a85e18 100%)",
-  color: "#fff8ee",
+    "linear-gradient(135deg, var(--color-c97c2e) 0%, var(--color-a85e18) 100%)",
+  color: "var(--color-fff8ee)",
   cursor: "pointer",
   fontSize: "15px",
   fontFamily: "sans-serif",
@@ -453,12 +453,12 @@ const primaryButton = {
 const footerNote = {
   textAlign: "center",
   fontSize: "14px",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   fontFamily: "sans-serif",
 };
 
 const footerLink = {
-  color: "#c97c2e",
+  color: "var(--color-c97c2e)",
   textDecoration: "none",
   fontWeight: "bold",
 };

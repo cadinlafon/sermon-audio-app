@@ -63,8 +63,8 @@ export default function ResourceFilters({
 
 const wrap = { display: "flex", flexDirection: "column", gap: "10px" };
 const pillRow = { display: "flex", gap: "8px", flexWrap: "wrap" };
-const pill = { padding: "7px 14px", borderRadius: "999px", border: "1px solid #eddfc8", background: "#fdf8f3", color: "#7a4f10", fontSize: "12px", fontFamily: "sans-serif", cursor: "pointer", whiteSpace: "nowrap" };
-const pillActive = { background: "linear-gradient(135deg, #c97c2e, #a85e18)", color: "#fff8ee", border: "none" };
+const pill = { padding: "7px 14px", borderRadius: "999px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fdf8f3)", color: "var(--color-7a4f10)", fontSize: "12px", fontFamily: "sans-serif", cursor: "pointer", whiteSpace: "nowrap" };
+const pillActive = { background: "linear-gradient(135deg, var(--color-c97c2e), var(--color-a85e18))", color: "var(--color-fff8ee)", border: "none" };
 const sortRow = { display: "flex", alignItems: "center", gap: "8px" };
-const sortLabel = { fontSize: "11px", fontFamily: "sans-serif", color: "#9b7040", letterSpacing: "0.06em", textTransform: "uppercase" };
-const sortSelect = { padding: "7px 10px", borderRadius: "8px", border: "1px solid #eddfc8", background: "#fdf8f3", fontSize: "12px", fontFamily: "sans-serif", color: "#3d2200" };
+const sortLabel = { fontSize: "11px", fontFamily: "sans-serif", color: "var(--color-9b7040)", letterSpacing: "0.06em", textTransform: "uppercase" };
+const sortSelect = { padding: "7px 10px", borderRadius: "8px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fdf8f3)", fontSize: "12px", fontFamily: "sans-serif", color: "var(--color-3d2200)" };

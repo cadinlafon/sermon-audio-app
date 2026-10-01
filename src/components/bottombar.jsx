@@ -230,8 +230,8 @@ function SheetButton({ icon, label, onClick, muted, badge, locked }) {
 
 const bar = {
   width: "100%",
-  background: "#fffdf9",
-  borderTop: "1px solid #eddfc8",
+  background: "var(--color-fffdf9)",
+  borderTop: "1px solid var(--color-eddfc8)",
   display: "flex",
   justifyContent: "space-around",
   padding: "8px 0 calc(14px + env(safe-area-inset-bottom))",
@@ -281,7 +281,7 @@ const navEmoji = (active) => ({
 const navLabel = (active) => ({
   fontSize: "10px",
   fontFamily: "sans-serif",
-  color: active ? "#a85e18" : "#b08050",
+  color: active ? "var(--color-a85e18)" : "var(--color-b08050)",
   fontWeight: active ? "600" : "400",
   whiteSpace: "nowrap",
   overflow: "hidden",
@@ -307,7 +307,7 @@ const sheet = {
   left: 0,
   right: 0,          // ← fixes the "pops out left" bug
   width: "100%",
-  background: "#fffdf9",
+  background: "var(--color-fffdf9)",
   borderTopLeftRadius: "22px",
   borderTopRightRadius: "22px",
   padding: "16px 20px calc(32px + env(safe-area-inset-bottom))",
@@ -319,7 +319,7 @@ const sheet = {
 const handle = {
   width: "36px",
   height: "4px",
-  background: "#eddfc8",
+  background: "var(--color-eddfc8)",
   borderRadius: "999px",
   margin: "0 auto 16px",
 };
@@ -328,7 +328,7 @@ const sheetTitle = {
   textAlign: "center",
   fontFamily: "'Georgia', serif",
   fontSize: "15px",
-  color: "#5c3a1e",
+  color: "var(--color-5c3a1e)",
   margin: "0 0 16px",
   letterSpacing: "0.02em",
 };
@@ -347,8 +347,8 @@ const sheetBtn = {
   gap: "6px",
   padding: "14px 8px",
   borderRadius: "14px",
-  border: "1px solid #eddfc8",
-  background: "#fdf8f3",
+  border: "1px solid var(--color-eddfc8)",
+  background: "var(--color-fdf8f3)",
   cursor: "pointer",
   minWidth: 0,
 };
@@ -366,7 +366,7 @@ const sheetBtnIcon = {
 const sheetBtnLabel = {
   fontSize: "12px",
   fontFamily: "sans-serif",
-  color: "#5c3a1e",
+  color: "var(--color-5c3a1e)",
   whiteSpace: "nowrap",
   overflow: "hidden",
   textOverflow: "ellipsis",
@@ -375,7 +375,7 @@ const sheetBtnLabel = {
 
 const divider = {
   height: "1px",
-  background: "#eddfc8",
+  background: "var(--color-eddfc8)",
   margin: "14px 0",
 };
 
@@ -384,9 +384,9 @@ const closeBtn = {
   width: "100%",
   padding: "13px",
   borderRadius: "12px",
-  border: "1px solid #eddfc8",
+  border: "1px solid var(--color-eddfc8)",
   background: "transparent",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   fontFamily: "sans-serif",
   fontSize: "14px",
   cursor: "pointer",

@@ -113,7 +113,7 @@ export default function Resources() {
     return (
       <div style={page}>
         <h1 style={pageTitle}>Resources</h1>
-        <p style={{ ...stateText, color: "#b3432c" }}>{error}</p>
+        <p style={{ ...stateText, color: "var(--color-b3432c)" }}>{error}</p>
       </div>
     );
   }
@@ -221,7 +221,7 @@ const page = {
   padding: "32px 20px 60px",
   maxWidth: "1100px",
   margin: "0 auto",
-  background: "#fdf8f3",
+  background: "var(--color-fdf8f3)",
   minHeight: "100vh",
 };
 
@@ -230,7 +230,7 @@ const pageTitle = {
   marginBottom: "4px",
   fontFamily: "'Georgia', serif",
   fontWeight: "normal",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
 };
 
 const pageSubtitle = {
@@ -238,14 +238,14 @@ const pageSubtitle = {
   marginBottom: "28px",
   fontFamily: "sans-serif",
   fontSize: "14px",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
 };
 
 const section = { marginBottom: "36px" };
 const sectionTitle = {
   fontSize: "18px",
   fontWeight: "normal",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   fontFamily: "'Georgia', serif",
   marginBottom: "16px",
 };
@@ -260,9 +260,9 @@ const filtersBtn = {
   gap: "6px",
   padding: "11px 16px",
   borderRadius: "12px",
-  border: "1px solid #eddfc8",
-  background: "#fffdf9",
-  color: "#7a4f10",
+  border: "1px solid var(--color-eddfc8)",
+  background: "var(--color-fffdf9)",
+  color: "var(--color-7a4f10)",
   fontSize: "13px",
   fontFamily: "sans-serif",
   fontWeight: "600",
@@ -272,8 +272,8 @@ const filtersBtn = {
 };
 
 const filtersBtnActive = {
-  background: "linear-gradient(135deg, #c97c2e, #a85e18)",
-  color: "#fff8ee",
+  background: "linear-gradient(135deg, var(--color-c97c2e), var(--color-a85e18))",
+  color: "var(--color-fff8ee)",
   border: "none",
 };
 
@@ -285,7 +285,7 @@ const filtersBadge = {
   padding: "0 4px",
   borderRadius: "999px",
   background: "rgba(255,255,255,0.9)",
-  color: "#a85e18",
+  color: "var(--color-a85e18)",
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
@@ -299,7 +299,7 @@ const grid = {
 
 const stateText = {
   textAlign: "center",
-  color: "#b08050",
+  color: "var(--color-b08050)",
   fontFamily: "sans-serif",
   fontStyle: "italic",
   padding: "40px 0",

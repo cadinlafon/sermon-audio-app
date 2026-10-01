@@ -157,7 +157,7 @@ const page = {
   padding: "32px 20px 60px",
   maxWidth: "680px",
   margin: "0 auto",
-  background: "#fdf8f3",
+  background: "var(--color-fdf8f3)",
   minHeight: "100vh",
   fontFamily: "'Georgia', serif",
 };
@@ -166,13 +166,13 @@ const pageTitle = {
   textAlign: "center",
   fontSize: "28px",
   fontWeight: "normal",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   marginBottom: "6px",
 };
 
 const pageSubtitle = {
   textAlign: "center",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   fontFamily: "sans-serif",
   fontSize: "15px",
   marginBottom: "32px",
@@ -180,18 +180,18 @@ const pageSubtitle = {
 
 const loadingText = {
   textAlign: "center",
-  color: "#b08050",
+  color: "var(--color-b08050)",
   fontStyle: "italic",
   fontFamily: "sans-serif",
   padding: "30px 0",
 };
 
 const emptyCard = {
-  background: "#fffdf9",
+  background: "var(--color-fffdf9)",
   borderRadius: "20px",
   padding: "48px 32px",
   textAlign: "center",
-  border: "1px solid #eddfc8",
+  border: "1px solid var(--color-eddfc8)",
   boxShadow: "0 2px 14px rgba(160,100,40,0.07)",
   maxWidth: "480px",
   margin: "0 auto",
@@ -206,13 +206,13 @@ const emptyIcon = {
 const emptyTitle = {
   fontSize: "20px",
   fontWeight: "normal",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   marginBottom: "10px",
 };
 
 const emptyBody = {
   fontSize: "15px",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   lineHeight: 1.7,
   fontFamily: "sans-serif",
   marginBottom: "20px",
@@ -223,8 +223,8 @@ const browseButton = {
   padding: "11px 24px",
   borderRadius: "999px",
   border: "none",
-  background: "linear-gradient(135deg, #c97c2e 0%, #a85e18 100%)",
-  color: "#fff8ee",
+  background: "linear-gradient(135deg, var(--color-c97c2e) 0%, var(--color-a85e18) 100%)",
+  color: "var(--color-fff8ee)",
   cursor: "pointer",
   fontSize: "14px",
   fontFamily: "sans-serif",
@@ -232,11 +232,11 @@ const browseButton = {
 };
 
 const card = {
-  background: "#fffdf9",
+  background: "var(--color-fffdf9)",
   borderRadius: "18px",
   padding: "20px 22px",
   marginBottom: "14px",
-  border: "1px solid #eddfc8",
+  border: "1px solid var(--color-eddfc8)",
   boxShadow: "0 2px 12px rgba(160,100,40,0.07)",
 };
 
@@ -256,14 +256,14 @@ const titleStyle = {
   marginBottom: "4px",
   fontSize: "17px",
   fontWeight: "normal",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   whiteSpace: "nowrap",
   overflow: "hidden",
   textOverflow: "ellipsis",
 };
 
 const speakerStyle = {
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   fontSize: "13px",
   marginBottom: "10px",
   fontFamily: "sans-serif",
@@ -281,15 +281,15 @@ const metaBadge = {
   fontSize: "11px",
   padding: "2px 9px",
   borderRadius: "999px",
-  background: "#f6e4b0",
-  color: "#7a5a10",
+  background: "var(--color-f6e4b0)",
+  color: "var(--color-7a5a10)",
   fontFamily: "sans-serif",
   letterSpacing: "0.03em",
 };
 
 const metaDate = {
   fontSize: "12px",
-  color: "#b08050",
+  color: "var(--color-b08050)",
   fontFamily: "sans-serif",
 };
 
@@ -298,8 +298,8 @@ const playButton = {
   height: "44px",
   borderRadius: "50%",
   border: "none",
-  background: "linear-gradient(135deg, #c97c2e 0%, #a85e18 100%)",
-  color: "#fff8ee",
+  background: "linear-gradient(135deg, var(--color-c97c2e) 0%, var(--color-a85e18) 100%)",
+  color: "var(--color-fff8ee)",
   cursor: "pointer",
   display: "flex",
   alignItems: "center",

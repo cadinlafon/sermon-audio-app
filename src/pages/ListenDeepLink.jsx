@@ -62,7 +62,7 @@ export default function ListenDeepLink() {
 
 const page = {
   minHeight: "100vh",
-  background: "#fdf8f3",
+  background: "var(--color-fdf8f3)",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
@@ -71,27 +71,27 @@ const page = {
 };
 
 const card = {
-  background: "#fffdf9",
+  background: "var(--color-fffdf9)",
   borderRadius: "20px",
   padding: "48px 36px",
   maxWidth: "440px",
   width: "100%",
   textAlign: "center",
-  border: "1px solid #eddfc8",
+  border: "1px solid var(--color-eddfc8)",
   boxShadow: "0 4px 20px rgba(160,100,40,0.08)",
 };
 
 const icon = { fontSize: "36px", display: "block", marginBottom: "14px" };
-const title = { fontSize: "22px", fontWeight: "normal", color: "#3d2200", marginBottom: "10px" };
-const body = { fontSize: "14px", color: "#9b7040", lineHeight: 1.7, fontFamily: "sans-serif", margin: "0 0 20px" };
+const title = { fontSize: "22px", fontWeight: "normal", color: "var(--color-3d2200)", marginBottom: "10px" };
+const body = { fontSize: "14px", color: "var(--color-9b7040)", lineHeight: 1.7, fontFamily: "sans-serif", margin: "0 0 20px" };
 const btn = {
   padding: "12px 22px",
   borderRadius: "10px",
   border: "none",
-  background: "linear-gradient(135deg, #c97c2e 0%, #a85e18 100%)",
-  color: "#fff8ee",
+  background: "linear-gradient(135deg, var(--color-c97c2e) 0%, var(--color-a85e18) 100%)",
+  color: "var(--color-fff8ee)",
   fontSize: "14px",
   fontFamily: "sans-serif",
   cursor: "pointer",
 };
-const loadingText = { color: "#9b7040", fontFamily: "sans-serif", fontStyle: "italic" };
+const loadingText = { color: "var(--color-9b7040)", fontFamily: "sans-serif", fontStyle: "italic" };

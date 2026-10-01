@@ -65,10 +65,10 @@ export default function KeyboardShortcuts() {
 }
 
 const backdrop = { position: "fixed", inset: 0, background: "rgba(40,18,0,0.5)", zIndex: 7000, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" };
-const card = { background: "#fffdf9", borderRadius: "18px", padding: "24px", width: "100%", maxWidth: "400px", border: "1px solid #eddfc8", fontFamily: "sans-serif" };
-const title = { margin: "0 0 14px", fontSize: "19px", fontWeight: "normal", color: "#3d2200", fontFamily: "'Georgia', serif" };
+const card = { background: "var(--color-fffdf9)", borderRadius: "18px", padding: "24px", width: "100%", maxWidth: "400px", border: "1px solid var(--color-eddfc8)", fontFamily: "sans-serif" };
+const title = { margin: "0 0 14px", fontSize: "19px", fontWeight: "normal", color: "var(--color-3d2200)", fontFamily: "'Georgia', serif" };
 const list = { margin: 0, display: "flex", flexDirection: "column", gap: "8px" };
 const row = { display: "flex", alignItems: "center", gap: "12px" };
-const kbd = { display: "inline-block", minWidth: "52px", textAlign: "center", padding: "4px 8px", borderRadius: "6px", border: "1px solid #eddfc8", background: "#fdf8f3", color: "#5c3a1e", fontSize: "12px", fontFamily: "monospace" };
-const desc = { margin: 0, fontSize: "13px", color: "#7a5530" };
-const close = { marginTop: "18px", width: "100%", padding: "11px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, #c97c2e, #a85e18)", color: "#fff8ee", fontSize: "14px", cursor: "pointer" };
+const kbd = { display: "inline-block", minWidth: "52px", textAlign: "center", padding: "4px 8px", borderRadius: "6px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fdf8f3)", color: "var(--color-5c3a1e)", fontSize: "12px", fontFamily: "monospace" };
+const desc = { margin: 0, fontSize: "13px", color: "var(--color-7a5530)" };
+const close = { marginTop: "18px", width: "100%", padding: "11px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, var(--color-c97c2e), var(--color-a85e18))", color: "var(--color-fff8ee)", fontSize: "14px", cursor: "pointer" };

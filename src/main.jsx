@@ -9,6 +9,8 @@ import { PagesProvider } from "./context/PagesContext";
 import { registerSW } from "virtual:pwa-register";
 import { ToastProvider } from "./context/ToastContext";
 import { PlaylistProvider } from "./context/PlaylistContext";
+import { ThemeProvider } from "./context/ThemeContext";
+import "./theme-tokens.css";
 
 //////////////////////////////////////////////////
 // SERVICE WORKER (PWA)
@@ -26,20 +28,22 @@ registerSW({
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <BrowserRouter>
-      <AuthProvider>
-        <PagesProvider>
-          <ShutdownProvider>
-            <AudioPlayerProvider>
-              <ToastProvider>
-                <PlaylistProvider>
-                  <App />
-                </PlaylistProvider>
-              </ToastProvider>
-            </AudioPlayerProvider>
-          </ShutdownProvider>
-        </PagesProvider>
-      </AuthProvider>
-    </BrowserRouter>
+    <ThemeProvider>
+      <BrowserRouter>
+        <AuthProvider>
+          <PagesProvider>
+            <ShutdownProvider>
+              <AudioPlayerProvider>
+                <ToastProvider>
+                  <PlaylistProvider>
+                    <App />
+                  </PlaylistProvider>
+                </ToastProvider>
+              </AudioPlayerProvider>
+            </ShutdownProvider>
+          </PagesProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </ThemeProvider>
   </React.StrictMode>
 );

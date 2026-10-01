@@ -6,17 +6,17 @@ import { downloadJson } from "../../utils/userAdmin";
 import { useModulePermissions } from "../../hooks/usePermissions";
 
 const CATEGORY_COLORS = {
-  role_change: { bg: "#eee8ff", color: "#6547a5" },
-  account_disable: { bg: "#fef3c7", color: "#92400e" },
-  account_delete: { bg: "#fee2e2", color: "#991b1b" },
-  content_edit: { bg: "#e8f0fe", color: "#2a5ab5" },
-  content_delete: { bg: "#fee2e2", color: "#991b1b" },
-  settings_change: { bg: "#dcfce7", color: "#166534" },
-  agent_key: { bg: "#e0f2fe", color: "#075985" },
-  agent_action: { bg: "#ede9fe", color: "#5b21b6" },
+  role_change: { bg: "var(--color-eee8ff)", color: "var(--color-6547a5)" },
+  account_disable: { bg: "var(--color-fef3c7)", color: "var(--color-92400e)" },
+  account_delete: { bg: "var(--color-fee2e2)", color: "var(--color-991b1b)" },
+  content_edit: { bg: "var(--color-e8f0fe)", color: "var(--color-2a5ab5)" },
+  content_delete: { bg: "var(--color-fee2e2)", color: "var(--color-991b1b)" },
+  settings_change: { bg: "var(--color-dcfce7)", color: "var(--color-166534)" },
+  agent_key: { bg: "var(--color-e0f2fe)", color: "var(--color-075985)" },
+  agent_action: { bg: "var(--color-ede9fe)", color: "var(--color-5b21b6)" },
 };
 
-const categoryStyle = (category) => CATEGORY_COLORS[category] || { bg: "#f0e4d0", color: "#5c3a1e" };
+const categoryStyle = (category) => CATEGORY_COLORS[category] || { bg: "var(--color-f0e4d0)", color: "var(--color-5c3a1e)" };
 
 export default function AdminActionsLog() {
   const perms = useModulePermissions("logs");
@@ -384,39 +384,39 @@ function DetailField({ label, value, mono }) {
 //////////////////////////////////////////////////
 
 const retentionCard = {
-  background: "#fffdf9",
-  border: "1px solid #eddfc8",
+  background: "var(--color-fffdf9)",
+  border: "1px solid var(--color-eddfc8)",
   borderRadius: "14px",
   padding: "16px 18px",
   marginBottom: "16px",
 };
 
 const retentionHeader = { marginBottom: "10px" };
-const retentionTitle = { margin: 0, fontSize: "16px", fontWeight: "normal", color: "#3d2200", fontFamily: "'Georgia', serif" };
-const retentionHint = { margin: "4px 0 0", fontSize: "12px", color: "#9b7040", fontFamily: "sans-serif" };
+const retentionTitle = { margin: 0, fontSize: "16px", fontWeight: "normal", color: "var(--color-3d2200)", fontFamily: "'Georgia', serif" };
+const retentionHint = { margin: "4px 0 0", fontSize: "12px", color: "var(--color-9b7040)", fontFamily: "sans-serif" };
 
 const retentionRow = { display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" };
 
 const retentionInput_ = {
   padding: "8px 10px",
   borderRadius: "8px",
-  border: "1px solid #eddfc8",
-  background: "#fdf8f3",
+  border: "1px solid var(--color-eddfc8)",
+  background: "var(--color-fdf8f3)",
   fontSize: "13px",
   fontFamily: "sans-serif",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   width: "150px",
 };
 
-const retentionStatus = { fontSize: "12px", color: "#9b7040", fontFamily: "sans-serif" };
-const retentionResult = { marginTop: "10px", fontSize: "12px", color: "#7a4f10", fontFamily: "sans-serif" };
+const retentionStatus = { fontSize: "12px", color: "var(--color-9b7040)", fontFamily: "sans-serif" };
+const retentionResult = { marginTop: "10px", fontSize: "12px", color: "var(--color-7a4f10)", fontFamily: "sans-serif" };
 
 const smallBtn = {
   padding: "8px 13px",
   borderRadius: "8px",
-  border: "1px solid #eddfc8",
-  background: "#f8eee3",
-  color: "#7a4f10",
+  border: "1px solid var(--color-eddfc8)",
+  background: "var(--color-f8eee3)",
+  color: "var(--color-7a4f10)",
   cursor: "pointer",
   fontFamily: "sans-serif",
   fontSize: "13px",
@@ -425,9 +425,9 @@ const smallBtn = {
 const dangerBtn = {
   padding: "8px 13px",
   borderRadius: "8px",
-  border: "1px solid #f3c8ba",
-  background: "#fff5f2",
-  color: "#a33622",
+  border: "1px solid var(--color-f3c8ba)",
+  background: "var(--color-fff5f2)",
+  color: "var(--color-a33622)",
   cursor: "pointer",
   fontFamily: "sans-serif",
   fontSize: "13px",
@@ -438,11 +438,11 @@ const toolbar = { display: "flex", gap: "10px", alignItems: "center", marginBott
 const searchInput = {
   padding: "9px 14px",
   borderRadius: "10px",
-  border: "1px solid #eddfc8",
-  background: "#fffdf9",
+  border: "1px solid var(--color-eddfc8)",
+  background: "var(--color-fffdf9)",
   fontSize: "13px",
   fontFamily: "sans-serif",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   outline: "none",
   width: "260px",
   flexShrink: 0,
@@ -451,21 +451,21 @@ const searchInput = {
 const filterSelect = {
   padding: "9px 12px",
   borderRadius: "10px",
-  border: "1px solid #eddfc8",
-  background: "#fffdf9",
+  border: "1px solid var(--color-eddfc8)",
+  background: "var(--color-fffdf9)",
   fontSize: "13px",
   fontFamily: "sans-serif",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   cursor: "pointer",
 };
 
 const smallInput = { ...filterSelect, width: "70px" };
 
-const summaryText = { fontSize: "12px", color: "#9b7040", fontFamily: "sans-serif", marginBottom: "12px" };
+const summaryText = { fontSize: "12px", color: "var(--color-9b7040)", fontFamily: "sans-serif", marginBottom: "12px" };
 
 const list = { display: "flex", flexDirection: "column", gap: "8px" };
 
-const card = { background: "#fffdf9", border: "1px solid #eddfc8", borderRadius: "14px", overflow: "hidden" };
+const card = { background: "var(--color-fffdf9)", border: "1px solid var(--color-eddfc8)", borderRadius: "14px", overflow: "hidden" };
 
 const cardHeaderBtn = {
   width: "100%",
@@ -494,23 +494,23 @@ const categoryBadge = {
   fontWeight: "500",
 };
 
-const actionText = { fontSize: "13px", color: "#3d2200", fontFamily: "sans-serif", fontWeight: "600" };
-const targetText = { fontSize: "13px", color: "#7a5530", fontFamily: "sans-serif" };
-const adminText = { fontSize: "12px", color: "#5c3a1e", fontFamily: "sans-serif" };
-const metaDot = { fontSize: "12px", color: "#c8a87a" };
-const timeText = { fontSize: "12px", color: "#9b7040", fontFamily: "sans-serif" };
+const actionText = { fontSize: "13px", color: "var(--color-3d2200)", fontFamily: "sans-serif", fontWeight: "600" };
+const targetText = { fontSize: "13px", color: "var(--color-7a5530)", fontFamily: "sans-serif" };
+const adminText = { fontSize: "12px", color: "var(--color-5c3a1e)", fontFamily: "sans-serif" };
+const metaDot = { fontSize: "12px", color: "var(--color-c8a87a)" };
+const timeText = { fontSize: "12px", color: "var(--color-9b7040)", fontFamily: "sans-serif" };
 
 const chevron = (open) => ({
   display: "inline-block",
   fontSize: "12px",
-  color: "#a85e18",
+  color: "var(--color-a85e18)",
   transition: "transform 0.15s",
   transform: open ? "rotate(0deg)" : "rotate(-90deg)",
 });
 
 const cardBody = {
   padding: "12px 16px 16px",
-  borderTop: "1px solid #f0e4d0",
+  borderTop: "1px solid var(--color-f0e4d0)",
   display: "flex",
   flexDirection: "column",
   gap: "14px",
@@ -522,20 +522,20 @@ const detailGrid = {
   gap: "10px",
 };
 
-const detailLabel = { fontSize: "10px", color: "#9b7040", fontFamily: "sans-serif", textTransform: "uppercase", letterSpacing: "0.04em" };
-const detailValue = { fontSize: "13px", color: "#3d2200", fontFamily: "sans-serif", marginTop: "2px" };
+const detailLabel = { fontSize: "10px", color: "var(--color-9b7040)", fontFamily: "sans-serif", textTransform: "uppercase", letterSpacing: "0.04em" };
+const detailValue = { fontSize: "13px", color: "var(--color-3d2200)", fontFamily: "sans-serif", marginTop: "2px" };
 
 const diffGrid = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px" };
-const diffLabel = { fontSize: "11px", color: "#9b7040", fontFamily: "sans-serif", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: "4px" };
+const diffLabel = { fontSize: "11px", color: "var(--color-9b7040)", fontFamily: "sans-serif", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: "4px" };
 const diffBlock = {
   margin: 0,
   padding: "10px 12px",
   borderRadius: "8px",
-  background: "#fdf8f3",
-  border: "1px solid #eddfc8",
+  background: "var(--color-fdf8f3)",
+  border: "1px solid var(--color-eddfc8)",
   fontSize: "11px",
   fontFamily: "monospace",
-  color: "#5c3a1e",
+  color: "var(--color-5c3a1e)",
   overflowX: "auto",
   whiteSpace: "pre-wrap",
   wordBreak: "break-word",
@@ -543,4 +543,4 @@ const diffBlock = {
 
 const emptyState = { textAlign: "center", padding: "50px 20px" };
 const emptyIcon = { fontSize: "36px", display: "block", marginBottom: "10px" };
-const emptyText = { color: "#b08050", fontFamily: "sans-serif", fontStyle: "italic", margin: 0 };
+const emptyText = { color: "var(--color-b08050)", fontFamily: "sans-serif", fontStyle: "italic", margin: 0 };

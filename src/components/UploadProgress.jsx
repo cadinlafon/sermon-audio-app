@@ -36,7 +36,7 @@ export default function UploadProgress({ percent, totalBytes, label, compact }) 
         {percent === null || percent === undefined ? (
           <div className="pf-upload-indeterminate" style={indeterminate} />
         ) : (
-          <div className={done ? "" : "pf-upload-stripes"} style={{ ...fill, width: `${percent}%`, background: done ? "#2f8a4a" : undefined }} />
+          <div className={done ? "" : "pf-upload-stripes"} style={{ ...fill, width: `${percent}%`, background: done ? "var(--color-2f8a4a)" : undefined }} />
         )}
       </div>
       {!compact && (
@@ -49,7 +49,7 @@ export default function UploadProgress({ percent, totalBytes, label, compact }) 
   );
 }
 
-const track = { background: "#eddfc8", borderRadius: "999px", overflow: "hidden", position: "relative" };
-const fill = { height: "100%", borderRadius: "999px", transition: "width 0.25s ease-out, background 0.3s", backgroundColor: "#c97c2e" };
-const indeterminate = { height: "100%", width: "40%", background: "linear-gradient(to right, #e08930, #c97c2e)", borderRadius: "999px", animation: "uploadSlide 1.1s ease-in-out infinite" };
-const text = { fontSize: "12px", fontFamily: "sans-serif", color: "#9b7040", margin: "8px 0 0", textAlign: "center" };
+const track = { background: "var(--color-eddfc8)", borderRadius: "999px", overflow: "hidden", position: "relative" };
+const fill = { height: "100%", borderRadius: "999px", transition: "width 0.25s ease-out, background 0.3s", backgroundColor: "var(--color-c97c2e)" };
+const indeterminate = { height: "100%", width: "40%", background: "linear-gradient(to right, var(--color-e08930), var(--color-c97c2e))", borderRadius: "999px", animation: "uploadSlide 1.1s ease-in-out infinite" };
+const text = { fontSize: "12px", fontFamily: "sans-serif", color: "var(--color-9b7040)", margin: "8px 0 0", textAlign: "center" };

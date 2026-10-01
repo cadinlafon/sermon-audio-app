@@ -72,7 +72,7 @@ const page = {
   padding: "32px 20px 60px",
   maxWidth: "860px",
   margin: "0 auto",
-  background: "#fdf8f3",
+  background: "var(--color-fdf8f3)",
   minHeight: "100vh",
   fontFamily: "'Georgia', serif",
   textAlign: "center",
@@ -81,8 +81,8 @@ const page = {
 const tabBar = {
   display: "flex",
   gap: "6px",
-  background: "#fffdf9",
-  border: "1px solid #eddfc8",
+  background: "var(--color-fffdf9)",
+  border: "1px solid var(--color-eddfc8)",
   borderRadius: "14px",
   padding: "6px",
   marginBottom: "28px",
@@ -95,7 +95,7 @@ const tabBtn = {
   border: "none",
   borderRadius: "10px",
   background: "transparent",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   fontFamily: "'Georgia', serif",
   fontSize: "14px",
   cursor: "pointer",
@@ -104,28 +104,28 @@ const tabBtn = {
 
 const activeTabBtn = {
   ...tabBtn,
-  background: "#3d2200",
-  color: "#fdf8f3",
+  background: "var(--color-3d2200)",
+  color: "var(--color-fdf8f3)",
 };
 
 const pageTitle = {
   fontSize: "28px",
   fontWeight: "normal",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   marginBottom: "8px",
 };
 
 const pageSubtitle = {
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   fontFamily: "sans-serif",
   fontSize: "15px",
   marginBottom: "28px",
 };
 
 const card = {
-  background: "#fffdf9",
+  background: "var(--color-fffdf9)",
   borderRadius: "18px",
-  border: "1px solid #eddfc8",
+  border: "1px solid var(--color-eddfc8)",
   boxShadow: "0 2px 14px rgba(160,100,40,0.07)",
   padding: "16px",
   overflow: "hidden",
@@ -146,14 +146,14 @@ const notInstalledIcon = {
 
 const notInstalledTitle = {
   fontSize: "18px",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   fontFamily: "'Georgia', serif",
   margin: 0,
 };
 
 const notInstalledSub = {
   fontSize: "14px",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   fontFamily: "sans-serif",
   margin: 0,
 };

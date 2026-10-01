@@ -171,18 +171,18 @@ function Shell({ children }) {
   );
 }
 
-const page = { minHeight: "100vh", background: "#fdf8f3", display: "flex", alignItems: "center", justifyContent: "center", padding: "24px" };
-const card = { background: "#fffdf9", border: "1px solid #eddfc8", borderRadius: "20px", padding: "32px 28px", width: "100%", maxWidth: "520px", display: "flex", flexDirection: "column", gap: "14px", fontFamily: "'Georgia', serif" };
-const title = { fontSize: "22px", fontWeight: "normal", color: "#3d2200", margin: 0 };
-const muted = { fontSize: "13px", color: "#9b7040", fontFamily: "sans-serif", lineHeight: 1.55, margin: 0 };
-const warn = { fontSize: "13px", color: "#a33622", background: "#fff5f2", border: "1px solid #f3c8ba", borderRadius: "10px", padding: "10px 12px", fontFamily: "sans-serif", margin: 0 };
+const page = { minHeight: "100vh", background: "var(--color-fdf8f3)", display: "flex", alignItems: "center", justifyContent: "center", padding: "24px" };
+const card = { background: "var(--color-fffdf9)", border: "1px solid var(--color-eddfc8)", borderRadius: "20px", padding: "32px 28px", width: "100%", maxWidth: "520px", display: "flex", flexDirection: "column", gap: "14px", fontFamily: "'Georgia', serif" };
+const title = { fontSize: "22px", fontWeight: "normal", color: "var(--color-3d2200)", margin: 0 };
+const muted = { fontSize: "13px", color: "var(--color-9b7040)", fontFamily: "sans-serif", lineHeight: 1.55, margin: 0 };
+const warn = { fontSize: "13px", color: "var(--color-a33622)", background: "var(--color-fff5f2)", border: "1px solid var(--color-f3c8ba)", borderRadius: "10px", padding: "10px 12px", fontFamily: "sans-serif", margin: 0 };
 const list = { display: "flex", flexDirection: "column", gap: "10px" };
-const option = { display: "flex", gap: "10px", alignItems: "flex-start", border: "1px solid #eddfc8", borderRadius: "12px", padding: "12px", cursor: "pointer", fontFamily: "sans-serif", fontSize: "14px", color: "#3d2200", background: "#fdf8f3" };
-const optionOn = { borderColor: "#c97c2e", background: "#fff6e8" };
-const pill = { fontSize: "10px", padding: "2px 8px", borderRadius: "999px", background: "#eee8ff", color: "#6547a5", marginLeft: "6px" };
+const option = { display: "flex", gap: "10px", alignItems: "flex-start", border: "1px solid var(--color-eddfc8)", borderRadius: "12px", padding: "12px", cursor: "pointer", fontFamily: "sans-serif", fontSize: "14px", color: "var(--color-3d2200)", background: "var(--color-fdf8f3)" };
+const optionOn = { borderColor: "var(--color-c97c2e)", background: "var(--color-fff6e8)" };
+const pill = { fontSize: "10px", padding: "2px 8px", borderRadius: "999px", background: "var(--color-eee8ff)", color: "var(--color-6547a5)", marginLeft: "6px" };
 const chips = { display: "flex", flexWrap: "wrap", gap: "5px", marginTop: "8px" };
-const chip = { fontSize: "11px", padding: "2px 8px", borderRadius: "999px", background: "#f4e7d4", color: "#7a4f10" };
-const chipRisky = { ...chip, background: "#fde8d8", color: "#a3551f" };
+const chip = { fontSize: "11px", padding: "2px 8px", borderRadius: "999px", background: "var(--color-f4e7d4)", color: "var(--color-7a4f10)" };
+const chipRisky = { ...chip, background: "var(--color-fde8d8)", color: "var(--color-a3551f)" };
 const row = { display: "flex", gap: "10px" };
-const primary = { flex: 1, padding: "12px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, #c97c2e, #a85e18)", color: "#fff8ee", fontSize: "14px", fontFamily: "sans-serif", cursor: "pointer", fontWeight: "600" };
-const secondary = { flex: 1, padding: "12px", borderRadius: "10px", border: "1px solid #eddfc8", background: "transparent", color: "#7a4f10", fontSize: "14px", fontFamily: "sans-serif", cursor: "pointer" };
+const primary = { flex: 1, padding: "12px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, var(--color-c97c2e), var(--color-a85e18))", color: "var(--color-fff8ee)", fontSize: "14px", fontFamily: "sans-serif", cursor: "pointer", fontWeight: "600" };
+const secondary = { flex: 1, padding: "12px", borderRadius: "10px", border: "1px solid var(--color-eddfc8)", background: "transparent", color: "var(--color-7a4f10)", fontSize: "14px", fontFamily: "sans-serif", cursor: "pointer" };

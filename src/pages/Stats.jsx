@@ -220,7 +220,7 @@ const page = {
   padding: "32px 20px 60px",
   maxWidth: "680px",
   margin: "0 auto",
-  background: "#fdf8f3",
+  background: "var(--color-fdf8f3)",
   minHeight: "100vh",
   fontFamily: "'Georgia', serif",
 };
@@ -229,13 +229,13 @@ const pageTitle = {
   textAlign: "center",
   fontSize: "28px",
   fontWeight: "normal",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   marginBottom: "6px",
 };
 
 const pageSubtitle = {
   textAlign: "center",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   fontFamily: "sans-serif",
   fontSize: "15px",
   marginBottom: "32px",
@@ -243,14 +243,14 @@ const pageSubtitle = {
 
 const loadingText = {
   textAlign: "center",
-  color: "#b08050",
+  color: "var(--color-b08050)",
   fontStyle: "italic",
   fontFamily: "sans-serif",
   padding: "30px 0",
 };
 
 const errorText = {
-  color: "#a33622",
+  color: "var(--color-a33622)",
   fontSize: "13px",
   fontFamily: "sans-serif",
   textAlign: "center",
@@ -258,11 +258,11 @@ const errorText = {
 };
 
 const emptyCard = {
-  background: "#fffdf9",
+  background: "var(--color-fffdf9)",
   borderRadius: "20px",
   padding: "48px 32px",
   textAlign: "center",
-  border: "1px solid #eddfc8",
+  border: "1px solid var(--color-eddfc8)",
   boxShadow: "0 2px 14px rgba(160,100,40,0.07)",
   maxWidth: "480px",
   margin: "0 auto",
@@ -283,20 +283,20 @@ const emptyIcon = {
 const emptyTitle = {
   fontSize: "20px",
   fontWeight: "normal",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   marginBottom: "10px",
 };
 
 const emptyBody = {
   fontSize: "15px",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   lineHeight: 1.7,
   fontFamily: "sans-serif",
   margin: 0,
 };
 
 const currentBadgeCard = {
-  background: "linear-gradient(135deg, #6b3a10 0%, #3d2200 100%)",
+  background: "linear-gradient(135deg, var(--color-6b3a10) 0%, var(--color-3d2200) 100%)",
   borderRadius: "20px",
   padding: "28px 28px",
   marginBottom: "20px",
@@ -324,7 +324,7 @@ const badgeName = {
   margin: "0 0 6px",
   fontSize: "26px",
   fontWeight: "normal",
-  color: "#fff8ee",
+  color: "var(--color-fff8ee)",
 };
 
 const badgeHint = {
@@ -342,10 +342,10 @@ const tileRow = {
 };
 
 const tile = {
-  background: "#fffdf9",
+  background: "var(--color-fffdf9)",
   borderRadius: "18px",
   padding: "22px 20px",
-  border: "1px solid #eddfc8",
+  border: "1px solid var(--color-eddfc8)",
   boxShadow: "0 2px 12px rgba(160,100,40,0.07)",
   textAlign: "center",
   display: "flex",
@@ -356,24 +356,24 @@ const tile = {
 const tileNumber = {
   fontSize: "32px",
   fontWeight: "normal",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   lineHeight: 1,
 };
 
 const tileLabel = {
   fontSize: "12px",
-  color: "#b08050",
+  color: "var(--color-b08050)",
   fontFamily: "sans-serif",
   letterSpacing: "0.04em",
   textTransform: "uppercase",
 };
 
 const card = {
-  background: "#fffdf9",
+  background: "var(--color-fffdf9)",
   borderRadius: "18px",
   padding: "22px 24px 18px",
   marginBottom: "16px",
-  border: "1px solid #eddfc8",
+  border: "1px solid var(--color-eddfc8)",
   boxShadow: "0 2px 12px rgba(160,100,40,0.07)",
 };
 
@@ -383,7 +383,7 @@ const cardHeader = {
   gap: "10px",
   marginBottom: "16px",
   paddingBottom: "12px",
-  borderBottom: "1px solid #eddfc8",
+  borderBottom: "1px solid var(--color-eddfc8)",
 };
 
 const cardIcon = { fontSize: "18px" };
@@ -392,12 +392,12 @@ const cardTitle = {
   margin: 0,
   fontSize: "17px",
   fontWeight: "normal",
-  color: "#5c3a1e",
+  color: "var(--color-5c3a1e)",
 };
 
 const speakerName = {
   fontSize: "20px",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   margin: 0,
 };
 
@@ -406,15 +406,15 @@ const sermonRow = {
   alignItems: "center",
   gap: "12px",
   padding: "10px 0",
-  borderBottom: "1px solid #f0e4d0",
+  borderBottom: "1px solid var(--color-f0e4d0)",
 };
 
 const rankBadge = {
   width: "24px",
   height: "24px",
   borderRadius: "50%",
-  background: "#f6e4b0",
-  color: "#7a5a10",
+  background: "var(--color-f6e4b0)",
+  color: "var(--color-7a5a10)",
   fontSize: "12px",
   fontFamily: "sans-serif",
   display: "flex",
@@ -427,13 +427,13 @@ const rankBadge = {
 const sermonTitle = {
   flex: 1,
   fontSize: "14px",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   fontFamily: "sans-serif",
 };
 
 const sermonCount = {
   fontSize: "12px",
-  color: "#b08050",
+  color: "var(--color-b08050)",
   fontFamily: "sans-serif",
   flexShrink: 0,
 };
@@ -445,8 +445,8 @@ const badgeRow = (achieved) => ({
   padding: "12px 14px",
   borderRadius: "12px",
   marginBottom: "8px",
-  background: achieved ? "#fffbee" : "#fdf8f3",
-  border: achieved ? "1px solid #f0d898" : "1px solid #f0e4d0",
+  background: achieved ? "var(--color-fffbee)" : "var(--color-fdf8f3)",
+  border: achieved ? "1px solid var(--color-f0d898)" : "1px solid var(--color-f0e4d0)",
 });
 
 const badgeRowIcon = { fontSize: "20px", flexShrink: 0 };
@@ -455,14 +455,14 @@ const badgeRowName = (achieved) => ({
   margin: "0 0 2px",
   fontSize: "14px",
   fontWeight: achieved ? "bold" : "normal",
-  color: achieved ? "#3d2600" : "#7a5530",
+  color: achieved ? "var(--color-3d2600)" : "var(--color-7a5530)",
   fontFamily: "sans-serif",
 });
 
 const badgeRowHint = {
   margin: 0,
   fontSize: "12px",
-  color: "#b08050",
+  color: "var(--color-b08050)",
   fontFamily: "sans-serif",
 };
 
@@ -470,8 +470,8 @@ const checkmark = {
   width: "22px",
   height: "22px",
   borderRadius: "50%",
-  background: "#f6e4b0",
-  color: "#7a5a10",
+  background: "var(--color-f6e4b0)",
+  color: "var(--color-7a5a10)",
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",

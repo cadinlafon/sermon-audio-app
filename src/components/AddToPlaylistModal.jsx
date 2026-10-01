@@ -79,18 +79,18 @@ export default function AddToPlaylistModal({ audio, onClose }) {
 }
 
 const backdrop = { position: "fixed", inset: 0, background: "rgba(40,18,0,0.5)", zIndex: 6000, display: "flex", alignItems: "flex-end", justifyContent: "center" };
-const sheet = { background: "#fffdf9", width: "100%", maxWidth: "480px", borderRadius: "22px 22px 0 0", padding: "20px 20px calc(env(safe-area-inset-bottom, 0px) + 20px)", maxHeight: "80vh", overflowY: "auto", fontFamily: "sans-serif" };
+const sheet = { background: "var(--color-fffdf9)", width: "100%", maxWidth: "480px", borderRadius: "22px 22px 0 0", padding: "20px 20px calc(env(safe-area-inset-bottom, 0px) + 20px)", maxHeight: "80vh", overflowY: "auto", fontFamily: "sans-serif" };
 const head = { display: "flex", justifyContent: "space-between", alignItems: "center" };
-const title = { margin: 0, fontSize: "19px", fontWeight: "normal", color: "#3d2200", fontFamily: "'Georgia', serif" };
-const x = { width: "34px", height: "34px", borderRadius: "50%", border: "1px solid #eddfc8", background: "#fdf8f3", cursor: "pointer", color: "#7a4f10" };
-const sub = { margin: "4px 0 12px", fontSize: "13px", color: "#9b7040" };
+const title = { margin: 0, fontSize: "19px", fontWeight: "normal", color: "var(--color-3d2200)", fontFamily: "'Georgia', serif" };
+const x = { width: "34px", height: "34px", borderRadius: "50%", border: "1px solid var(--color-eddfc8)", background: "var(--color-fdf8f3)", cursor: "pointer", color: "var(--color-7a4f10)" };
+const sub = { margin: "4px 0 12px", fontSize: "13px", color: "var(--color-9b7040)" };
 const list = { display: "flex", flexDirection: "column", gap: "8px", marginBottom: "12px" };
-const row = { display: "flex", alignItems: "center", gap: "12px", padding: "8px 10px", borderRadius: "12px", border: "1px solid #eddfc8", background: "#fdf8f3", cursor: "pointer", fontSize: "14px", color: "#3d2200" };
-const count = { color: "#9b7040", fontSize: "12px" };
-const check = { width: "30px", height: "30px", borderRadius: "50%", background: "#f0e4d0", color: "#7a4f10", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "15px" };
-const checkOn = { background: "#2f8a4a", color: "#fff" };
+const row = { display: "flex", alignItems: "center", gap: "12px", padding: "8px 10px", borderRadius: "12px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fdf8f3)", cursor: "pointer", fontSize: "14px", color: "var(--color-3d2200)" };
+const count = { color: "var(--color-9b7040)", fontSize: "12px" };
+const check = { width: "30px", height: "30px", borderRadius: "50%", background: "var(--color-f0e4d0)", color: "var(--color-7a4f10)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "15px" };
+const checkOn = { background: "var(--color-2f8a4a)", color: "var(--color-ffffff)" };
 const newRow = { display: "flex", gap: "8px" };
-const input = { flex: 1, padding: "10px 14px", borderRadius: "999px", border: "1px solid #eddfc8", background: "#fdf8f3", fontSize: "14px", color: "#3d2200" };
-const primary = { padding: "10px 18px", borderRadius: "999px", border: "none", background: "linear-gradient(135deg, #c97c2e, #a85e18)", color: "#fff8ee", fontWeight: "600", cursor: "pointer", fontSize: "13px" };
+const input = { flex: 1, padding: "10px 14px", borderRadius: "999px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fdf8f3)", fontSize: "14px", color: "var(--color-3d2200)" };
+const primary = { padding: "10px 18px", borderRadius: "999px", border: "none", background: "linear-gradient(135deg, var(--color-c97c2e), var(--color-a85e18))", color: "var(--color-fff8ee)", fontWeight: "600", cursor: "pointer", fontSize: "13px" };
 const chips = { display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "12px" };
-const chip = { padding: "7px 12px", borderRadius: "999px", border: "1px solid #eddfc8", background: "transparent", color: "#7a4f10", fontSize: "12px", cursor: "pointer" };
+const chip = { padding: "7px 12px", borderRadius: "999px", border: "1px solid var(--color-eddfc8)", background: "transparent", color: "var(--color-7a4f10)", fontSize: "12px", cursor: "pointer" };

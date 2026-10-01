@@ -6,55 +6,55 @@ import AdminActionsLog from "./AdminActionsLog";
 // Event type → badge color
 const EVENT_COLORS = {
   session_start: {
-    bg: "#dcfce7",
-    color: "#166534",
+    bg: "var(--color-dcfce7)",
+    color: "var(--color-166534)",
   },
 
   session_end: {
-    bg: "#f1f5f9",
-    color: "#475569",
+    bg: "var(--color-f1f5f9)",
+    color: "var(--color-475569)",
   },
 
   app_opened: {
-    bg: "#e8f0fe",
-    color: "#2a5ab5",
+    bg: "var(--color-e8f0fe)",
+    color: "var(--color-2a5ab5)",
   },
 
   pwa_installed: {
-    bg: "#fef3c7",
-    color: "#92400e",
+    bg: "var(--color-fef3c7)",
+    color: "var(--color-92400e)",
   },
 
   pwa_installed_ios: {
-    bg: "#fef3c7",
-    color: "#92400e",
+    bg: "var(--color-fef3c7)",
+    color: "var(--color-92400e)",
   },
 
   route_change: {
-    bg: "#f3e8ff",
-    color: "#6d28d9",
+    bg: "var(--color-f3e8ff)",
+    color: "var(--color-6d28d9)",
   },
 
   audio_play: {
-    bg: "#f6e4b0",
-    color: "#7a5a10",
+    bg: "var(--color-f6e4b0)",
+    color: "var(--color-7a5a10)",
   },
 
   notice_view: {
-    bg: "#e8f0e4",
-    color: "#49653c",
+    bg: "var(--color-e8f0e4)",
+    color: "var(--color-49653c)",
   },
 
   notice_click: {
-    bg: "#fde8d8",
-    color: "#a3551f",
+    bg: "var(--color-fde8d8)",
+    color: "var(--color-a3551f)",
   },
 };
 
 const eventStyle = (event) =>
   EVENT_COLORS[event] || {
-    bg: "#f0e4d0",
-    color: "#5c3a1e",
+    bg: "var(--color-f0e4d0)",
+    color: "var(--color-5c3a1e)",
   };
 
 const defaultFilters = {
@@ -1608,7 +1608,7 @@ const pageHeader = {
 const pageTitle = {
   fontSize: "26px",
   fontWeight: "normal",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   margin: "0 0 4px",
   fontFamily:
     "'Georgia', serif",
@@ -1616,7 +1616,7 @@ const pageTitle = {
 
 const pageSubtitle = {
   fontSize: "14px",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   fontFamily:
     "sans-serif",
   margin: 0,
@@ -1631,17 +1631,17 @@ const tabBar = {
 const tabButton = {
   padding: "8px 16px",
   borderRadius: "999px",
-  border: "1px solid #eddfc8",
-  background: "#fffdf9",
-  color: "#7a4f10",
+  border: "1px solid var(--color-eddfc8)",
+  background: "var(--color-fffdf9)",
+  color: "var(--color-7a4f10)",
   fontSize: "13px",
   fontFamily: "sans-serif",
   cursor: "pointer",
 };
 
 const tabButtonActive = {
-  background: "linear-gradient(135deg, #c97c2e, #a85e18)",
-  color: "#fff8ee",
+  background: "linear-gradient(135deg, var(--color-c97c2e), var(--color-a85e18))",
+  color: "var(--color-fff8ee)",
   borderColor: "transparent",
 };
 
@@ -1649,9 +1649,9 @@ const searchBox = {
   display: "flex",
   alignItems: "center",
   gap: "10px",
-  background: "#fffdf9",
+  background: "var(--color-fffdf9)",
   border:
-    "1px solid #eddfc8",
+    "1px solid var(--color-eddfc8)",
   borderRadius: "12px",
   padding: "10px 14px",
   marginBottom: "12px",
@@ -1667,7 +1667,7 @@ const searchInput = {
   outline: "none",
   background:
     "transparent",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   fontFamily:
     "sans-serif",
   fontSize: "14px",
@@ -1677,7 +1677,7 @@ const clearSearch = {
   border: "none",
   background:
     "transparent",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   fontSize: "20px",
   cursor: "pointer",
 };
@@ -1689,9 +1689,9 @@ const filterBar = {
     "flex-end",
   marginBottom: "12px",
   flexWrap: "wrap",
-  background: "#fffdf9",
+  background: "var(--color-fffdf9)",
   border:
-    "1px solid #eddfc8",
+    "1px solid var(--color-eddfc8)",
   borderRadius: "14px",
   padding: "14px 16px",
 };
@@ -1705,7 +1705,7 @@ const filterGroup = {
 
 const filterLabel = {
   fontSize: "11px",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   fontFamily:
     "sans-serif",
   textTransform:
@@ -1718,12 +1718,12 @@ const select = {
   padding: "8px 10px",
   borderRadius: "8px",
   border:
-    "1px solid #eddfc8",
-  background: "#fdf8f3",
+    "1px solid var(--color-eddfc8)",
+  background: "var(--color-fdf8f3)",
   fontSize: "13px",
   fontFamily:
     "sans-serif",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   outline: "none",
   minWidth: "130px",
 };
@@ -1738,9 +1738,9 @@ const advancedButton = {
   padding: "9px 15px",
   borderRadius: "9px",
   border:
-    "1px solid #eddfc8",
-  background: "#fffdf9",
-  color: "#7a4f10",
+    "1px solid var(--color-eddfc8)",
+  background: "var(--color-fffdf9)",
+  color: "var(--color-7a4f10)",
   cursor: "pointer",
   fontFamily:
     "sans-serif",
@@ -1748,16 +1748,16 @@ const advancedButton = {
 
 const advancedButtonActive = {
   background:
-    "linear-gradient(135deg, #c97c2e, #a85e18)",
-  color: "#fff8ee",
+    "linear-gradient(135deg, var(--color-c97c2e), var(--color-a85e18))",
+  color: "var(--color-fff8ee)",
   borderColor:
     "transparent",
 };
 
 const advancedPanel = {
-  background: "#fffdf9",
+  background: "var(--color-fffdf9)",
   border:
-    "1px solid #eddfc8",
+    "1px solid var(--color-eddfc8)",
   borderRadius: "14px",
   padding: "18px",
   marginBottom: "12px",
@@ -1769,7 +1769,7 @@ const advancedHeader = {
 
 const advancedTitle = {
   margin: 0,
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   fontFamily:
     "'Georgia', serif",
   fontSize: "19px",
@@ -1777,7 +1777,7 @@ const advancedTitle = {
 
 const advancedSubtitle = {
   margin: "4px 0 0",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   fontSize: "12px",
   fontFamily:
     "sans-serif",
@@ -1805,7 +1805,7 @@ const checkboxLabel = {
   gap: "8px",
   minHeight: "36px",
   fontSize: "13px",
-  color: "#5c3a1e",
+  color: "var(--color-5c3a1e)",
   fontFamily:
     "sans-serif",
   cursor: "pointer",
@@ -1815,9 +1815,9 @@ const resetButton = {
   padding: "8px 13px",
   borderRadius: "8px",
   border:
-    "1px solid #eddfc8",
-  background: "#f8eee3",
-  color: "#7a4f10",
+    "1px solid var(--color-eddfc8)",
+  background: "var(--color-f8eee3)",
+  color: "var(--color-7a4f10)",
   cursor: "pointer",
   fontFamily:
     "sans-serif",
@@ -1831,7 +1831,7 @@ const summaryBar = {
   flexWrap: "wrap",
   marginBottom: "12px",
   fontSize: "12px",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   fontFamily:
     "sans-serif",
 };
@@ -1841,8 +1841,8 @@ const filterChip = {
   alignItems:
     "center",
   gap: "5px",
-  background: "#f4e7d4",
-  color: "#7a4f10",
+  background: "var(--color-f4e7d4)",
+  color: "var(--color-7a4f10)",
   borderRadius:
     "999px",
   padding: "4px 8px 4px 10px",
@@ -1852,7 +1852,7 @@ const chipButton = {
   border: "none",
   background:
     "transparent",
-  color: "#7a4f10",
+  color: "var(--color-7a4f10)",
   cursor: "pointer",
   fontSize: "15px",
   padding: 0,
@@ -1872,9 +1872,9 @@ const row = {
     "space-between",
   alignItems:
     "center",
-  background: "#fffdf9",
+  background: "var(--color-fffdf9)",
   border:
-    "1px solid #eddfc8",
+    "1px solid var(--color-eddfc8)",
   borderRadius: "12px",
   padding: "12px 16px",
   gap: "12px",
@@ -1892,7 +1892,7 @@ const rowRight = {
   fontSize: "12px",
   fontFamily:
     "sans-serif",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   textAlign: "right",
   maxWidth: "280px",
   wordBreak:
@@ -1928,8 +1928,8 @@ const sourceBadge = {
     "3px 8px",
   borderRadius:
     "999px",
-  background: "#e8f0e4",
-  color: "#49653c",
+  background: "var(--color-e8f0e4)",
+  color: "var(--color-49653c)",
   fontFamily:
     "sans-serif",
 };
@@ -1941,8 +1941,8 @@ const guestBadge = {
     "3px 8px",
   borderRadius:
     "999px",
-  background: "#f1e7dc",
-  color: "#87684b",
+  background: "var(--color-f1e7dc)",
+  color: "var(--color-87684b)",
   fontFamily:
     "sans-serif",
 };
@@ -1958,19 +1958,19 @@ const metaUser = {
   fontSize: "12px",
   fontFamily:
     "sans-serif",
-  color: "#5c3a1e",
+  color: "var(--color-5c3a1e)",
 };
 
 const metaDot = {
   fontSize: "12px",
-  color: "#c8a87a",
+  color: "var(--color-c8a87a)",
 };
 
 const metaTime = {
   fontSize: "12px",
   fontFamily:
     "sans-serif",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
 };
 
 const sessionText = {
@@ -1978,7 +1978,7 @@ const sessionText = {
   fontSize: "10px",
   fontFamily:
     "monospace",
-  color: "#b9966a",
+  color: "var(--color-b9966a)",
 };
 
 const emptyState = {
@@ -1993,7 +1993,7 @@ const emptyIcon = {
 };
 
 const emptyText = {
-  color: "#b08050",
+  color: "var(--color-b08050)",
   fontFamily:
     "sans-serif",
   fontStyle:
@@ -2002,8 +2002,8 @@ const emptyText = {
 };
 
 const sessionCard = {
-  background: "#fffdf9",
-  border: "1px solid #eddfc8",
+  background: "var(--color-fffdf9)",
+  border: "1px solid var(--color-eddfc8)",
   borderRadius: "14px",
   overflow: "hidden",
 };
@@ -2033,7 +2033,7 @@ const sessionHeaderLeft = {
 const sessionChevron = (open) => ({
   display: "inline-block",
   fontSize: "12px",
-  color: "#a85e18",
+  color: "var(--color-a85e18)",
   transition: "transform 0.15s",
   transform: open ? "rotate(0deg)" : "rotate(-90deg)",
 });
@@ -2048,19 +2048,19 @@ const sessionUserLine = {
 const sessionUserName = {
   fontSize: "14px",
   fontWeight: "600",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   fontFamily: "sans-serif",
 };
 
 const sessionMetaLine = {
   fontSize: "12px",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   fontFamily: "sans-serif",
   marginTop: "3px",
 };
 
 const activeText = {
-  color: "#2f7d4f",
+  color: "var(--color-2f7d4f)",
   fontWeight: "600",
 };
 
@@ -2076,8 +2076,8 @@ const activeBadge = {
   fontSize: "10px",
   padding: "3px 9px",
   borderRadius: "999px",
-  background: "#dcfce7",
-  color: "#166534",
+  background: "var(--color-dcfce7)",
+  color: "var(--color-166534)",
   fontFamily: "sans-serif",
   fontWeight: "600",
 };
@@ -2087,8 +2087,8 @@ const countBadge = {
   fontSize: "10px",
   padding: "3px 9px",
   borderRadius: "999px",
-  background: "#f4e7d4",
-  color: "#7a4f10",
+  background: "var(--color-f4e7d4)",
+  color: "var(--color-7a4f10)",
   fontFamily: "sans-serif",
 };
 
@@ -2097,8 +2097,8 @@ const countBadgeMuted = {
   fontSize: "10px",
   padding: "3px 9px",
   borderRadius: "999px",
-  background: "#f0e9df",
-  color: "#8a7860",
+  background: "var(--color-f0e9df)",
+  color: "var(--color-8a7860)",
   fontFamily: "sans-serif",
 };
 
@@ -2107,5 +2107,5 @@ const sessionBody = {
   flexDirection: "column",
   gap: "8px",
   padding: "10px 12px 12px",
-  borderTop: "1px solid #f0e4d0",
+  borderTop: "1px solid var(--color-f0e4d0)",
 };

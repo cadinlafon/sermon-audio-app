@@ -168,7 +168,7 @@ zIndex:999
 }
 
 const popup={
-background:"#fff",
+background:"var(--color-ffffff)",
 padding:"28px",
 width:"360px",
 borderRadius:"10px",
@@ -192,7 +192,7 @@ gap:"10px"
 
 const closeButton=(link)=>({
 flex:link ? 1 : 2,
-background:"#eee",
+background:"var(--color-eeeeee)",
 border:"none",
 padding:"12px",
 borderRadius:"6px",
@@ -201,8 +201,8 @@ cursor:"pointer"
 
 const openButton={
 flex:1,
-background:"#111",
-color:"#fff",
+background:"var(--color-111111)",
+color:"var(--color-ffffff)",
 border:"none",
 padding:"12px",
 borderRadius:"6px",

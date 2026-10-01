@@ -5,7 +5,7 @@
 ////////////////////////////////////////////////////////////////
 
 export const page = {
-  background: "#fdf8f3",
+  background: "var(--color-fdf8f3)",
   minHeight: "100vh",
   display: "flex",
   flexDirection: "column",
@@ -20,7 +20,7 @@ export const iconRing = (colors = {}) => ({
   width: "80px",
   height: "80px",
   borderRadius: "50%",
-  background: colors.background || "linear-gradient(135deg, #e08930 0%, #a85e18 100%)",
+  background: colors.background || "linear-gradient(135deg, var(--color-e08930) 0%, var(--color-a85e18) 100%)",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
@@ -36,13 +36,13 @@ export const icon = {
 export const title = {
   fontSize: "clamp(22px, 5vw, 30px)",
   fontWeight: "normal",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   margin: "0 0 12px",
 };
 
 export const subtitle = {
   fontSize: "16px",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   fontFamily: "sans-serif",
   lineHeight: 1.7,
   maxWidth: "420px",
@@ -50,8 +50,8 @@ export const subtitle = {
 };
 
 export const infoCard = {
-  background: "#fffdf9",
-  border: "1px solid #eddfc8",
+  background: "var(--color-fffdf9)",
+  border: "1px solid var(--color-eddfc8)",
   borderRadius: "16px",
   padding: "20px 32px",
   marginBottom: "32px",
@@ -63,22 +63,22 @@ export const infoLabel = {
   fontSize: "11px",
   letterSpacing: "0.1em",
   textTransform: "uppercase",
-  color: "#b08050",
+  color: "var(--color-b08050)",
   fontFamily: "sans-serif",
 };
 
 export const infoValue = {
   margin: 0,
   fontSize: "18px",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
 };
 
 export const homeButton = {
   padding: "12px 24px",
   borderRadius: "999px",
   border: "none",
-  background: "linear-gradient(135deg, #c97c2e 0%, #a85e18 100%)",
-  color: "#fff8ee",
+  background: "linear-gradient(135deg, var(--color-c97c2e) 0%, var(--color-a85e18) 100%)",
+  color: "var(--color-fff8ee)",
   cursor: "pointer",
   fontSize: "14px",
   fontFamily: "sans-serif",

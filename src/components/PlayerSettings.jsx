@@ -115,21 +115,21 @@ export default function PlayerSettings({ onClose }) {
   );
 }
 
-const overlay = { position: "fixed", inset: 0, zIndex: 3500, background: "#fdf8f3", overflowY: "auto", display: "flex", justifyContent: "center", padding: "0 0 env(safe-area-inset-bottom, 0px)" };
+const overlay = { position: "fixed", inset: 0, zIndex: 3500, background: "var(--color-fdf8f3)", overflowY: "auto", display: "flex", justifyContent: "center", padding: "0 0 env(safe-area-inset-bottom, 0px)" };
 const panel = { width: "100%", maxWidth: "520px", padding: "calc(env(safe-area-inset-top, 0px) + 16px) 22px 32px", fontFamily: "sans-serif" };
 const header = { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" };
-const title = { margin: 0, fontSize: "22px", fontWeight: "normal", color: "#3d2200", fontFamily: "'Georgia', serif" };
-const closeBtn = { width: "40px", height: "40px", borderRadius: "50%", border: "1px solid #eddfc8", background: "#fffdf9", color: "#7a4f10", fontSize: "16px", cursor: "pointer" };
-const section = { background: "#fffdf9", border: "1px solid #eddfc8", borderRadius: "16px", padding: "16px", marginBottom: "12px" };
-const sectionTitle = { display: "block", margin: 0, fontSize: "15px", color: "#3d2200", fontWeight: "600" };
-const hint = { display: "block", margin: "3px 0 10px", fontSize: "12px", color: "#9b7040", lineHeight: 1.45 };
+const title = { margin: 0, fontSize: "22px", fontWeight: "normal", color: "var(--color-3d2200)", fontFamily: "'Georgia', serif" };
+const closeBtn = { width: "40px", height: "40px", borderRadius: "50%", border: "1px solid var(--color-eddfc8)", background: "var(--color-fffdf9)", color: "var(--color-7a4f10)", fontSize: "16px", cursor: "pointer" };
+const section = { background: "var(--color-fffdf9)", border: "1px solid var(--color-eddfc8)", borderRadius: "16px", padding: "16px", marginBottom: "12px" };
+const sectionTitle = { display: "block", margin: 0, fontSize: "15px", color: "var(--color-3d2200)", fontWeight: "600" };
+const hint = { display: "block", margin: "3px 0 10px", fontSize: "12px", color: "var(--color-9b7040)", lineHeight: 1.45 };
 const chipRow = { display: "flex", flexWrap: "wrap", gap: "8px" };
-const chip = { minWidth: "56px", padding: "10px 14px", borderRadius: "999px", border: "1px solid #eddfc8", background: "#fdf8f3", color: "#7a4f10", fontSize: "14px", cursor: "pointer" };
-const chipOn = { background: "linear-gradient(135deg, #c97c2e, #a85e18)", color: "#fff8ee", borderColor: "transparent", fontWeight: "600" };
+const chip = { minWidth: "56px", padding: "10px 14px", borderRadius: "999px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fdf8f3)", color: "var(--color-7a4f10)", fontSize: "14px", cursor: "pointer" };
+const chipOn = { background: "linear-gradient(135deg, var(--color-c97c2e), var(--color-a85e18))", color: "var(--color-fff8ee)", borderColor: "transparent", fontWeight: "600" };
 const volumeRow = { display: "flex", alignItems: "center", gap: "12px", marginTop: "10px" };
-const muteBtn = { width: "44px", height: "44px", borderRadius: "50%", border: "1px solid #eddfc8", background: "#fdf8f3", fontSize: "20px", cursor: "pointer" };
-const volumeValue = { minWidth: "50px", textAlign: "right", fontSize: "13px", color: "#7a4f10" };
+const muteBtn = { width: "44px", height: "44px", borderRadius: "50%", border: "1px solid var(--color-eddfc8)", background: "var(--color-fdf8f3)", fontSize: "20px", cursor: "pointer" };
+const volumeValue = { minWidth: "50px", textAlign: "right", fontSize: "13px", color: "var(--color-7a4f10)" };
 const toggleRow = { display: "flex", justifyContent: "space-between", alignItems: "center", gap: "14px", cursor: "pointer" };
 const footer = { display: "flex", gap: "10px", marginTop: "18px" };
-const resetBtn = { flex: 1, padding: "13px", borderRadius: "12px", border: "1px solid #eddfc8", background: "transparent", color: "#7a4f10", fontSize: "14px", cursor: "pointer" };
-const doneBtn = { flex: 1, padding: "13px", borderRadius: "12px", border: "none", background: "linear-gradient(135deg, #c97c2e, #a85e18)", color: "#fff8ee", fontSize: "14px", fontWeight: "600", cursor: "pointer" };
+const resetBtn = { flex: 1, padding: "13px", borderRadius: "12px", border: "1px solid var(--color-eddfc8)", background: "transparent", color: "var(--color-7a4f10)", fontSize: "14px", cursor: "pointer" };
+const doneBtn = { flex: 1, padding: "13px", borderRadius: "12px", border: "none", background: "linear-gradient(135deg, var(--color-c97c2e), var(--color-a85e18))", color: "var(--color-fff8ee)", fontSize: "14px", fontWeight: "600", cursor: "pointer" };

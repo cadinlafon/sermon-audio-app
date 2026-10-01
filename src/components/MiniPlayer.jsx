@@ -75,7 +75,7 @@ export default function MiniPlayer() {
 
 const container = {
   width: "100%",
-  background: "#fffdf9",
+  background: "var(--color-fffdf9)",
   boxSizing: "border-box",
   cursor: "pointer",
   overflow: "hidden",
@@ -90,12 +90,12 @@ const containerEmpty = {
 const progressTrack = {
   height: "3px",
   width: "100%",
-  background: "#eddfc8",
+  background: "var(--color-eddfc8)",
 };
 
 const progressFill = {
   height: "100%",
-  background: "linear-gradient(to right, #e08930, #c97c2e)",
+  background: "linear-gradient(to right, var(--color-e08930), var(--color-c97c2e))",
   transition: "width 0.2s linear",
 };
 
@@ -119,14 +119,14 @@ const title = {
   whiteSpace: "nowrap",
   overflow: "hidden",
   textOverflow: "ellipsis",
-  color: "#3d2200",
+  color: "var(--color-3d2200)",
   fontFamily: "'Georgia', serif",
   lineHeight: 1.3,
 };
 
 const speaker = {
   fontSize: "11px",
-  color: "#9b7040",
+  color: "var(--color-9b7040)",
   fontFamily: "sans-serif",
   marginTop: "2px",
   whiteSpace: "nowrap",
@@ -136,7 +136,7 @@ const speaker = {
 
 const emptyTitle = {
   fontSize: "13px",
-  color: "#b08050",
+  color: "var(--color-b08050)",
   fontFamily: "sans-serif",
   fontStyle: "italic",
 };
@@ -164,7 +164,7 @@ const iconImg = {
 };
 
 const playBtn = {
-  background: "linear-gradient(135deg, #e08930 0%, #c97c2e 100%)",
+  background: "linear-gradient(135deg, var(--color-e08930) 0%, var(--color-c97c2e) 100%)",
   border: "none",
   borderRadius: "50%",
   width: "36px",
@@ -178,9 +178,9 @@ const playBtn = {
 };
 
 const playGlyph = {
-  color: "#fff",
+  color: "var(--color-ffffff)",
   fontSize: "22px",
   lineHeight: 1,
 };
 
-const retryLink = { background: "none", border: "none", padding: 0, textAlign: "left", color: "#b3432c", fontSize: "11px", fontFamily: "sans-serif", cursor: "pointer", textDecoration: "underline" };
+const retryLink = { background: "none", border: "none", padding: 0, textAlign: "left", color: "var(--color-b3432c)", fontSize: "11px", fontFamily: "sans-serif", cursor: "pointer", textDecoration: "underline" };

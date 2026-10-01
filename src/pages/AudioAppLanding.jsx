@@ -85,13 +85,13 @@ function Section({ icon, title, children }) {
 }
 
 const page = {
-  background: "#fdf8f3",
+  background: "var(--color-fdf8f3)",
   minHeight: "100vh",
   fontFamily: "'Georgia', serif",
 };
 
 const heroBand = {
-  background: "linear-gradient(135deg, #6b3a10 0%, #3d2200 100%)",
+  background: "linear-gradient(135deg, var(--color-6b3a10) 0%, var(--color-3d2200) 100%)",
   padding: "52px 24px 48px",
   textAlign: "center",
 };
@@ -109,7 +109,7 @@ const heroTitle = {
   margin: "0 0 10px",
   fontSize: "clamp(28px, 6vw, 44px)",
   fontWeight: "normal",
-  color: "#fff8ee",
+  color: "var(--color-fff8ee)",
   lineHeight: 1.1,
 };
 
@@ -128,8 +128,8 @@ const heroButton = {
   display: "inline-block",
   padding: "13px 28px",
   borderRadius: "999px",
-  background: "linear-gradient(135deg, #e08930 0%, #c97c2e 100%)",
-  color: "#fff8ee",
+  background: "linear-gradient(135deg, var(--color-e08930) 0%, var(--color-c97c2e) 100%)",
+  color: "var(--color-fff8ee)",
   textDecoration: "none",
   fontSize: "15px",
   fontFamily: "sans-serif",
@@ -144,11 +144,11 @@ const body = {
 };
 
 const sectionCard = {
-  background: "#fffdf9",
+  background: "var(--color-fffdf9)",
   borderRadius: "18px",
   padding: "22px 24px",
   marginBottom: "16px",
-  border: "1px solid #eddfc8",
+  border: "1px solid var(--color-eddfc8)",
   boxShadow: "0 2px 12px rgba(160,100,40,0.06)",
 };
 
@@ -167,23 +167,23 @@ const sectionTitle = {
   margin: 0,
   fontSize: "17px",
   fontWeight: "normal",
-  color: "#5c3a1e",
+  color: "var(--color-5c3a1e)",
 };
 
 const sectionBody = {
   margin: 0,
   fontSize: "15px",
-  color: "#7a5530",
+  color: "var(--color-7a5530)",
   fontFamily: "sans-serif",
   lineHeight: 1.7,
 };
 
 const reasonsCard = {
-  background: "#fffdf9",
+  background: "var(--color-fffdf9)",
   borderRadius: "18px",
   padding: "22px 24px",
   marginBottom: "16px",
-  border: "1px solid #eddfc8",
+  border: "1px solid var(--color-eddfc8)",
   boxShadow: "0 2px 12px rgba(160,100,40,0.06)",
 };
 
@@ -191,7 +191,7 @@ const reasonsTitle = {
   margin: "0 0 16px",
   fontSize: "17px",
   fontWeight: "normal",
-  color: "#5c3a1e",
+  color: "var(--color-5c3a1e)",
 };
 
 const reasonRow = {
@@ -205,8 +205,8 @@ const checkmark = {
   width: "22px",
   height: "22px",
   borderRadius: "50%",
-  background: "#f6e4b0",
-  color: "#7a5a10",
+  background: "var(--color-f6e4b0)",
+  color: "var(--color-7a5a10)",
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
@@ -217,11 +217,11 @@ const checkmark = {
 const reasonText = {
   fontFamily: "sans-serif",
   fontSize: "14px",
-  color: "#5c3a1e",
+  color: "var(--color-5c3a1e)",
 };
 
 const closingCard = {
-  background: "linear-gradient(135deg, #6b3a10 0%, #3d2200 100%)",
+  background: "linear-gradient(135deg, var(--color-6b3a10) 0%, var(--color-3d2200) 100%)",
   borderRadius: "18px",
   padding: "28px 24px",
   textAlign: "center",
@@ -240,8 +240,8 @@ const closingButton = {
   display: "inline-block",
   padding: "12px 26px",
   borderRadius: "999px",
-  background: "linear-gradient(135deg, #e08930 0%, #c97c2e 100%)",
-  color: "#fff8ee",
+  background: "linear-gradient(135deg, var(--color-e08930) 0%, var(--color-c97c2e) 100%)",
+  color: "var(--color-fff8ee)",
   textDecoration: "none",
   fontSize: "15px",
   fontFamily: "sans-serif",

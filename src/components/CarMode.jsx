@@ -100,19 +100,19 @@ export default function CarMode({ onClose }) {
   );
 }
 
-const overlay = { position: "fixed", inset: 0, zIndex: 4000, background: "#120b03", color: "#fff8ee", display: "flex", flexDirection: "column", padding: "calc(env(safe-area-inset-top, 0px) + 14px) calc(env(safe-area-inset-right, 0px) + 20px) calc(env(safe-area-inset-bottom, 0px) + 18px) calc(env(safe-area-inset-left, 0px) + 20px)", fontFamily: "sans-serif", overflowY: "auto" };
-const exitBtn = { alignSelf: "flex-start", minHeight: "52px", padding: "0 22px", borderRadius: "999px", border: "2px solid #6b4a1c", background: "transparent", color: "#fde8b8", fontSize: "18px", cursor: "pointer" };
+const overlay = { position: "fixed", inset: 0, zIndex: 4000, background: "var(--color-120b03)", color: "var(--color-fff8ee)", display: "flex", flexDirection: "column", padding: "calc(env(safe-area-inset-top, 0px) + 14px) calc(env(safe-area-inset-right, 0px) + 20px) calc(env(safe-area-inset-bottom, 0px) + 18px) calc(env(safe-area-inset-left, 0px) + 20px)", fontFamily: "sans-serif", overflowY: "auto" };
+const exitBtn = { alignSelf: "flex-start", minHeight: "52px", padding: "0 22px", borderRadius: "999px", border: "2px solid var(--color-6b4a1c)", background: "transparent", color: "var(--color-fde8b8)", fontSize: "18px", cursor: "pointer" };
 const body = { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", maxWidth: "980px", width: "100%", margin: "0 auto" };
 const infoBox = { width: "100%" };
 const titleStyle = { fontSize: "clamp(26px, 5.5vw, 44px)", lineHeight: 1.2, fontFamily: "'Georgia', serif", fontWeight: "bold", overflowWrap: "anywhere" };
-const speaker = { fontSize: "clamp(18px, 3.5vw, 26px)", color: "#e5c27a", marginTop: "8px" };
-const barTrack = { height: "12px", background: "#3a2810", borderRadius: "999px", overflow: "hidden" };
-const barFill = { height: "100%", background: "#f0a848", borderRadius: "999px" };
-const times = { display: "flex", justifyContent: "space-between", fontSize: "20px", color: "#e5c27a", marginTop: "10px" };
+const speaker = { fontSize: "clamp(18px, 3.5vw, 26px)", color: "var(--color-e5c27a)", marginTop: "8px" };
+const barTrack = { height: "12px", background: "var(--color-3a2810)", borderRadius: "999px", overflow: "hidden" };
+const barFill = { height: "100%", background: "var(--color-f0a848)", borderRadius: "999px" };
+const times = { display: "flex", justifyContent: "space-between", fontSize: "20px", color: "var(--color-e5c27a)", marginTop: "10px" };
 const controlsBox = { display: "flex", flexDirection: "column", alignItems: "center", gap: "20px" };
 const row = { display: "flex", alignItems: "center", justifyContent: "center", gap: "clamp(6px, 2vw, 20px)", flexWrap: "nowrap" };
-const sideBtn = { width: "clamp(52px, 14vw, 96px)", height: "clamp(52px, 14vw, 96px)", borderRadius: "50%", border: "2px solid #6b4a1c", background: "#2a1c0a", color: "#fff8ee", fontSize: "clamp(24px, 6vw, 34px)", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", lineHeight: 1, flexShrink: 0 };
-const skipNum = { fontSize: "14px", marginTop: "2px", color: "#e5c27a" };
-const playBtn = { width: "clamp(84px, 24vw, 140px)", height: "clamp(84px, 24vw, 140px)", borderRadius: "50%", border: "none", background: "linear-gradient(135deg, #f0a848, #c97c2e)", color: "#120b03", fontSize: "clamp(44px, 12vw, 64px)", cursor: "pointer", flexShrink: 0 };
-const speedBtn = { minHeight: "56px", padding: "0 30px", borderRadius: "999px", border: "2px solid #6b4a1c", background: "#2a1c0a", color: "#fde8b8", fontSize: "20px", cursor: "pointer" };
-const errorBtn = { width: "100%", minHeight: "56px", padding: "10px 16px", borderRadius: "16px", border: "2px solid #a33622", background: "#3a120a", color: "#ffd9cf", fontSize: "18px", cursor: "pointer" };
+const sideBtn = { width: "clamp(52px, 14vw, 96px)", height: "clamp(52px, 14vw, 96px)", borderRadius: "50%", border: "2px solid var(--color-6b4a1c)", background: "var(--color-2a1c0a)", color: "var(--color-fff8ee)", fontSize: "clamp(24px, 6vw, 34px)", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", lineHeight: 1, flexShrink: 0 };
+const skipNum = { fontSize: "14px", marginTop: "2px", color: "var(--color-e5c27a)" };
+const playBtn = { width: "clamp(84px, 24vw, 140px)", height: "clamp(84px, 24vw, 140px)", borderRadius: "50%", border: "none", background: "linear-gradient(135deg, var(--color-f0a848), var(--color-c97c2e))", color: "var(--color-120b03)", fontSize: "clamp(44px, 12vw, 64px)", cursor: "pointer", flexShrink: 0 };
+const speedBtn = { minHeight: "56px", padding: "0 30px", borderRadius: "999px", border: "2px solid var(--color-6b4a1c)", background: "var(--color-2a1c0a)", color: "var(--color-fde8b8)", fontSize: "20px", cursor: "pointer" };
+const errorBtn = { width: "100%", minHeight: "56px", padding: "10px 16px", borderRadius: "16px", border: "2px solid var(--color-a33622)", background: "var(--color-3a120a)", color: "var(--color-ffd9cf)", fontSize: "18px", cursor: "pointer" };

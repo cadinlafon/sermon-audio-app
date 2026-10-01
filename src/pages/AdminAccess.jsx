@@ -74,7 +74,7 @@ Login
 
 </form>
 
-{error && <p style={{ color: "red" }}>{error}</p>}
+{error && <p style={{ color: "var(--color-ff0000)" }}>{error}</p>}
 
 </div>
 
