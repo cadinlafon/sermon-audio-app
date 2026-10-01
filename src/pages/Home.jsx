@@ -5,6 +5,7 @@ import { db, auth } from "../firebase";
 import {
   collection,
   query,
+  where,
   orderBy,
   limit,
   getDocs,
@@ -13,6 +14,17 @@ import {
 } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { logEvent } from "../utils/logEvent";
+import { useAudioPlayer } from "../context/AudioPlayerContext";
+
+function formatTime(seconds) {
+  const s = Math.max(0, Math.floor(seconds || 0));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  return h > 0
+    ? `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`
+    : `${m}:${String(sec).padStart(2, "0")}`;
+}
 
 export default function Home() {
   const navigate = useNavigate();
@@ -20,10 +32,13 @@ export default function Home() {
   const [latestSermon, setLatestSermon] = useState(null);
   const [continueListening, setContinueListening] = useState(null);
   const [notices, setNotices] = useState([]);
+  const [inProgress, setInProgress] = useState([]);
 
   const [user, setUser] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [authLoaded, setAuthLoaded] = useState(false);
+
+  const { playSermon } = useAudioPlayer();
 
   const loggedViewsRef = useRef(new Set());
 
@@ -118,6 +133,35 @@ export default function Home() {
         filtered.sort((a, b) => (b.pinned === true) - (a.pinned === true));
 
         setNotices(filtered);
+
+        // Continue Listening — last 3 recordings this listener actually
+        // started but hasn't finished. A single where("userId","==") is
+        // the only filter applied server-side (status + ordering happen
+        // client-side below) so this never needs a composite Firestore
+        // index — same pattern useGoalData.js already relies on.
+        if (user) {
+          const progressSnap = await getDocs(
+            query(collection(db, "listenProgress"), where("userId", "==", user.uid))
+          );
+
+          const recent = progressSnap.docs
+            .map((d) => d.data())
+            .filter((p) => p.status === "in-progress" && p.audioId)
+            .sort((a, b) => (b.updatedAt?.seconds || 0) - (a.updatedAt?.seconds || 0))
+            .slice(0, 3);
+
+          const resolved = await Promise.all(
+            recent.map(async (p) => {
+              const audioSnap = await getDoc(doc(db, "audio", p.audioId));
+              if (!audioSnap.exists()) return null;
+              return { progress: p, audio: { id: audioSnap.id, ...audioSnap.data() } };
+            })
+          );
+
+          setInProgress(resolved.filter(Boolean));
+        } else {
+          setInProgress([]);
+        }
       } catch (error) {
         console.error("Error loading home data:", error);
       }
@@ -144,6 +188,49 @@ export default function Home() {
       </div>
 
       <div style={contentArea}>
+
+        {/* CONTINUE LISTENING */}
+        {inProgress.length > 0 && (
+          <div style={card}>
+            <div style={cardHeader}>
+              <span style={cardIcon}>⏯️</span>
+              <h2 style={cardTitle}>Continue Listening</h2>
+            </div>
+
+            {inProgress.map(({ progress, audio }, index) => {
+              const pct = progress.duration
+                ? Math.min(100, Math.round((progress.position / progress.duration) * 100))
+                : 0;
+              const isLast = index === inProgress.length - 1;
+
+              return (
+                <div key={audio.id} style={isLast ? { ...continueItem, borderBottom: "none", paddingBottom: 0 } : continueItem}>
+                  <div style={continueInfo}>
+                    <h4 style={continueTitle}>{audio.title}</h4>
+                    <p style={continueSpeaker}>{audio.speaker}</p>
+
+                    <div style={progressTrack}>
+                      <div style={{ ...progressFill, width: `${pct}%` }} />
+                    </div>
+                    <p style={progressLabel}>
+                      {formatTime(progress.position)} of {formatTime(progress.duration)}
+                    </p>
+                  </div>
+
+                  <button
+                    style={resumeButton}
+                    onClick={() => {
+                      logEvent("continue_listening_resume", { audioId: audio.id });
+                      playSermon(audio, { resumeAt: progress.position });
+                    }}
+                  >
+                    <span style={playIcon}>▶</span> Resume
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         {/* NOTICES */}
         {notices.length > 0 && (
@@ -324,6 +411,74 @@ const cardTitle = {
   color: "var(--color-5c3a1e)",
   fontFamily: "'Georgia', serif",
   letterSpacing: "0.01em",
+};
+
+const continueItem = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: "16px",
+  padding: "12px 0",
+  borderBottom: "1px solid var(--color-f0e4d0)",
+};
+
+const continueInfo = {
+  flex: 1,
+  minWidth: 0,
+};
+
+const continueTitle = {
+  margin: "0 0 2px",
+  fontSize: "15px",
+  fontWeight: "normal",
+  color: "var(--color-3d2200)",
+  fontFamily: "'Georgia', serif",
+  whiteSpace: "nowrap",
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+};
+
+const continueSpeaker = {
+  margin: "0 0 8px",
+  fontSize: "12px",
+  color: "var(--color-9b7040)",
+  fontFamily: "sans-serif",
+};
+
+const progressTrack = {
+  height: "5px",
+  borderRadius: "999px",
+  background: "var(--color-eddfc8)",
+  overflow: "hidden",
+  marginBottom: "5px",
+};
+
+const progressFill = {
+  height: "100%",
+  background: "linear-gradient(to right, var(--color-e08930), var(--color-c97c2e))",
+};
+
+const progressLabel = {
+  margin: 0,
+  fontSize: "11px",
+  color: "var(--color-b08050)",
+  fontFamily: "sans-serif",
+};
+
+const resumeButton = {
+  flexShrink: 0,
+  display: "inline-flex",
+  alignItems: "center",
+  gap: "6px",
+  padding: "9px 16px",
+  borderRadius: "999px",
+  border: "none",
+  background: "linear-gradient(135deg, var(--color-c97c2e) 0%, var(--color-a85e18) 100%)",
+  color: "var(--color-fff8ee)",
+  cursor: "pointer",
+  fontSize: "13px",
+  fontFamily: "sans-serif",
+  boxShadow: "0 3px 10px rgba(160,80,20,0.25)",
 };
 
 const noticeItem = {
