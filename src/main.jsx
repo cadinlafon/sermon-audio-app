@@ -6,7 +6,8 @@ import { ShutdownProvider } from "./context/ShutdownContext";
 import { AudioPlayerProvider } from "./context/AudioPlayerContext";
 import { AuthProvider } from "./context/AuthContext";
 import { PagesProvider } from "./context/PagesContext";
-import { registerSW } from "virtual:pwa-register";
+import { registerAppUpdates } from "./utils/appUpdate";
+import UpdatePrompt from "./components/UpdatePrompt";
 import { ToastProvider } from "./context/ToastContext";
 import { PlaylistProvider } from "./context/PlaylistContext";
 import { ThemeProvider } from "./context/ThemeContext";
@@ -16,11 +17,10 @@ import "./theme-tokens.css";
 // SERVICE WORKER (PWA)
 //////////////////////////////////////////////////
 
-// 🔥 This registers your PWA service worker
-// "immediate: true" = updates instantly (good for your case)
-registerSW({
-  immediate: true,
-});
+// Registers the PWA service worker and watches for new deploys. A new
+// version installs in the background and waits; <UpdatePrompt /> below
+// asks the user to refresh instead of reloading the page on its own.
+registerAppUpdates();
 
 //////////////////////////////////////////////////
 // RENDER
@@ -44,6 +44,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
           </PagesProvider>
         </AuthProvider>
       </BrowserRouter>
+      <UpdatePrompt />
     </ThemeProvider>
   </React.StrictMode>
 );

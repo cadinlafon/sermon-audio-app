@@ -6,9 +6,19 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      // 'prompt': a new service worker installs in the background and
+      // WAITS — the page is told (onNeedRefresh -> src/utils/appUpdate.js)
+      // and shows a "New version available — Refresh" prompt. With the
+      // old 'autoUpdate' the new worker took over immediately and the
+      // page was force-reloaded with no warning, which would cut off
+      // whatever someone was listening to.
+      registerType: 'prompt',
 
       workbox: {
+        // Pages stay controlled from first install (offline-ready
+        // without a second visit); updates still wait for the prompt.
+        clientsClaim: true,
+
         // The main bundle has grown past workbox's 2 MiB default precache
         // limit (Media3-adjacent web features: QR codes, Cast, etc.) —
         // raise the cap rather than leaving the service worker un-buildable.
