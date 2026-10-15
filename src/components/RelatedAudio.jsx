@@ -12,8 +12,15 @@ const TYPE_LABEL = { sundayschool: "Sunday School", homily: "Homily", sermon: "S
 const AI_CANDIDATE_LIMIT = 30;
 const AI_TIMEOUT_MS = 15000;
 
+const STRENGTH_COPY = {
+  strong: { label: "Strong match", detail: "These summaries cover much of the same ground." },
+  moderate: { label: "Moderate match", detail: "There's a clear overlap in topics." },
+  loose: { label: "Loose match", detail: "Only a few general themes overlap, so treat this as a loose connection." },
+};
+
 // Asks the AI service which of the already-closest candidates are
-// thematically related. Returns the picked items, or null if the call
+// thematically related. Returns the picked match entries (same shape
+// rankBySimilarity produces, tagged source: "ai"), or null if the call
 // failed / timed out — the caller then keeps the local summary match.
 async function askAiForRelated(current, summary, ranked) {
   const user = auth.currentUser;
@@ -36,8 +43,11 @@ async function askAiForRelated(current, summary, ranked) {
 
     if (error || !Array.isArray(data?.relatedIds)) return null;
 
-    const byId = new Map(ranked.map(({ item }) => [item.id, item]));
-    return data.relatedIds.map((id) => byId.get(id)).filter(Boolean);
+    const byId = new Map(ranked.map((entry) => [entry.item.id, entry]));
+    return data.relatedIds
+      .map((id) => byId.get(id))
+      .filter(Boolean)
+      .map((entry) => ({ ...entry, source: "ai" }));
   } catch (err) {
     console.warn("AI related-content lookup failed; using summary matching instead", err);
     return null;
@@ -45,13 +55,14 @@ async function askAiForRelated(current, summary, ranked) {
 }
 
 // "Related" section on the player page: finds other recordings whose AI
-// summaries are close to this one's.
+// summaries are close to this one's, and explains each match.
 //
 // How it works:
 //   1. Compare this recording's summary against every other
 //      recording's summary (TF-IDF similarity — utils/relatedContent.js).
 //      That alone always works: no sign-in and no network call beyond
-//      reading the audio list.
+//      reading the audio list. It also yields the words the two
+//      summaries share — the "why" behind each match.
 //   2. If signed in, the closest candidates are also sent to the AI
 //      service, whose thematic picks win when it answers with any.
 //
@@ -66,9 +77,11 @@ export default function RelatedAudio({ current }) {
     !!current &&
     (!current.collection || current.collection === "audio") &&
     (!current.type || SUMMARIZABLE_TYPES.includes(current.type));
+
   const [summary, setSummary] = useState(current?.aiSummary || "");
-  const [result, setResult] = useState(null); // { key, status: "ready" | "error", items }
+  const [result, setResult] = useState(null); // { key, status: "ready" | "error", matches }
   const [attempt, setAttempt] = useState(0);
+  const [openInfoId, setOpenInfoId] = useState(null);
 
   // The track object can predate its summary (auto-generated in the
   // background after playback starts), so watch the document itself
@@ -100,6 +113,7 @@ export default function RelatedAudio({ current }) {
     if (!current?.id || !supported || !summary) return undefined;
 
     let cancelled = false;
+    setOpenInfoId(null);
 
     async function run() {
       try {
@@ -109,17 +123,17 @@ export default function RelatedAudio({ current }) {
           .filter((a) => a.id !== current.id && typeof a.aiSummary === "string" && a.aiSummary.trim());
 
         const ranked = rankBySimilarity({ title: current.title, summary }, candidates);
-        let items = pickRelated(ranked);
+        let matches = pickRelated(ranked).map((entry) => ({ ...entry, source: "summary" }));
 
         if (ranked.length > 0) {
-          const aiItems = await askAiForRelated(current, summary, ranked);
-          if (aiItems && aiItems.length > 0) items = aiItems;
+          const aiMatches = await askAiForRelated(current, summary, ranked);
+          if (aiMatches && aiMatches.length > 0) matches = aiMatches;
         }
 
-        if (!cancelled) setResult({ key, status: "ready", items });
+        if (!cancelled) setResult({ key, status: "ready", matches });
       } catch (err) {
         console.error("Unable to load related audio", err);
-        if (!cancelled) setResult({ key, status: "error", items: [] });
+        if (!cancelled) setResult({ key, status: "error", matches: [] });
       }
     }
 
@@ -154,7 +168,7 @@ export default function RelatedAudio({ current }) {
         </button>
       </div>
     );
-  } else if (result.items.length === 0) {
+  } else if (result.matches.length === 0) {
     body = (
       <div>
         <p style={emptyTitle}>No results found.</p>
@@ -166,13 +180,37 @@ export default function RelatedAudio({ current }) {
   } else {
     body = (
       <div style={list}>
-        {result.items.map((item) => (
-          <button key={item.id} type="button" style={itemBtn} onClick={() => playSermon(item)}>
-            <span style={itemTag}>{TYPE_LABEL[item.type] || "Sermon"}</span>
-            <span style={itemTitle}>{item.title}</span>
-            <span style={itemSpeaker}>{item.speaker}</span>
-          </button>
-        ))}
+        {result.matches.map((match) => {
+          const { item } = match;
+          const open = openInfoId === item.id;
+          const panelId = `related-why-${item.id}`;
+
+          return (
+            <div key={item.id} style={card}>
+              <div style={row}>
+                <button type="button" style={playBtn} onClick={() => playSermon(item)}>
+                  <span style={itemTag}>{TYPE_LABEL[item.type] || "Sermon"}</span>
+                  <span style={itemTitle}>{item.title}</span>
+                  <span style={itemSpeaker}>{item.speaker}</span>
+                </button>
+
+                <button
+                  type="button"
+                  style={infoBtn(open)}
+                  aria-expanded={open}
+                  aria-controls={panelId}
+                  aria-label={`Why "${item.title}" is related`}
+                  title="Why is this related?"
+                  onClick={() => setOpenInfoId(open ? null : item.id)}
+                >
+                  i
+                </button>
+              </div>
+
+              {open && <WhyPanel id={panelId} match={match} currentTitle={current.title} />}
+            </div>
+          );
+        })}
       </div>
     );
   }
@@ -180,6 +218,44 @@ export default function RelatedAudio({ current }) {
   return (
     <div style={wrap} aria-live="polite">
       {body}
+    </div>
+  );
+}
+
+// The explanation under a related item: what the two summaries share,
+// and how strong that overlap is.
+function WhyPanel({ id, match, currentTitle }) {
+  const { terms, strength, source } = match;
+  const strengthInfo = STRENGTH_COPY[strength] || STRENGTH_COPY.loose;
+  const fromAi = source === "ai";
+
+  return (
+    <div id={id} style={panel}>
+      <div style={panelHead}>
+        <span style={panelTitle}>Why it's related</span>
+        <span style={fromAi ? aiChip : strengthChip(strength)}>{fromAi ? "AI-suggested" : strengthInfo.label}</span>
+      </div>
+
+      <p style={panelText}>
+        {fromAi
+          ? `The AI compared the summaries of this recording and "${currentTitle}" and judged them to cover similar themes.`
+          : `We compared this recording's summary with "${currentTitle}". ${strengthInfo.detail}`}
+      </p>
+
+      {terms.length > 0 ? (
+        <>
+          <p style={panelLabel}>Both summaries talk about</p>
+          <div style={chips}>
+            {terms.map((term) => (
+              <span key={term} style={chip}>
+                {term}
+              </span>
+            ))}
+          </div>
+        </>
+      ) : (
+        <p style={panelText}>They don't share many of the same words, so this match is based on meaning rather than wording.</p>
+      )}
     </div>
   );
 }
@@ -224,20 +300,53 @@ const list = {
   gap: "8px",
 };
 
-const itemBtn = {
+const card = {
+  borderRadius: "14px",
+  border: "1px solid var(--color-eddfc8)",
+  background: "var(--color-fffdf9)",
+  overflow: "hidden",
+};
+
+const row = {
+  display: "flex",
+  alignItems: "center",
+};
+
+const playBtn = {
+  flex: 1,
+  minWidth: 0,
   display: "flex",
   flexDirection: "column",
   alignItems: "flex-start",
   gap: "3px",
   textAlign: "left",
   padding: "12px 14px",
-  borderRadius: "14px",
-  border: "1px solid var(--color-eddfc8)",
-  background: "var(--color-fffdf9)",
+  border: "none",
+  background: "transparent",
   cursor: "pointer",
-  width: "100%",
   boxSizing: "border-box",
 };
+
+const infoBtn = (open) => ({
+  flexShrink: 0,
+  width: "26px",
+  height: "26px",
+  margin: "0 12px 0 4px",
+  borderRadius: "50%",
+  border: "1.5px solid var(--color-c97c2e)",
+  background: open ? "var(--color-c97c2e)" : "transparent",
+  color: open ? "var(--color-fff8ee)" : "var(--color-a85e18)",
+  fontFamily: "'Georgia', serif",
+  fontStyle: "italic",
+  fontWeight: "bold",
+  fontSize: "14px",
+  lineHeight: 1,
+  cursor: "pointer",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  padding: 0,
+});
 
 const itemTag = {
   fontSize: "10px",
@@ -260,4 +369,80 @@ const itemSpeaker = {
   fontSize: "12px",
   color: "var(--color-9b7040)",
   fontFamily: "sans-serif",
+};
+
+const panel = {
+  padding: "12px 14px 14px",
+  borderTop: "1px solid var(--color-eddfc8)",
+  background: "var(--color-fdf8f3)",
+  fontFamily: "sans-serif",
+};
+
+const panelHead = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: "10px",
+  marginBottom: "8px",
+};
+
+const panelTitle = {
+  fontSize: "12px",
+  fontWeight: "700",
+  letterSpacing: "0.04em",
+  textTransform: "uppercase",
+  color: "var(--color-5c3a1e)",
+};
+
+const STRENGTH_CHIP_COLORS = {
+  strong: { bg: "var(--color-dcfce7)", color: "var(--color-166534)" },
+  moderate: { bg: "var(--color-fde8b8)", color: "var(--color-7a5a10)" },
+  loose: { bg: "var(--color-f0e4d0)", color: "var(--color-7a5530)" },
+};
+
+const strengthChip = (strength) => ({
+  fontSize: "11px",
+  fontWeight: "600",
+  padding: "3px 10px",
+  borderRadius: "999px",
+  ...(STRENGTH_CHIP_COLORS[strength] || STRENGTH_CHIP_COLORS.loose),
+});
+
+const aiChip = {
+  fontSize: "11px",
+  fontWeight: "600",
+  padding: "3px 10px",
+  borderRadius: "999px",
+  background: "var(--color-e8f0fe)",
+  color: "var(--color-2a5ab5)",
+};
+
+const panelText = {
+  margin: "0 0 10px",
+  fontSize: "13px",
+  lineHeight: 1.6,
+  color: "var(--color-5c3a1e)",
+};
+
+const panelLabel = {
+  margin: "0 0 6px",
+  fontSize: "11px",
+  letterSpacing: "0.05em",
+  textTransform: "uppercase",
+  color: "var(--color-9b7040)",
+};
+
+const chips = {
+  display: "flex",
+  flexWrap: "wrap",
+  gap: "6px",
+};
+
+const chip = {
+  fontSize: "12px",
+  padding: "4px 10px",
+  borderRadius: "999px",
+  border: "1px solid var(--color-eddfc8)",
+  background: "var(--color-fffdf9)",
+  color: "var(--color-7a4f10)",
 };

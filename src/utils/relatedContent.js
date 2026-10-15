@@ -50,7 +50,10 @@ function stem(word) {
   return w;
 }
 
-export function tokenize(text) {
+// Same as tokenize(), but keeps the original word next to each stem so
+// a matched stem can be shown to people as a real word ("parent", not
+// "paren").
+function tokenizeDetailed(text) {
   if (typeof text !== "string") return [];
   // \p{L} keeps letters from any script; this also cleanly splits on
   // markdown (**), narrow no-break spaces and non-breaking hyphens that
@@ -61,9 +64,42 @@ export function tokenize(text) {
   for (const raw of words) {
     if (raw.length < 3 || STOPWORDS.has(raw)) continue;
     const s = stem(raw);
-    if (s.length >= 3 && !STOPWORDS.has(s)) out.push(s);
+    if (s.length >= 3 && !STOPWORDS.has(s)) out.push({ stem: s, word: raw });
   }
   return out;
+}
+
+export function tokenize(text) {
+  return tokenizeDetailed(text).map((t) => t.stem);
+}
+
+// stem -> the surface form used most often in `text`, capitalized.
+function displayWords(detailed) {
+  const counts = new Map();
+  for (const { stem: s, word } of detailed) {
+    const forms = counts.get(s) || new Map();
+    forms.set(word, (forms.get(word) || 0) + 1);
+    counts.set(s, forms);
+  }
+  const out = new Map();
+  for (const [s, forms] of counts) {
+    const best = [...forms.entries()].sort((a, b) => b[1] - a[1])[0][0];
+    out.set(s, best.charAt(0).toUpperCase() + best.slice(1));
+  }
+  return out;
+}
+
+// How many shared terms to surface per match.
+const MAX_SHARED_TERMS = 6;
+
+// A plain-language read on a score, so the "why" is honest about weak
+// matches (whose shared words tend to be generic). Cut-points taken
+// from the real library: same-passage / same-topic pairs score ~0.10+,
+// a few shared general themes ~0.06–0.08.
+export function matchStrength(score) {
+  if (score >= 0.12) return "strong";
+  if (score >= 0.08) return "moderate";
+  return "loose";
 }
 
 function termFrequencies(tokens) {
@@ -74,27 +110,34 @@ function termFrequencies(tokens) {
 
 /**
  * Apply the floor + relative cutoff to a ranked list.
- * @returns {object[]} the candidate items worth showing, best first.
+ * @returns {Array<{item: object, score: number, terms: string[]}>}
+ *          the matches worth showing, best first.
  */
 export function pickRelated(ranked, limit = MAX_RELATED_RESULTS) {
   const best = ranked[0]?.score || 0;
   if (best < MIN_RELATED_SCORE) return [];
   const cutoff = Math.max(MIN_RELATED_SCORE, best * RELATIVE_CUTOFF);
-  return ranked.filter((r) => r.score >= cutoff).slice(0, limit).map((r) => r.item);
+  return ranked.filter((r) => r.score >= cutoff).slice(0, limit);
 }
 
 /**
  * Rank candidates by how similar their summary is to `current`'s.
  *
+ * `terms` is WHY a candidate scored as it did: the words the two
+ * summaries share, biggest contributors to the similarity first.
+ *
  * @param {{title?: string, summary?: string}} current
  * @param {Array<{id: string, title?: string, aiSummary?: string}>} candidates
- * @returns {Array<{item: object, score: number}>} sorted best-first,
- *          INCLUDING zero scores — callers apply MIN_RELATED_SCORE.
+ * @returns {Array<{item: object, score: number, terms: string[]}>}
+ *          sorted best-first, INCLUDING zero scores — callers apply
+ *          MIN_RELATED_SCORE (see pickRelated).
  */
 export function rankBySimilarity(current, candidates) {
-  const currentTokens = tokenize(`${current?.title || ""} ${current?.summary || ""}`);
+  const currentDetailed = tokenizeDetailed(`${current?.title || ""} ${current?.summary || ""}`);
+  const currentTokens = currentDetailed.map((t) => t.stem);
   if (currentTokens.length === 0 || !Array.isArray(candidates) || candidates.length === 0) return [];
 
+  const display = displayWords(currentDetailed);
   const candidateTokens = candidates.map((c) => tokenize(`${c.title || ""} ${c.aiSummary || ""}`));
 
   // Document frequency across the whole pool (current included).
@@ -123,13 +166,31 @@ export function rankBySimilarity(current, candidates) {
   return candidates
     .map((item, i) => {
       const cand = vectorize(candidateTokens[i]);
-      if (cand.norm === 0) return { item, score: 0 };
+      if (cand.norm === 0) return { item, score: 0, terms: [], strength: "loose" };
       let dot = 0;
+      const shared = [];
       for (const [t, w] of cur.vec) {
         const cw = cand.vec.get(t);
-        if (cw) dot += w * cw;
+        if (cw) {
+          const contribution = w * cw;
+          dot += contribution;
+          shared.push([t, contribution]);
+        }
       }
-      return { item, score: dot / (cur.norm * cand.norm) };
+      // Biggest contributors first, skipping near-duplicate forms the
+      // light stemmer doesn't unify ("Curse"/"Curses", "Child"/"Children").
+      const terms = [];
+      const seenPrefixes = new Set();
+      for (const [t] of shared.sort((a, b) => b[1] - a[1])) {
+        const word = display.get(t) || t;
+        const prefix = word.toLowerCase().slice(0, 5);
+        if (seenPrefixes.has(prefix)) continue;
+        seenPrefixes.add(prefix);
+        terms.push(word);
+        if (terms.length >= MAX_SHARED_TERMS) break;
+      }
+      const score = dot / (cur.norm * cand.norm);
+      return { item, score, terms, strength: matchStrength(score) };
     })
     .sort((a, b) => b.score - a.score);
 }
