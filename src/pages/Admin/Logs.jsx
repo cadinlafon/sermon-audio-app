@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
-import { collection, onSnapshot, getDocs } from "firebase/firestore";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { collection, onSnapshot, getDocs, query, where } from "firebase/firestore";
 import { db } from "../../firebase";
 import AdminActionsLog from "./AdminActionsLog";
+import { getLogDateRange, parseLocalDate } from "../../utils/logRange";
 
 // Event type → badge color
 const EVENT_COLORS = {
@@ -84,14 +85,185 @@ const defaultFilters = {
 // within this window; past that it's just treated as abandoned.
 const SESSION_ACTIVE_WINDOW_MS = 10 * 60 * 1000;
 
+// Shown before "All time" is applied — that choice reads every
+// document in the logs collection, and Firestore bills per document
+// read. Cancel is focused by default, Escape / clicking outside cancel.
+function AllTimeWarning({ onCancel, onContinue }) {
+  const dialogRef = useRef(null);
+  const cancelRef = useRef(null);
+  const onCancelRef = useRef(onCancel);
+
+  useEffect(() => {
+    onCancelRef.current = onCancel;
+  });
+
+  useEffect(() => {
+    const previouslyFocused = document.activeElement;
+    cancelRef.current?.focus();
+
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onCancelRef.current();
+        return;
+      }
+
+      if (e.key !== "Tab" || !dialogRef.current) return;
+
+      const focusable = dialogRef.current.querySelectorAll("button");
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      if (previouslyFocused && typeof previouslyFocused.focus === "function") {
+        previouslyFocused.focus();
+      }
+    };
+  }, []);
+
+  return (
+    <div
+      style={warnOverlay}
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onCancel();
+      }}
+    >
+      <div
+        ref={dialogRef}
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="all-time-warning-title"
+        aria-describedby="all-time-warning-body"
+        style={warnDialog}
+      >
+        <h2 id="all-time-warning-title" style={warnTitle}>
+          ⚠️ WARNING!
+        </h2>
+
+        <div id="all-time-warning-body">
+          <p style={warnText}>
+            Loading <strong>All time</strong> logs may bring in a very large amount of data.
+          </p>
+          <p style={warnText}>
+            Firestore <strong>READ</strong> charges on your account may spike. Heed this warning — cancel, or continue
+            if you're sure.
+          </p>
+        </div>
+
+        <div style={warnActions}>
+          <button ref={cancelRef} type="button" style={warnCancel} onClick={onCancel}>
+            Cancel
+          </button>
+          <button type="button" style={warnContinue} onClick={onContinue}>
+            Continue
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const warnOverlay = {
+  position: "fixed",
+  inset: 0,
+  background: "rgba(40,18,0,0.55)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  padding: "20px",
+  zIndex: 5000,
+};
+
+const warnDialog = {
+  width: "100%",
+  maxWidth: "420px",
+  boxSizing: "border-box",
+  background: "var(--color-fffdf9)",
+  border: "1px solid var(--color-f3c8ba)",
+  borderRadius: "16px",
+  padding: "24px",
+  boxShadow: "0 16px 48px rgba(40,18,0,0.35)",
+  fontFamily: "sans-serif",
+};
+
+const warnTitle = {
+  margin: "0 0 12px",
+  fontSize: "20px",
+  letterSpacing: "0.04em",
+  color: "var(--color-a33622)",
+};
+
+const warnText = {
+  margin: "0 0 10px",
+  fontSize: "14px",
+  lineHeight: 1.6,
+  color: "var(--color-5c3a1e)",
+};
+
+const warnActions = {
+  display: "flex",
+  gap: "10px",
+  marginTop: "18px",
+};
+
+const warnCancel = {
+  flex: 1,
+  padding: "11px 14px",
+  borderRadius: "10px",
+  border: "1px solid var(--color-eddfc8)",
+  background: "var(--color-fdf8f3)",
+  color: "var(--color-7a4f10)",
+  fontSize: "14px",
+  fontFamily: "sans-serif",
+  cursor: "pointer",
+};
+
+const warnContinue = {
+  flex: 1,
+  padding: "11px 14px",
+  borderRadius: "10px",
+  border: "none",
+  background: "var(--color-a33622)",
+  color: "var(--color-fff8ee)",
+  fontSize: "14px",
+  fontWeight: "600",
+  fontFamily: "sans-serif",
+  cursor: "pointer",
+};
+
 export default function Logs() {
   const [tab, setTab] = useState("activity");
 
   const [logs, setLogs] = useState([]);
+  const [logsLoading, setLogsLoading] = useState(true);
+  const [logsError, setLogsError] = useState(false);
   const [userMap, setUserMap] = useState({});
 
   const [filters, setFilters] =
     useState(defaultFilters);
+
+  // Asked before the one choice that reads the ENTIRE logs collection.
+  const [confirmAllTime, setConfirmAllTime] = useState(false);
+
+  // "Last X days" is a number input — wait for typing to settle so
+  // "30" doesn't first load "3" days (each load is a billed read).
+  const [loadDays, setLoadDays] = useState(defaultFilters.days);
+  useEffect(() => {
+    const timer = setTimeout(() => setLoadDays(filters.days), 500);
+    return () => clearTimeout(timer);
+  }, [filters.days]);
 
   const [sortBy, setSortBy] =
     useState("newest");
@@ -148,9 +320,39 @@ export default function Logs() {
   // LOAD LOGS
   //////////////////////////////////////////////////
 
+  // Reads only the selected date range from Firestore (see
+  // utils/logRange.js) — every document returned is a billed read, and
+  // this used to subscribe to the whole collection on every page open
+  // and filter by date in the browser afterwards. "All time" is the one
+  // choice that still reads everything, hence the confirmation.
   useEffect(() => {
+    const { start, end, skip } = getLogDateRange({
+      date: filters.date,
+      days: loadDays,
+      customDate: filters.customDate,
+    });
+
+    setLogsError(false);
+
+    if (skip) {
+      setLogs([]);
+      setLogsLoading(false);
+      return undefined;
+    }
+
+    const constraints = [];
+    if (start) constraints.push(where("createdAt", ">=", start));
+    if (end) constraints.push(where("createdAt", "<", end));
+
+    const source =
+      constraints.length > 0
+        ? query(collection(db, "logs"), ...constraints)
+        : collection(db, "logs");
+
+    setLogsLoading(true);
+
     return onSnapshot(
-      collection(db, "logs"),
+      source,
       (snapshot) => {
         const data = snapshot.docs.map(
           (doc) => ({
@@ -160,9 +362,15 @@ export default function Logs() {
         );
 
         setLogs(data);
+        setLogsLoading(false);
+      },
+      (error) => {
+        console.error("Could not load logs:", error);
+        setLogsError(true);
+        setLogsLoading(false);
       }
     );
-  }, []);
+  }, [filters.date, loadDays, filters.customDate]);
 
   //////////////////////////////////////////////////
   // HELPERS
@@ -332,12 +540,15 @@ export default function Logs() {
           filters.date === "custom" &&
           filters.customDate
         ) {
+          // Local date, not new Date("YYYY-MM-DD") (which is UTC
+          // midnight — the day before, west of UTC).
           const selected =
-            new Date(filters.customDate);
+            parseLocalDate(filters.customDate);
 
           if (
+            selected &&
             date.toDateString() !==
-            selected.toDateString()
+              selected.toDateString()
           ) {
             return false;
           }
@@ -782,12 +993,24 @@ export default function Logs() {
 
           {tab === "activity" ? (
             <p style={pageSubtitle}>
-              <strong>{sessions.length}</strong> session
-              {sessions.length === 1 ? "" : "s"} · showing{" "}
-              <strong>
-                {filteredLogs.length}
-              </strong>{" "}
-              of {logs.length} events
+              {logsError ? (
+                <span style={{ color: "var(--color-a33622)" }}>
+                  Couldn't load logs for this range. Check your connection and permissions, then try again.
+                </span>
+              ) : logsLoading ? (
+                "Loading logs…"
+              ) : filters.date === "custom" && !filters.customDate ? (
+                "Pick a date to load its logs."
+              ) : (
+                <>
+                  <strong>{sessions.length}</strong> session
+                  {sessions.length === 1 ? "" : "s"} · showing{" "}
+                  <strong>
+                    {filteredLogs.length}
+                  </strong>{" "}
+                  of {logs.length} loaded events
+                </>
+              )}
             </p>
           ) : (
             <p style={pageSubtitle}>
@@ -873,6 +1096,16 @@ export default function Logs() {
         )}
       </div>
 
+      {confirmAllTime && (
+        <AllTimeWarning
+          onCancel={() => setConfirmAllTime(false)}
+          onContinue={() => {
+            setConfirmAllTime(false);
+            updateFilter("date", "all");
+          }}
+        />
+      )}
+
       {/* BASIC FILTERS */}
 
       <div style={filterBar}>
@@ -883,12 +1116,19 @@ export default function Logs() {
 
           <select
             value={filters.date}
-            onChange={(e) =>
-              updateFilter(
-                "date",
-                e.target.value
-              )
-            }
+            onChange={(e) => {
+              const value = e.target.value;
+
+              // "All time" reads the entire logs collection — hold the
+              // change until it's confirmed. (The select is controlled,
+              // so it snaps back to the current choice meanwhile.)
+              if (value === "all" && filters.date !== "all") {
+                setConfirmAllTime(true);
+                return;
+              }
+
+              updateFilter("date", value);
+            }}
             style={select}
           >
             <option value="today">
