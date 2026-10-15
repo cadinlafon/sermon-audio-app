@@ -90,7 +90,12 @@ Pick up to ${RESULT_COUNT} candidates whose topic/themes are most related to the
       body: JSON.stringify({
         model: "openai/gpt-oss-120b",
         temperature: 0.1,
-        max_completion_tokens: 200,
+        // gpt-oss-120b is a reasoning model: its thinking tokens count
+        // against this budget. At 200 the answer was routinely cut off
+        // before the JSON array was written, which came back as an
+        // empty list ("nothing related") — summarize-audio uses 900+
+        // for the same model for the same reason.
+        max_completion_tokens: 1000,
         messages: [
           { role: "system", content: "You return only valid JSON, nothing else — no prose, no markdown fences." },
           { role: "user", content: prompt },
