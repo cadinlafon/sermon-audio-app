@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
 import { db } from "../../firebase";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, query, where } from "firebase/firestore";
+import { startOfToday, summarizeToday } from "../../utils/todayActivity";
 
 const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
 export default function Analytics() {
   const [stats, setStats] = useState({ totalUsers:0, newUsers:0, totalUploads:0, minutesPlayed:0, totalListens:0, usesWeb:0, usesPWA:0, pwaIphone:0, pwaAndroid:0, pwaDesktop:0 });
   const [monthlyActivity, setMonthlyActivity] = useState([]);
+  const [today, setToday] = useState({ users: [], anonymous: 0, loading: true, error: false });
+  const [expanded, setExpanded] = useState(() => new Set());
 
   const getWeekRange = () => {
     const now = new Date();
@@ -18,16 +21,22 @@ export default function Analytics() {
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
-        const [usersSnap, audioSnap, usageSnap, logsSnap] = await Promise.all([
+        const [usersSnap, audioSnap, usageSnap, logsSnap, todayLogsSnap] = await Promise.all([
           getDocs(collection(db, "users")),
           getDocs(collection(db, "audio")),
           getDocs(collection(db, "appUsage")),
           getDocs(collection(db, "logs")),
+          // Only today's logs (a handful of docs) for the "used the app today" card.
+          getDocs(query(collection(db, "logs"), where("createdAt", ">=", startOfToday()))),
         ]);
         const users = usersSnap.docs.map(d => d.data());
         const usage = usageSnap.docs.map(d => d.data());
         const logs = logsSnap.docs.map(d => d.data());
         const { start, end } = getWeekRange();
+
+        const usersById = new Map(usersSnap.docs.map(d => [d.id, d.data()]));
+        const summary = summarizeToday(todayLogsSnap.docs.map(d => d.data()), usersById);
+        setToday({ ...summary, loading: false, error: false });
 
         const newUsers = users.filter(u => u.createdAt?.seconds && new Date(u.createdAt.seconds*1000) >= start && new Date(u.createdAt.seconds*1000) <= end).length;
         let minutesPlayed = 0, totalListens = 0;
@@ -64,10 +73,19 @@ export default function Analytics() {
         });
 
         setStats({ totalUsers: users.length, newUsers, totalUploads: audioSnap.size, minutesPlayed, totalListens, usesWeb, usesPWA, pwaIphone, pwaAndroid, pwaDesktop });
-      } catch (err) { console.error("Analytics error:", err); }
+      } catch (err) {
+        console.error("Analytics error:", err);
+        setToday(t => ({ ...t, loading: false, error: true }));
+      }
     };
     fetchAnalytics();
   }, []);
+
+  const toggleUser = (id) => setExpanded(prev => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
 
   const maxCount = Math.max(...monthlyActivity.map(m => m.count), 1);
 
@@ -89,6 +107,40 @@ export default function Analytics() {
         <StatCard icon="🍎" label="PWA on iPhone" value={stats.pwaIphone} color="var(--color-dc2626)" />
         <StatCard icon="🤖" label="PWA on Android" value={stats.pwaAndroid} color="var(--color-16a34a)" />
         <StatCard icon="💻" label="PWA on Desktop" value={stats.pwaDesktop} color="var(--color-6d28d9)" />
+      </div>
+
+      <div style={{ ...chartCard, marginBottom: "28px" }}>
+        <h2 style={{ ...chartTitle, margin: "0 0 4px" }}>These users used the app today</h2>
+        <p style={todayHint}>
+          {today.loading ? "Loading…" : today.error ? "Couldn't load today's activity." : `${today.users.length} signed-in ${today.users.length === 1 ? "user" : "users"}${today.anonymous ? ` · ${today.anonymous} signed-out ${today.anonymous === 1 ? "visitor" : "visitors"}` : ""}`}
+        </p>
+        {!today.loading && !today.error && today.users.length === 0 && (
+          <p style={todayEmpty}>No signed-in users have used the app yet today.</p>
+        )}
+        <div style={userList}>
+          {today.users.map(u => {
+            const open = expanded.has(u.id);
+            return (
+              <div key={u.id} style={userRow}>
+                <button style={userBtn} onClick={() => toggleUser(u.id)} aria-expanded={open}>
+                  <span style={userName}>{u.name}</span>
+                  <span style={userMeta}>{u.pages.length} {u.pages.length === 1 ? "page" : "pages"} <span aria-hidden="true">{open ? "▴" : "▾"}</span></span>
+                </button>
+                {open && (
+                  <ul style={pageList}>
+                    {u.pages.length === 0 && <li style={pageItem}>No page views recorded</li>}
+                    {u.pages.map(p => (
+                      <li key={p.label} style={pageItem}>
+                        <span>{p.label}</span>
+                        {p.count > 1 && <span style={pageCount}>×{p.count}</span>}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {monthlyActivity.length > 0 && (
@@ -136,3 +188,14 @@ const barWrapper = { flex: 1, display: "flex", flexDirection: "column", alignIte
 const bar = { width: "100%", maxWidth: "48px", background: "linear-gradient(180deg, var(--color-e08930), var(--color-c97c2e))", borderRadius: "6px 6px 0 0" };
 const barValue = { fontSize: "12px", fontFamily: "sans-serif", color: "var(--color-7a4f10)", fontWeight: "bold", marginBottom: "4px" };
 const barLabel = { fontSize: "11px", fontFamily: "sans-serif", color: "var(--color-9b7040)", marginTop: "6px", textAlign: "center" };
+
+const todayHint = { fontSize: "13px", fontFamily: "sans-serif", color: "var(--color-9b7040)", margin: "0 0 14px" };
+const todayEmpty = { fontSize: "14px", fontFamily: "sans-serif", color: "var(--color-5c3a1e)", margin: 0 };
+const userList = { display: "flex", flexDirection: "column", gap: "8px" };
+const userRow = { border: "1px solid var(--color-eddfc8)", borderRadius: "10px", background: "var(--color-fdf8f3)", overflow: "hidden" };
+const userBtn = { width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", padding: "10px 14px", background: "none", border: "none", cursor: "pointer", textAlign: "left", fontFamily: "sans-serif" };
+const userName = { fontSize: "14px", color: "var(--color-3d2200)", fontWeight: "bold" };
+const userMeta = { fontSize: "12px", color: "var(--color-9b7040)", whiteSpace: "nowrap" };
+const pageList = { listStyle: "none", margin: 0, padding: "0 14px 12px", display: "flex", flexDirection: "column", gap: "6px" };
+const pageItem = { display: "flex", justifyContent: "space-between", fontSize: "13px", fontFamily: "sans-serif", color: "var(--color-5c3a1e)" };
+const pageCount = { color: "var(--color-9b7040)" };
