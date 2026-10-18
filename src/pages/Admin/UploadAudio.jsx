@@ -11,11 +11,23 @@ import { useAdminPin } from "../../context/AdminPinContext";
 
 const speakers = ["Jonathan Mcintosh", "Rusty Olps", "Jason Farley", "Mark Thiele"];
 
-export default function UploadAudio() {
+// Several forms can upload at once, and each one picks "the next order
+// number" by reading the collection — so the pick + write is queued to
+// keep two simultaneous uploads from getting the same number.
+let orderQueue = Promise.resolve();
+function addAudioDoc(data) {
+  const run = orderQueue.then(async () => {
+    const order = await getNextAudioOrder();
+    return addDoc(collection(db, "audio"), { ...data, order, createdAt: serverTimestamp() });
+  });
+  orderQueue = run.catch(() => {});
+  return run;
+}
+
+function SingleUploadForm({ canAddAnother, onUploadAnother, onRemove }) {
   const perms = useModulePermissions("upload");
   const pinCtx = useAdminPin();
   const requirePin = pinCtx?.requirePin || (async () => true);
-  const [mode, setMode] = useState("single");
   const [title, setTitle] = useState("");
   const [speaker, setSpeaker] = useState("");
   const [type, setType] = useState("sermon");
@@ -79,16 +91,13 @@ export default function UploadAudio() {
       }
       setTranscodeStatus("");
 
-      const order = await getNextAudioOrder();
-      await addDoc(collection(db, "audio"), {
+      await addAudioDoc({
         title,
         speaker,
         type,
         duration,
         audioStorageKey,
         ...(transcribeStorageKey ? { transcribeStorageKey } : {}),
-        order,
-        createdAt: serverTimestamp(),
       });
 
       setTitle(""); setSpeaker(""); setType("sermon"); setFile(null); setDuration(null);
@@ -105,31 +114,7 @@ export default function UploadAudio() {
   const fmt = (s) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
 
   return (
-    <div style={page}>
-      <div style={pageHeader}>
-        <h1 style={pageTitle}>Upload Audio</h1>
-        <p style={pageSubtitle}>Add a new sermon, homily, or Sunday School lesson.</p>
-      </div>
-
-      <div style={modeRow}>
-        <button
-          style={mode === "single" ? { ...modeBtn, ...modeBtnActive } : modeBtn}
-          onClick={() => setMode("single")}
-        >
-          Single Upload
-        </button>
-        <button
-          style={mode === "bulk" ? { ...modeBtn, ...modeBtnActive } : modeBtn}
-          onClick={() => setMode("bulk")}
-        >
-          Bulk Upload
-        </button>
-      </div>
-
-      {mode === "bulk" && <BulkUploadAudio speakers={speakers} />}
-
-      {mode === "single" && (
-      <div style={card}>
+    <div style={card}>
         <div style={fieldGroup}>
           <label style={fieldLabel}>Title</label>
           <input
@@ -197,14 +182,75 @@ export default function UploadAudio() {
           </div>
         )}
 
-        <button onClick={handleUpload} disabled={uploading || !perms.canEdit} style={uploading || !perms.canEdit ? { ...uploadBtn, opacity: 0.6 } : uploadBtn}>
-          {uploading ? "Uploading…" : "🚀 Upload"}
+        <div style={actionRow}>
+          <button onClick={handleUpload} disabled={uploading || !perms.canEdit} style={{ ...(uploading || !perms.canEdit ? { ...uploadBtn, opacity: 0.6 } : uploadBtn), flex: 1 }}>
+            {uploading ? "Uploading…" : "🚀 Upload"}
+          </button>
+          {uploading && canAddAnother && (
+            <button onClick={onUploadAnother} style={uploadAnotherBtn}>
+              ➕ Upload Another
+            </button>
+          )}
+        </div>
+        {onRemove && !uploading && (
+          <button onClick={onRemove} style={removeBtn}>Remove this form</button>
+        )}
+    </div>
+  );
+}
+
+export default function UploadAudio() {
+  const [mode, setMode] = useState("single");
+  const [formIds, setFormIds] = useState([1]);
+  const nextFormId = useRef(2);
+
+  const addForm = () => setFormIds((ids) => [...ids, nextFormId.current++]);
+  const removeForm = (id) => setFormIds((ids) => ids.filter((x) => x !== id));
+
+  return (
+    <div style={page}>
+      <div style={pageHeader}>
+        <h1 style={pageTitle}>Upload Audio</h1>
+        <p style={pageSubtitle}>Add a new sermon, homily, or Sunday School lesson.</p>
+      </div>
+
+      <div style={modeRow}>
+        <button
+          style={mode === "single" ? { ...modeBtn, ...modeBtnActive } : modeBtn}
+          onClick={() => setMode("single")}
+        >
+          Single Upload
+        </button>
+        <button
+          style={mode === "bulk" ? { ...modeBtn, ...modeBtnActive } : modeBtn}
+          onClick={() => setMode("bulk")}
+        >
+          Bulk Upload
         </button>
       </div>
+
+      {mode === "bulk" && <BulkUploadAudio speakers={speakers} />}
+
+      {mode === "single" && (
+        <div style={formStack}>
+          {formIds.map((id, i) => (
+            <SingleUploadForm
+              key={id}
+              canAddAnother={i === formIds.length - 1}
+              onUploadAnother={addForm}
+              onRemove={i > 0 ? () => removeForm(id) : undefined}
+            />
+          ))}
+        </div>
       )}
     </div>
   );
 }
+
+const formStack = { display: "flex", flexDirection: "column", gap: "20px" };
+const actionRow = { display: "flex", gap: "10px", flexWrap: "wrap" };
+const uploadAnotherBtn = { padding: "13px 18px", borderRadius: "12px", border: "1px solid var(--color-c97c2e)", background: "var(--color-fdf8f3)", color: "var(--color-7a4f10)", fontSize: "15px", fontFamily: "sans-serif", cursor: "pointer" };
+const removeBtn = { alignSelf: "center", background: "none", border: "none", color: "var(--color-9b7040)", fontSize: "12px", fontFamily: "sans-serif", cursor: "pointer", textDecoration: "underline" };
 
 const page = { maxWidth: "640px" };
 const pageHeader = { marginBottom: "24px" };
