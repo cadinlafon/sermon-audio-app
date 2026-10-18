@@ -118,6 +118,26 @@ async function fetchAudioBlob(audio, token) {
   return response.blob();
 }
 
+const EXT_BY_TYPE = { "audio/mpeg": "mp3", "audio/mp3": "mp3", "audio/mp4": "m4a", "audio/x-m4a": "m4a", "audio/aac": "aac", "audio/wav": "wav", "audio/x-wav": "wav", "audio/ogg": "ogg", "audio/webm": "webm" };
+
+// "Download file": hands the recording to the browser as an ordinary file
+// download, separate from the in-app offline copies above — no account or
+// download slot needed, since listening itself doesn't need an account.
+export async function saveAudioFile(audio, token) {
+  const blob = await fetchAudioBlob(audio, token);
+  const keyExt = /\.([a-z0-9]{2,4})$/i.exec(audio.audioStorageKey || "")?.[1];
+  const ext = (keyExt || EXT_BY_TYPE[blob.type] || "mp3").toLowerCase();
+  const name = (audio.title || "").replace(/[\\/:*?"<>|]+/g, "").trim() || "audio";
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${name}.${ext}`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+
 export async function getRemoteDownloadCount(userId) {
   if (!userId) return 0;
   const snap = await getDoc(doc(db, "users", userId));

@@ -5,7 +5,7 @@ import { auth, db } from "../firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { toggleSaveSermon } from "../utils/saveSermon";
 import { fetchListenProgress, setListenStatus } from "../utils/listenProgress";
-import { isDownloadedLocally, downloadForOffline, removeOfflineDownload, downloadForLater } from "../utils/offlineDownloads";
+import { isDownloadedLocally, downloadForOffline, removeOfflineDownload, downloadForLater, saveAudioFile } from "../utils/offlineDownloads";
 import { useToast } from "../context/ToastContext";
 import useOnlineStatus from "../hooks/useOnlineStatus";
 import { useAudioPlayer } from "../context/AudioPlayerContext";
@@ -36,6 +36,7 @@ export default function AudioCard({ audio, onPlay, onSummarySaved, onSaveChange 
   const [isDownloaded, setIsDownloaded] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState("");
+  const [savingFile, setSavingFile] = useState(false);
   const isOnline = useOnlineStatus();
   const [showPlaylist, setShowPlaylist] = useState(false);
   const { toast } = useToast();
@@ -169,6 +170,19 @@ export default function AudioCard({ audio, onPlay, onSummarySaved, onSaveChange 
     }
   };
 
+  // Works signed in or out — the offline toggle below is the account-only one.
+  const handleSaveFile = async () => {
+    setSavingFile(true);
+    try {
+      await saveAudioFile(audio, user ? await user.getIdToken() : null);
+    } catch (error) {
+      console.error("Couldn't download audio file", error);
+      toast(error.message || "Couldn't download this audio.", { type: "error" });
+    } finally {
+      setSavingFile(false);
+    }
+  };
+
   const offlineDisabled = !isOnline && !isDownloaded;
 
   const handlePlayClick = () => {
@@ -273,6 +287,15 @@ export default function AudioCard({ audio, onPlay, onSummarySaved, onSaveChange 
           </button>
         )}
         <button onClick={() => setShowPlaylist(true)} style={iconOnlyButton} title="Add to playlist" aria-label="Add to playlist">☰＋</button>
+        <button
+          onClick={handleSaveFile}
+          style={playNextButton}
+          disabled={savingFile || !isOnline}
+          title="Download the audio file to your device"
+          aria-label="Download the audio file to your device"
+        >
+          {savingFile ? "Downloading…" : "💾 Download"}
+        </button>
         {user && (
           <button
             onClick={handleToggleDownload}
