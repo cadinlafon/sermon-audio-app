@@ -9,6 +9,7 @@ import {
   typeUsesField,
   extractYouTubeId,
   youTubeThumbnail,
+  isHttpUrl,
 } from "../../lib/resourceTypes";
 
 const URL_LABELS = {
@@ -23,6 +24,7 @@ const URL_LABELS = {
   download: "File URL",
   scripture: "Resource URL (optional)",
   course: "External Course URL (optional)",
+  app: "Web App / Other Link (optional)",
 };
 
 export default function ResourceForm({ resource, categories, sections, allResources, actor, onSave, onClose }) {
@@ -154,6 +156,13 @@ export default function ResourceForm({ resource, categories, sections, allResour
   const handleSave = async () => {
     if (!form.title.trim()) return setError("Title is required.");
 
+    if (form.type === "app") {
+      const links = [["App Store link", form.appStoreUrl], ["Google Play link", form.playStoreUrl], ["Web App / Other link", form.url]];
+      if (!links.some(([, v]) => (v || "").trim())) return setError("Add at least one link: App Store, Google Play, or a web link.");
+      const bad = links.find(([, v]) => (v || "").trim() && !isHttpUrl(v));
+      if (bad) return setError(`${bad[0]} must be a full web address starting with https://`);
+    }
+
     setSaving(true);
     setError("");
     try {
@@ -258,6 +267,18 @@ export default function ResourceForm({ resource, categories, sections, allResour
             )}
             <input ref={thumbInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => { handleThumbSelect(e.target.files[0]); e.target.value = ""; }} />
           </Field>
+
+          {typeUsesField(form.type, "appStoreUrl") && (
+            <Field label="App Store Link (iPhone / iPad)" hint="e.g. https://apps.apple.com/app/…">
+              <input value={form.appStoreUrl || ""} onChange={set("appStoreUrl")} style={input} placeholder="https://apps.apple.com/…" />
+            </Field>
+          )}
+
+          {typeUsesField(form.type, "playStoreUrl") && (
+            <Field label="Google Play Link (Android)" hint="e.g. https://play.google.com/store/apps/details?id=…">
+              <input value={form.playStoreUrl || ""} onChange={set("playStoreUrl")} style={input} placeholder="https://play.google.com/…" />
+            </Field>
+          )}
 
           {typeUsesField(form.type, "url") && (
             <Field label={URL_LABELS[form.type] || "URL"}>

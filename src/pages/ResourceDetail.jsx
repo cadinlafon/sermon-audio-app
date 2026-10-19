@@ -14,6 +14,7 @@ import {
   parseSpotifyLink,
   FILE_TYPE_ICON,
   COLLECTION_TYPES,
+  isHttpUrl,
 } from "../lib/resourceTypes";
 
 export default function ResourceDetail() {
@@ -166,6 +167,8 @@ function ResourceContent({ resource, items, onOpenImage }) {
       return <SpotifyContent resource={resource} />;
     case "image":
       return <ImageContent resource={resource} onOpenImage={onOpenImage} />;
+    case "app":
+      return <AppContent resource={resource} />;
     case "playlist":
     case "course":
       return <ItemListContent resource={resource} items={items} />;
@@ -205,6 +208,26 @@ function AudioContent({ resource }) {
           Open resource link →
         </a>
       )}
+    </div>
+  );
+}
+
+function AppContent({ resource }) {
+  const links = [
+    { href: resource.appStoreUrl, label: "🍎 Download on the App Store ↗" },
+    { href: resource.playStoreUrl, label: "🤖 Get it on Google Play ↗" },
+    { href: resource.url, label: "🌐 Open Web App ↗" },
+  ].filter((l) => isHttpUrl(l.href));
+
+  if (links.length === 0) return <p style={stateText}>No app links have been added yet.</p>;
+
+  return (
+    <div style={appLinks}>
+      {links.map((l) => (
+        <a key={l.label} href={l.href.trim()} target="_blank" rel="noopener noreferrer" style={primaryBtnLink}>
+          {l.label}
+        </a>
+      ))}
     </div>
   );
 }
@@ -396,6 +419,7 @@ const stackCol = { display: "flex", flexDirection: "column", gap: "12px" };
 const scriptureRef = { fontSize: "18px", fontFamily: "'Georgia', serif", color: "var(--color-3d2200)", fontStyle: "italic", margin: 0 };
 
 const primaryBtn = { padding: "12px 22px", borderRadius: "999px", border: "none", background: "linear-gradient(135deg, var(--color-c97c2e) 0%, var(--color-a85e18) 100%)", color: "var(--color-fff8ee)", fontSize: "14px", fontWeight: "600", fontFamily: "sans-serif", cursor: "pointer", boxShadow: "0 3px 10px rgba(160,80,20,0.25)" };
+const appLinks = { display: "flex", flexWrap: "wrap", gap: "10px" };
 const primaryBtnLink = { display: "inline-block", padding: "12px 22px", borderRadius: "999px", border: "none", background: "linear-gradient(135deg, var(--color-c97c2e) 0%, var(--color-a85e18) 100%)", color: "var(--color-fff8ee)", fontSize: "14px", fontWeight: "600", fontFamily: "sans-serif", textDecoration: "none", boxShadow: "0 3px 10px rgba(160,80,20,0.25)" };
 const secondaryLink = { fontSize: "13px", color: "var(--color-a85e18)", fontFamily: "sans-serif", fontWeight: "600", textDecoration: "none" };
 

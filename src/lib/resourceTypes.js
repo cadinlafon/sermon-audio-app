@@ -22,6 +22,7 @@ export const RESOURCE_TYPES = [
   "scripture",
   "course",
   "playlist",
+  "app",
 ];
 
 export const RESOURCE_TYPE_META = {
@@ -39,6 +40,7 @@ export const RESOURCE_TYPE_META = {
   scripture: { label: "Scripture / Bible Study", icon: "📖", actionLabel: "Open" },
   course: { label: "Course / Study", icon: "🎓", actionLabel: "Start Course" },
   playlist: { label: "Playlist", icon: "📋", actionLabel: "Open Playlist" },
+  app: { label: "App", icon: "📱", actionLabel: "Get the App" },
 };
 
 export const DOWNLOAD_FILE_TYPES = ["pdf", "doc", "docx", "ppt", "pptx", "xls", "xlsx", "zip", "txt"];
@@ -51,7 +53,7 @@ export const FILE_TYPE_ICON = {
 // Types whose "main content" is an external/openable link rather than
 // something rendered inline (used to decide when to show the
 // external-link indicator on a card).
-export const EXTERNAL_LINK_TYPES = new Set(["website", "book", "article", "presentation"]);
+export const EXTERNAL_LINK_TYPES = new Set(["website", "book", "article", "presentation", "app"]);
 
 // Types that contain other resources rather than being one themselves.
 export const COLLECTION_TYPES = new Set(["playlist", "course"]);
@@ -83,10 +85,26 @@ export const TYPE_FIELDS = {
   scripture: ["scriptureReference", "url", "uploadAudio"],
   course: ["url", "items"],
   playlist: ["items"],
+  app: ["appStoreUrl", "playStoreUrl", "url"],
 };
 
 export function typeUsesField(type, field) {
   return (TYPE_FIELDS[type] || []).includes(field);
+}
+
+////////////////////////////////////////////////////////////////
+// LINKS
+////////////////////////////////////////////////////////////////
+
+// Admin-entered links end up in an href — only ever allow web links
+// (a "javascript:" URL here would run script when someone taps it).
+export function isHttpUrl(value) {
+  try {
+    const u = new URL(String(value || "").trim());
+    return u.protocol === "https:" || u.protocol === "http:";
+  } catch {
+    return false;
+  }
 }
 
 ////////////////////////////////////////////////////////////////
@@ -168,6 +186,8 @@ export function blankResource(type = "audio") {
     siteName: "",
     fileType: "",
     scriptureReference: "",
+    appStoreUrl: "",
+    playStoreUrl: "",
     images: [],
     items: [],
   };
