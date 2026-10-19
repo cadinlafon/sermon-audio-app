@@ -44,7 +44,7 @@ export default function DevInfo() {
           <h2 style={cardTitle}>App Info</h2>
         </div>
         <InfoRow label="Name" value="Sermon Audio App (Palouse Fellowship)" />
-        <InfoRow label="Version" value="1.0.0" />
+        <InfoRow label="Version" value={__APP_VERSION__} />
         <InfoRow label="License" value="Open source" />
         <div style={linkRow}>
           <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" style={linkBtn}>

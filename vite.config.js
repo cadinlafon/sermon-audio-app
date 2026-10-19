@@ -1,8 +1,30 @@
 import { defineConfig } from 'vite'
+import { execSync } from 'node:child_process'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa' // 🔥 THIS WAS MISSING
 
+// Version shown on the Dev Info page: the build's date + time (and the
+// git commit it was built from). Because it's baked into the bundle, every
+// deploy gets a new one — and the same bundle change is what makes the
+// service worker update, so "New version available" and a new Version
+// always arrive together.
+function buildVersion() {
+  const d = new Date()
+  const p = (n) => String(n).padStart(2, '0')
+  const stamp = `${d.getFullYear()}.${p(d.getMonth() + 1)}.${p(d.getDate())}.${p(d.getHours())}${p(d.getMinutes())}`
+  let commit = ''
+  try {
+    commit = execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim()
+  } catch {
+    // not a git checkout — the timestamp alone is still unique
+  }
+  return commit ? `${stamp} (${commit})` : stamp
+}
+
 export default defineConfig({
+  define: {
+    __APP_VERSION__: JSON.stringify(buildVersion()),
+  },
   plugins: [
     react(),
     VitePWA({
