@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { uploadPrivateAudio } from "../../utils/privateAudioUpload";
 import { uploadPublicImage } from "../../utils/imageUpload";
+import { useAdminBusy } from "../../utils/adminIdle";
 import ResourceTypeIcon from "../../components/ResourceTypeIcon";
 import {
   RESOURCE_TYPES,
@@ -419,6 +420,7 @@ export default function ResourceForm({ resource, categories, sections, allResour
 }
 
 function ProgressBar({ progress }) {
+  useAdminBusy();
   return (
     <div style={progressTrack}>
       <div

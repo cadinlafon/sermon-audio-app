@@ -7,6 +7,7 @@ import { auth, db } from "./firebase";
 import LoadingScreen from "./components/LoadingScreen";
 import PopupNotification from "./components/PopupNotification";
 import CreateAccountPopup from "./components/CreateAccountPopup";
+import AdminTimeoutAlert from "./components/AdminTimeoutAlert";
 import NetworkStatus from "./components/NetworkStatus";
 import AccountDisabledBanner from "./components/AccountDisabledBanner";
 import BackToTop from "./components/BackToTop";
@@ -347,6 +348,8 @@ function App() {
       <PopupNotification />
 
       <CreateAccountPopup />
+
+      <AdminTimeoutAlert />
 
       <RouteLogger />
 

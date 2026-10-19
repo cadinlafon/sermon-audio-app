@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useAdminBusy } from "../utils/adminIdle";
 
 const mb = (bytes) => `${(bytes / 1048576).toFixed(bytes > 10485760 ? 0 : 1)} MB`;
 const eta = (s) => (s < 60 ? `${Math.max(1, Math.round(s))}s` : `${Math.floor(s / 60)}m ${Math.round(s % 60)}s`);
@@ -6,6 +7,7 @@ const eta = (s) => (s < 60 ? `${Math.max(1, Math.round(s))}s` : `${Math.floor(s 
 // Animated upload progress: striped moving fill, percent, size, speed, time left.
 // `percent` null = still preparing (indeterminate).
 export default function UploadProgress({ percent, totalBytes, label, compact }) {
+  useAdminBusy(); // an upload in progress isn't "inactivity" for the admin timeout
   const startRef = useRef(null);
   const [, tick] = useState(0);
 

@@ -2,8 +2,11 @@ import { Link, Outlet, useLocation } from "react-router-dom";
 import { usePermissions } from "../../hooks/usePermissions";
 import { ADMIN_MODULES, NO_ACCESS_MESSAGE } from "../../config/adminModules";
 import { AdminPinProvider, useAdminPin } from "../../context/AdminPinContext";
+import useAdminIdleTimeout from "../../hooks/useAdminIdleTimeout";
 
 export default function AdminLayout() {
+  useAdminIdleTimeout();
+
   return (
     <AdminPinProvider>
       <AdminShell />
