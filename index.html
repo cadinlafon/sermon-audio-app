@@ -77,6 +77,13 @@
     PF Church App – Sermons & Audio | Palouse Fellowship
   </title>
 
+  <script>
+    // Liquid Screen (admin setting): apply the last known value before first
+    // paint so the page doesn't flash classic -> glass. ShutdownContext keeps
+    // this in sync with the live setting.
+    try { if (localStorage.getItem("pf-liquid-screen") === "on") document.documentElement.setAttribute("data-liquid", "on"); } catch (e) {}
+  </script>
+
   <style>
     /* Keyboard focus: a clear ring on everything interactive */
     :focus-visible { outline: 2px solid #c97c2e; outline-offset: 2px; border-radius: 4px; }

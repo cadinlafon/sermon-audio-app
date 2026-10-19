@@ -1,0 +1,131 @@
+/* LIQUID SCREEN — an Apple-style "liquid glass" look.
+   Off by default. An admin turns it on from Admin → Advanced, which sets
+   <html data-liquid="on"> (see ShutdownContext). Every rule below is
+   scoped to that attribute, so with it off the app is exactly the
+   classic design and none of this applies.
+
+   Nearly all of the app's styling is inline, so instead of editing every
+   component these rules match the inline surface colours the app already
+   uses (white card/bar/sheet backgrounds, the dim modal backdrop, the
+   orange gradient buttons) and restyle them as frosted, translucent
+   glass with a specular edge highlight. */
+
+:root {
+  --lg-fill: rgba(255, 253, 249, 0.46);
+  --lg-fill-strong: rgba(255, 253, 249, 0.74);
+  --lg-edge: rgba(255, 255, 255, 0.75);
+  --lg-edge-soft: rgba(255, 255, 255, 0.35);
+  --lg-shadow: 0 8px 30px rgba(120, 70, 20, 0.14);
+  --lg-ambient:
+    radial-gradient(55vmax 45vmax at 5% 0%, rgba(255, 170, 90, 0.85), transparent 62%),
+    radial-gradient(50vmax 42vmax at 100% 10%, rgba(255, 120, 130, 0.60), transparent 62%),
+    radial-gradient(60vmax 50vmax at 75% 100%, rgba(120, 170, 255, 0.70), transparent 64%),
+    radial-gradient(45vmax 40vmax at 0% 85%, rgba(255, 205, 110, 0.75), transparent 62%),
+    #fbefe0;
+}
+
+:root[data-theme="dark"] {
+  --lg-fill: rgba(44, 32, 24, 0.50);
+  --lg-fill-strong: rgba(36, 27, 20, 0.70);
+  --lg-edge: rgba(255, 255, 255, 0.20);
+  --lg-edge-soft: rgba(255, 255, 255, 0.08);
+  --lg-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
+  --lg-ambient:
+    radial-gradient(60vmax 50vmax at 8% 0%, rgba(201, 124, 46, 0.40), transparent 60%),
+    radial-gradient(55vmax 45vmax at 100% 12%, rgba(168, 70, 90, 0.30), transparent 60%),
+    radial-gradient(60vmax 50vmax at 70% 100%, rgba(60, 90, 180, 0.35), transparent 62%),
+    radial-gradient(45vmax 40vmax at 0% 90%, rgba(150, 90, 30, 0.30), transparent 60%),
+    #140e09;
+}
+
+/* Colourful, fixed backdrop — glass needs something to refract. */
+:root[data-liquid="on"] body {
+  background: var(--lg-ambient);
+  background-attachment: fixed;
+}
+
+/* Pages paint their own flat cream background; let the backdrop through. */
+:root[data-liquid="on"] #main-content > div[style*="var(--color-fdf8f3)"] {
+  background: transparent !important;
+}
+
+/* GLASS SURFACES: cards, top bar, bottom bar, mini player, sheets,
+   dropdowns, search panel, popups. */
+:root[data-liquid="on"] :is(
+  div, section, aside, header, nav, article, ul, button, a
+)[style*="background: var(--color-fffdf9)"],
+:root[data-liquid="on"] :is(
+  div, section, aside, header, nav, article, ul, button, a
+)[style*="background-color: var(--color-fffdf9)"] {
+  background: var(--lg-fill) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(200%);
+  backdrop-filter: blur(24px) saturate(200%);
+  border-color: var(--lg-edge-soft) !important;
+  box-shadow:
+    inset 0 1px 0 var(--lg-edge),
+    inset 0 0 0 1px var(--lg-edge-soft),
+    var(--lg-shadow) !important;
+}
+
+/* Bars hug the screen edges — a hairline highlight, no drop shadow. */
+:root[data-liquid="on"] [style*="position: sticky"][style*="var(--color-fffdf9)"],
+:root[data-liquid="on"] [style*="border-top: 1px solid var(--color-eddfc8)"][style*="var(--color-fffdf9)"] {
+  box-shadow: inset 0 1px 0 var(--lg-edge), 0 0 24px rgba(120, 70, 20, 0.08) !important;
+}
+
+/* Modal / sheet panels float over a dimmed page: a bit more opaque so
+   text stays readable. */
+:root[data-liquid="on"] [style*="position: fixed"][style*="var(--color-fffdf9)"],
+:root[data-liquid="on"] [style*="position: absolute"][style*="var(--color-fffdf9)"][style*="box-shadow"] {
+  background: var(--lg-fill-strong) !important;
+}
+
+/* The dim layer behind modals/sheets becomes a soft blur. */
+:root[data-liquid="on"] [style*="position: fixed"][style*="rgba(40, 18, 0"] {
+  background: rgba(40, 18, 0, 0.22) !important;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+/* Primary (orange gradient) buttons get a glossy, liquid highlight. */
+:root[data-liquid="on"] :is(button, a)[style*="linear-gradient(135deg"] {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -6px 12px rgba(120, 50, 0, 0.18),
+    0 6px 16px rgba(160, 80, 20, 0.30) !important;
+}
+
+/* Secondary pill buttons / inputs on the cream tone become frosted too. */
+:root[data-liquid="on"] :is(button, select)[style*="background: var(--color-fdf8f3)"],
+:root[data-liquid="on"] :is(button, select)[style*="background-color: var(--color-fdf8f3)"] {
+  background: rgba(255, 255, 255, 0.38) !important;
+  -webkit-backdrop-filter: blur(10px) saturate(160%);
+  backdrop-filter: blur(10px) saturate(160%);
+  box-shadow: inset 0 1px 0 var(--lg-edge-soft) !important;
+}
+:root[data-liquid="on"][data-theme="dark"] :is(button, select)[style*="background: var(--color-fdf8f3)"],
+:root[data-liquid="on"][data-theme="dark"] :is(button, select)[style*="background-color: var(--color-fdf8f3)"] {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Springy press feedback. */
+:root[data-liquid="on"] button {
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s ease;
+}
+:root[data-liquid="on"] button:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+/* Fall back to plain, readable surfaces when blur isn't available or the
+   person has asked their device for less transparency. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root[data-liquid="on"] { --lg-fill: var(--color-fffdf9, #fffdf9); --lg-fill-strong: var(--color-fffdf9, #fffdf9); }
+}
+@media (prefers-reduced-transparency: reduce) {
+  :root[data-liquid="on"] { --lg-fill: var(--color-fffdf9, #fffdf9); --lg-fill-strong: var(--color-fffdf9, #fffdf9); }
+  :root[data-liquid="on"] * { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root[data-liquid="on"] button { transition: none; }
+  :root[data-liquid="on"] button:active:not(:disabled) { transform: none; }
+}

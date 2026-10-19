@@ -12,6 +12,7 @@ import { ToastProvider } from "./context/ToastContext";
 import { PlaylistProvider } from "./context/PlaylistContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import "./theme-tokens.css";
+import "./liquid-glass.css";
 
 //////////////////////////////////////////////////
 // SERVICE WORKER (PWA)

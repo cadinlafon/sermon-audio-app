@@ -21,6 +21,7 @@ export default function Settings() {
   const [audioAiEnabled, setAudioAiEnabled] = useState(true);
   const [audioAiAudiences, setAudioAiAudiences] = useState(["guest", "user", "admin"]);
   const [registrationEnabled, setRegistrationEnabled] = useState(true);
+  const [liquidScreen, setLiquidScreen] = useState(false);
   const [maxDailyRegistrations, setMaxDailyRegistrations] = useState("");
   const [todayRegistrationCount, setTodayRegistrationCount] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -46,6 +47,7 @@ export default function Settings() {
           if (data.audioAiEnabled !== undefined) setAudioAiEnabled(data.audioAiEnabled);
           if (data.audioAiAudiences !== undefined) setAudioAiAudiences(data.audioAiAudiences);
           if (data.registrationEnabled !== undefined) setRegistrationEnabled(data.registrationEnabled);
+          setLiquidScreen(data.liquidScreen === true);
           if (data.maxDailyRegistrations) setMaxDailyRegistrations(String(data.maxDailyRegistrations));
           setOriginalConfig({
             shutdown: data.shutdown || false,
@@ -54,6 +56,7 @@ export default function Settings() {
             audioAiAudiences: data.audioAiAudiences || ["guest", "user", "admin"],
             registrationEnabled: data.registrationEnabled !== undefined ? data.registrationEnabled : true,
             maxDailyRegistrations: data.maxDailyRegistrations || 0,
+            liquidScreen: data.liquidScreen === true,
           });
         }
       } catch (err) { console.error("Failed to load config:", err); }
@@ -105,6 +108,7 @@ export default function Settings() {
         shutdown, message,
         audioAiEnabled, audioAiAudiences,
         registrationEnabled, maxDailyRegistrations: Number(maxDailyRegistrations) || 0,
+        liquidScreen,
       };
 
       await updateDoc(configRef, {
@@ -297,6 +301,28 @@ export default function Settings() {
             {todayRegistrationCount === null ? "Loading today's count…" : `${todayRegistrationCount} sign-up${todayRegistrationCount === 1 ? "" : "s"} so far today.`}
           </div>
         </Field>
+      </div>
+
+      <div style={{ ...card, marginTop: "20px" }}>
+        <div style={sectionHeader}>
+          <span style={sectionIcon}>💧</span>
+          <h2 style={sectionTitle}>Liquid Screen</h2>
+        </div>
+
+        <div style={toggleRow}>
+          <div>
+            <div style={toggleLabel}>Liquid Screen</div>
+            <div style={toggleHint}>When on, the whole app uses a frosted, translucent "liquid glass" look like Apple devices. When off, it keeps the classic design. Applies to everyone after you save.</div>
+          </div>
+          <button
+            onClick={() => setLiquidScreen(!liquidScreen)}
+            style={liquidScreen ? { ...toggle, ...toggleOn } : toggle}
+            aria-label="Toggle Liquid Screen"
+            aria-pressed={liquidScreen}
+          >
+            <div style={liquidScreen ? { ...toggleKnob, transform: "translateX(22px)" } : toggleKnob} />
+          </button>
+        </div>
       </div>
 
       <div style={saveRow}>
