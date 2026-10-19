@@ -4,7 +4,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "../firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { toggleSaveSermon } from "../utils/saveSermon";
-import { fetchListenProgress, setListenStatus } from "../utils/listenProgress";
+import { fetchListenProgress } from "../utils/listenProgress";
 import { isDownloadedLocally, downloadForOffline, removeOfflineDownload, downloadForLater } from "../utils/offlineDownloads";
 import { useToast } from "../context/ToastContext";
 import useOnlineStatus from "../hooks/useOnlineStatus";
@@ -31,7 +31,7 @@ export default function AudioCard({ audio, onPlay, onSummarySaved, onSaveChange 
   const [saveError, setSaveError] = useState("");
   const [queued, setQueued] = useState(false);
   const [progress, setProgress] = useState(null);
-  const [statusError, setStatusError] = useState("");
+  const [showMore, setShowMore] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isDownloaded, setIsDownloaded] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -184,27 +184,6 @@ export default function AudioCard({ audio, onPlay, onSummarySaved, onSaveChange 
     }
   };
 
-  const handleStatusChange = async (e) => {
-    const value = e.target.value;
-    e.target.value = "";
-    if (!value) return;
-
-    const user = auth.currentUser;
-    if (!user) {
-      setStatusError("Please sign in to update listen status.");
-      return;
-    }
-
-    setStatusError("");
-    setProgress((p) => ({ ...(p || {}), status: value, position: value === "not-started" ? 0 : p?.position || 0 }));
-    try {
-      await setListenStatus(user.uid, audio.id, value);
-    } catch (error) {
-      console.error("Unable to update listen status", error);
-      setStatusError("We couldn't update the status. Please try again.");
-    }
-  };
-
   // While this card's track is the one actually loaded, show the live
   // position instead of the last-saved snapshot — otherwise the bar
   // would sit frozen next to a "Pause" button that implies it's moving.
@@ -231,7 +210,6 @@ export default function AudioCard({ audio, onPlay, onSummarySaved, onSaveChange 
       <span style={tagStyle(audio.type)}>{label}</span>
       {isNew && <span style={newBadge}>✨ New</span>}
       {durationLabel && <span style={durationBadge}>⏱ {durationLabel}</span>}
-      {status === "completed" && <span style={completedBadge}>✓ Completed</span>}
       {isDownloaded && <span style={downloadedBadge}>⬇ Downloaded</span>}
       <h3 style={titleStyle}>{audio.title}</h3>
       <p style={speakerStyle}>{audio.speaker}</p>
@@ -259,36 +237,42 @@ export default function AudioCard({ audio, onPlay, onSummarySaved, onSaveChange 
         <button onClick={handlePlayNext} style={playNextButton} disabled={offlineDisabled}>
           {queued ? "✓ Added" : "+ Play Next"}
         </button>
-        <select defaultValue="" onChange={handleStatusChange} style={statusSelect} aria-label="Change listen status">
-          <option value="" disabled>Change ▾</option>
-          <option value="completed">Mark Completed</option>
-          <option value="not-started">Mark Not Started</option>
-        </select>
-        <button onClick={handleCopyLink} style={iconOnlyButton} title="Copy link" aria-label="Copy link">
-          {copied ? "✓" : "🔗"}
+        <button
+          onClick={() => setShowMore((v) => !v)}
+          style={moreButton}
+          aria-expanded={showMore}
+          aria-label={showMore ? "Show fewer actions" : "Show more actions"}
+        >
+          More <span aria-hidden="true" style={{ fontSize: "10px", marginLeft: "4px" }}>{showMore ? "▴" : "▾"}</span>
         </button>
-        {typeof navigator !== "undefined" && navigator.share && (
-          <button onClick={handleShare} style={iconOnlyButton} title="Share" aria-label="Share">
-            ↗
-          </button>
-        )}
-        <button onClick={() => setShowPlaylist(true)} style={iconOnlyButton} title="Add to playlist" aria-label="Add to playlist">☰＋</button>
-        {user && (
-          <button
-            onClick={handleToggleDownload}
-            style={isDownloaded ? { ...iconOnlyButton, ...iconOnlyButtonActive } : iconOnlyButton}
-            disabled={downloading}
-            title={isDownloaded ? "Remove offline download" : "Download for offline listening"}
-            aria-label={isDownloaded ? "Remove offline download" : "Download for offline listening"}
-          >
-            {downloading ? "…" : isDownloaded ? "✓" : "⬇"}
-          </button>
-        )}
       </div>
+      {showMore && (
+        <div style={moreRow}>
+          <button onClick={handleCopyLink} style={iconOnlyButton} title="Copy link" aria-label="Copy link">
+            {copied ? "✓" : "🔗"}
+          </button>
+          {typeof navigator !== "undefined" && navigator.share && (
+            <button onClick={handleShare} style={iconOnlyButton} title="Share" aria-label="Share">
+              ↗
+            </button>
+          )}
+          <button onClick={() => setShowPlaylist(true)} style={iconOnlyButton} title="Add to playlist" aria-label="Add to playlist">☰＋</button>
+          {user && (
+            <button
+              onClick={handleToggleDownload}
+              style={isDownloaded ? { ...iconOnlyButton, ...iconOnlyButtonActive } : iconOnlyButton}
+              disabled={downloading}
+              title={isDownloaded ? "Remove offline download" : "Download for offline listening"}
+              aria-label={isDownloaded ? "Remove offline download" : "Download for offline listening"}
+            >
+              {downloading ? "…" : isDownloaded ? "✓" : "⬇"}
+            </button>
+          )}
+        </div>
+      )}
       {offlineDisabled && <p style={offlineHint}>📴 You're offline — download this to listen without a connection.</p>}
       {!user && <p style={signInHint}>🔒 Sign in to save your spot — it'll be right here to resume next time you open the app.</p>}
       {saveError && <p style={saveErrorStyle} role="alert">{saveError}</p>}
-      {statusError && <p style={saveErrorStyle} role="alert">{statusError}</p>}
       {downloadError && <p style={saveErrorStyle} role="alert">{downloadError}</p>}
       <AiSummary audio={audio} onSummarySaved={onSummarySaved} />
       {showPlaylist && <AddToPlaylistModal audio={audio} onClose={() => setShowPlaylist(false)} />}
@@ -304,8 +288,8 @@ const speakerStyle = { color: "var(--color-9b7040)", fontSize: "13px", marginBot
 const playButton = { display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 18px", borderRadius: "999px", border: "none", background: "linear-gradient(135deg, var(--color-c97c2e) 0%, var(--color-a85e18) 100%)", color: "var(--color-fff8ee)", cursor: "pointer", fontSize: "13px", fontFamily: "sans-serif", boxShadow: "0 3px 10px rgba(160,80,20,0.25)" };
 const playRow = { display: "flex", gap: "8px", flexWrap: "wrap" };
 const playNextButton = { display: "inline-flex", alignItems: "center", padding: "8px 14px", borderRadius: "999px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fdf8f3)", color: "var(--color-7a4f10)", cursor: "pointer", fontSize: "13px", fontFamily: "sans-serif" };
-const statusSelect = { padding: "8px 10px", borderRadius: "999px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fdf8f3)", color: "var(--color-7a4f10)", cursor: "pointer", fontSize: "13px", fontFamily: "sans-serif" };
-const completedBadge = { display: "inline-block", fontSize: "11px", padding: "3px 10px", borderRadius: "999px", background: "var(--color-e3f5e6)", color: "var(--color-2f8a4a)", fontFamily: "sans-serif", marginLeft: "8px", marginBottom: "10px", fontWeight: "600" };
+const moreButton = { display: "inline-flex", alignItems: "center", padding: "8px 14px", borderRadius: "999px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fdf8f3)", color: "var(--color-7a4f10)", cursor: "pointer", fontSize: "13px", fontFamily: "sans-serif" };
+const moreRow = { display: "flex", gap: "8px", flexWrap: "wrap", marginTop: "10px" };
 const newBadge = { display: "inline-block", fontSize: "11px", padding: "3px 10px", borderRadius: "999px", background: "var(--color-fde8b8)", color: "var(--color-8a5a10)", fontFamily: "sans-serif", marginLeft: "8px", marginBottom: "10px", fontWeight: "600" };
 const durationBadge = { display: "inline-block", fontSize: "11px", padding: "3px 10px", borderRadius: "999px", background: "var(--color-f0e4d0)", color: "var(--color-7a5530)", fontFamily: "sans-serif", marginLeft: "8px", marginBottom: "10px" };
 const iconOnlyButton = { display: "inline-flex", alignItems: "center", justifyContent: "center", width: "34px", height: "34px", borderRadius: "999px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fdf8f3)", color: "var(--color-7a4f10)", cursor: "pointer", fontSize: "14px" };
