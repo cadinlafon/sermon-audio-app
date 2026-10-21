@@ -8,7 +8,7 @@ import { useModulePermissions } from "../../hooks/usePermissions";
 import { useAdminPin } from "../../context/AdminPinContext";
 import { logAdminAction } from "../../utils/adminAudit";
 import { zipSync, strToU8 } from "fflate";
-import { fetchTranscript, buildTranscriptText, transcriptFileBase } from "../../utils/transcripts";
+import { fetchTranscript, generateTranscript, buildTranscriptText, transcriptFileBase } from "../../utils/transcripts";
 import { downloadText } from "../../utils/notes";
 
 const speakers = ["Jonathan Mcintosh", "Rusty Olps", "Jason Farley", "Mark Thiele"];
@@ -57,6 +57,13 @@ export default function AdminContentManager() {
   // Transcript downloads
   const [txBusyId, setTxBusyId] = useState(null);
   const [txAll, setTxAll] = useState(null); // { done, total } while running
+
+  // Transcript creation (uses AI transcription — one recording at a time)
+  const [createStatus, setCreateStatus] = useState({}); // audioId -> "working" | "done" | "failed"
+  const [createRun, setCreateRun] = useState(null); // { phase, index, total, title } while "Create ALL" runs
+  const [createReport, setCreateReport] = useState(null); // { created, total, failed: [{ title, reason }], cancelled }
+  const createCancelRef = useRef(false);
+  const creating = !!createRun || Object.values(createStatus).includes("working");
 
   const loadAudio = async () => {
     const snapshot = await getDocs(collection(db, "audio"));
@@ -231,6 +238,98 @@ export default function AdminContentManager() {
     }
   };
 
+  // ── Create transcripts ──────────────────────────────
+  const createReason = (err) => (err?.message || "Unknown error").slice(0, 200);
+
+  const createTranscript = async (audio) => {
+    if (!perms.requireEdit()) return;
+    if (creating || txBusyId || txAll) return;
+    setCreateReport(null);
+    setCreateStatus((m) => ({ ...m, [audio.id]: "working" }));
+    try {
+      const existing = await fetchTranscript(audio.id);
+      if (existing && existing.segments.length > 0) {
+        setCreateStatus((m) => ({ ...m, [audio.id]: "done" }));
+        alert(`"${audio.title}" already has a transcript — use ⬇ Transcript to download it.`);
+        return;
+      }
+      await generateTranscript(audio);
+      const fresh = await fetchTranscript(audio.id);
+      if (!fresh || fresh.segments.length === 0) throw new Error("The transcript was requested but nothing came back yet. Try again in a moment.");
+      setCreateStatus((m) => ({ ...m, [audio.id]: "done" }));
+      alert(`Transcript created for "${audio.title}".`);
+    } catch (err) {
+      console.error(`Create transcript failed for "${audio.title}"`, err);
+      setCreateStatus((m) => ({ ...m, [audio.id]: "failed" }));
+      alert(`Couldn't create the transcript for "${audio.title}":\n${createReason(err)}`);
+    }
+  };
+
+  const createAllTranscripts = async () => {
+    if (!perms.requireEdit()) return;
+    if (creating || txBusyId || txAll || audioList.length === 0) return;
+    setCreateReport(null);
+    createCancelRef.current = false;
+
+    // 1) Find which recordings already have one (one read each) so nothing is re-transcribed.
+    const everything = [...audioList].sort((a, b) => (b.order ?? 0) - (a.order ?? 0));
+    setCreateRun({ phase: "checking", index: 0, total: everything.length, title: "" });
+    const missing = [];
+    let next = 0;
+    let checked = 0;
+    const checker = async () => {
+      while (next < everything.length) {
+        const audio = everything[next++];
+        try {
+          const data = await fetchTranscript(audio.id);
+          if (!data || data.segments.length === 0) missing.push(audio);
+        } catch (err) {
+          console.error(`Couldn't check transcript for "${audio.title}"`, err);
+          missing.push(audio); // unknown — attempt it; the server never re-transcribes an existing one
+        }
+        checked++;
+        setCreateRun({ phase: "checking", index: checked, total: everything.length, title: "" });
+      }
+    };
+    await Promise.all([checker(), checker(), checker(), checker()]);
+    const queue = everything.filter((a) => missing.includes(a));
+
+    if (queue.length === 0) {
+      setCreateRun(null);
+      alert("Every recording already has a transcript.");
+      return;
+    }
+    if (!window.confirm(`Create transcripts for ${queue.length} of ${everything.length} recordings?\n\nThe other ${everything.length - queue.length} already have one and are skipped. Each one uses AI transcription and can take a minute or more, so this may take a while — keep this tab open. You can stop at any time.`)) {
+      setCreateRun(null);
+      return;
+    }
+
+    // 2) One at a time, with a short pause between (gentle on rate limits).
+    const failed = [];
+    let created = 0;
+    for (let i = 0; i < queue.length; i++) {
+      if (createCancelRef.current) break;
+      const audio = queue[i];
+      setCreateRun({ phase: "creating", index: i + 1, total: queue.length, title: audio.title });
+      setCreateStatus((m) => ({ ...m, [audio.id]: "working" }));
+      if (i > 0) await new Promise((resolve) => setTimeout(resolve, 800));
+      try {
+        await generateTranscript(audio);
+        const fresh = await fetchTranscript(audio.id);
+        if (!fresh || fresh.segments.length === 0) throw new Error("Requested, but no transcript came back yet.");
+        created++;
+        setCreateStatus((m) => ({ ...m, [audio.id]: "done" }));
+      } catch (err) {
+        console.error(`Create transcript failed for "${audio.title}"`, err);
+        failed.push({ title: audio.title || "Untitled", reason: createReason(err) });
+        setCreateStatus((m) => ({ ...m, [audio.id]: "failed" }));
+      }
+    }
+
+    setCreateRun(null);
+    setCreateReport({ created, total: queue.length, failed, cancelled: createCancelRef.current });
+  };
+
   // ── Backfill AI transcription copies ────────────────
   const missingTranscribeCopy = audioList.filter((a) => a.audioStorageKey && !a.transcribeStorageKey);
 
@@ -303,10 +402,47 @@ export default function AdminContentManager() {
       </div>
 
       <div style={downloadAllRow}>
+        {perms.canEdit && (
+          createRun ? (
+            <button onClick={() => { createCancelRef.current = true; }} style={backfillStopBtn}>Stop</button>
+          ) : (
+            <button onClick={createAllTranscripts} disabled={creating || !!txAll || !!txBusyId || audioList.length === 0} style={creating ? { ...createAllBtn, opacity: 0.6 } : createAllBtn}>
+              ✦ Create ALL Transcriptions
+            </button>
+          )
+        )}
         <button onClick={downloadAllTranscripts} disabled={!!txAll || !!txBusyId || audioList.length === 0} style={txAll ? { ...downloadAllBtn, opacity: 0.6 } : downloadAllBtn}>
           {txAll ? `Collecting transcripts… ${txAll.done} / ${txAll.total}` : "⬇ Download ALL Transcripts"}
         </button>
       </div>
+
+      {createRun && (
+        <div style={createStatusBox} role="status" aria-live="polite">
+          {createRun.phase === "checking"
+            ? `Checking which recordings already have a transcript… ${createRun.index} / ${createRun.total}`
+            : `Creating transcript ${createRun.index} of ${createRun.total}: “${createRun.title}” — keep this tab open.`}
+        </div>
+      )}
+
+      {createReport && (
+        <div style={createReport.failed.length ? { ...createStatusBox, ...createReportBad } : { ...createStatusBox, ...createReportOk }} role="status">
+          <div style={{ display: "flex", justifyContent: "space-between", gap: "10px", alignItems: "flex-start" }}>
+            <strong>
+              {createReport.cancelled ? "Stopped — " : ""}Created {createReport.created} of {createReport.total} transcription{createReport.total === 1 ? "" : "s"}
+              {createReport.failed.length > 0 ? `, ${createReport.failed.length} failed` : createReport.cancelled ? "" : " ✓"}
+            </strong>
+            <button onClick={() => setCreateReport(null)} style={createReportClose} aria-label="Dismiss report">✕</button>
+          </div>
+          {createReport.cancelled && createReport.created + createReport.failed.length < createReport.total && (
+            <div style={createReportLine}>{createReport.total - createReport.created - createReport.failed.length} not attempted.</div>
+          )}
+          {createReport.failed.length > 0 && (
+            <ul style={createFailList}>
+              {createReport.failed.map((f, i) => <li key={i}><strong>{f.title}</strong> — {f.reason}</li>)}
+            </ul>
+          )}
+        </div>
+      )}
 
       {perms.canEdit && (missingTranscribeCopy.length > 0 || backfillRunning || backfillSummary) && (
         <div style={backfillCard}>
@@ -369,6 +505,16 @@ export default function AdminContentManager() {
               >
                 {txBusyId === audio.id ? "…" : "⬇ Transcript"}
               </button>
+              {perms.canEdit && (
+                <button
+                  onClick={() => createTranscript(audio)}
+                  disabled={creating || !!txBusyId || !!txAll}
+                  style={createStatus[audio.id] === "working" ? { ...transcriptBtn, opacity: 0.6 } : transcriptBtn}
+                  title="Create this recording's transcript with AI"
+                >
+                  {createStatus[audio.id] === "working" ? "Creating…" : createStatus[audio.id] === "done" ? "✓ Created" : createStatus[audio.id] === "failed" ? "⚠ Retry Transcript" : "✦ Create Transcript"}
+                </button>
+              )}
               {perms.canEdit && (
                 <>
                   <button onClick={() => moveItem(index, "up")} style={arrowBtn} title="Move up">▲</button>
@@ -479,7 +625,17 @@ const backfillStopBtn = {
   background: "transparent", color: "var(--color-c23c3c)", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer",
 };
 
-const downloadAllRow = { display: "flex", marginBottom: "18px" };
+const downloadAllRow = { display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: "18px" };
+const createAllBtn = {
+  padding: "10px 18px", borderRadius: "10px", border: "1px solid var(--color-c97c2e)",
+  background: "var(--color-fdf8f3)", color: "var(--color-7a4f10)", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer",
+};
+const createStatusBox = { padding: "12px 16px", borderRadius: "12px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fffdf9)", color: "var(--color-3d2200)", fontSize: "13px", fontFamily: "sans-serif", lineHeight: 1.5, marginBottom: "18px" };
+const createReportOk = { background: "var(--color-e3f5e6)", borderColor: "var(--color-bfe6c8)", color: "var(--color-2f8a4a)" };
+const createReportBad = { background: "var(--color-fffbee)", borderColor: "var(--color-f0d898)" };
+const createReportClose = { background: "none", border: "none", cursor: "pointer", color: "inherit", fontSize: "14px", lineHeight: 1 };
+const createReportLine = { marginTop: "4px" };
+const createFailList = { margin: "8px 0 0", paddingLeft: "18px", fontSize: "12.5px", color: "var(--color-5c3a1e)" };
 const downloadAllBtn = {
   padding: "10px 18px", borderRadius: "10px", border: "none",
   background: "linear-gradient(135deg, var(--color-c97c2e) 0%, var(--color-a85e18) 100%)",
