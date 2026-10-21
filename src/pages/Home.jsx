@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import NoticeInputForm from "../components/NoticeInputForm";
+import { noticeHasInput } from "../utils/noticeInputs";
 import { db, auth } from "../firebase";
 import {
   collection,
@@ -262,7 +263,7 @@ export default function Home() {
                   </button>
                 )}
 
-                {n.inputEnabled && <NoticeInputForm notice={n} user={user} />}
+                {noticeHasInput(n) && <NoticeInputForm notice={n} user={user} />}
               </div>
             ))}
           </div>

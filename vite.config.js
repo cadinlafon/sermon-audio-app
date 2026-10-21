@@ -21,11 +21,39 @@ function buildVersion() {
   return commit ? `${stamp} (${commit})` : stamp
 }
 
+const APP_VERSION = buildVersion()
+
+// How a deploy reaches people already using the app (src/utils/appUpdate.js):
+//   "auto"   (default) small updates: the app refreshes itself as soon as it
+//            is safe — nothing playing, nobody typing, not in the admin area.
+//            If it isn't safe it falls back to the "New version available" bar.
+//   "prompt" big updates: always show the "New version available" bar and wait
+//            for the Refresh button.
+// Pick per deploy:  PF_UPDATE_MODE=prompt npm run build
+// It's written to dist/version.json, which running apps fetch when a new
+// version is detected — so the NEW deploy decides how it is delivered.
+const UPDATE_MODE = process.env.PF_UPDATE_MODE === 'prompt' ? 'prompt' : 'auto'
+
+function emitVersionFile() {
+  return {
+    name: 'pf-emit-version-file',
+    apply: 'build',
+    generateBundle() {
+      this.emitFile({
+        type: 'asset',
+        fileName: 'version.json',
+        source: JSON.stringify({ version: APP_VERSION, mode: UPDATE_MODE }),
+      })
+    },
+  }
+}
+
 export default defineConfig({
   define: {
-    __APP_VERSION__: JSON.stringify(buildVersion()),
+    __APP_VERSION__: JSON.stringify(APP_VERSION),
   },
   plugins: [
+    emitVersionFile(),
     react(),
     VitePWA({
       // 'prompt': a new service worker installs in the background and

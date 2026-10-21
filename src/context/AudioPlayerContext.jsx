@@ -8,6 +8,7 @@ import { getLocalBlobUrl } from "../utils/offlineDownloads";
 import { loadPlayerSettings, savePlayerSettings, loadQueue, saveQueue, loadHistory, saveHistory, slimTrack } from "../utils/playerSettings";
 import { supabase } from "../supabase";
 import useCastSync from "../hooks/useCastSync";
+import { setAppBusy } from "../utils/appUpdate";
 
 const AudioPlayerContext = createContext();
 
@@ -66,6 +67,14 @@ export function AudioPlayerProvider({ children }) {
   // its own timeupdate/loadedmetadata listeners.
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
+
+  // While a track is loaded (playing or paused) the app must not refresh
+  // itself for an update — the loaded track isn't restored after a reload.
+  // (Utils/appUpdate falls back to the "New version available" bar instead.)
+  useEffect(() => {
+    setAppBusy("audio", !!current);
+    return () => setAppBusy("audio", false);
+  }, [current]);
 
   // "Play Next" queue — a plain array of sermon objects. Newest
   // "Play Next" goes to the front, ahead of whatever was queued

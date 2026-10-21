@@ -2,8 +2,23 @@ import { useEffect, useState } from "react";
 import { db } from "../../firebase";
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, where } from "firebase/firestore";
 import { useModulePermissions } from "../../hooks/usePermissions";
+import {
+  INPUT_TYPES,
+  INPUT_TYPE_BY_VALUE,
+  OPTION_TYPES,
+  MIN_OPTIONS,
+  MAX_OPTIONS,
+  MAX_OPTION_LENGTH,
+  blankOptions,
+  formFromNotice,
+  inputFieldsForSave,
+  inputTypeOf,
+  noticeHasInput,
+  summarizeSubmissions,
+  validateInputConfig,
+} from "../../utils/noticeInputs";
 
-const blankForm = { title: "", details: "", buttonEnabled: false, buttonText: "", buttonType: "url", buttonValue: "", active: true, pinned: false, audience: "all", inputEnabled: false, inputMessage: "", inputPlaceholder: "", inputButtonText: "" };
+const blankForm = { title: "", details: "", buttonEnabled: false, buttonText: "", buttonType: "url", buttonValue: "", active: true, pinned: false, audience: "all", inputEnabled: false, inputType: "text", inputOptions: blankOptions("poll"), inputScaleLow: "", inputScaleHigh: "", inputMessage: "", inputPlaceholder: "", inputButtonText: "" };
 
 export default function AdminNotices() {
   const perms = useModulePermissions("notices");
@@ -47,14 +62,17 @@ export default function AdminNotices() {
   }, []);
 
   const openCreate = () => { setEditing(null); setForm(blankForm); setShowForm(true); };
-  const openEdit = (n) => { setEditing(n); setForm({ ...blankForm, ...n }); setShowForm(true); };
+  const openEdit = (n) => { setEditing(n); setForm({ ...blankForm, ...n, ...formFromNotice(n) }); setShowForm(true); };
   const closeForm = () => { setShowForm(false); setEditing(null); };
 
   const handleSave = async () => {
     if (!perms.requireEdit()) return;
     if (!form.title || !form.details) return alert("Title and details are required.");
-    if (editing) await updateDoc(doc(db, "notices", editing.id), { ...form });
-    else await addDoc(collection(db, "notices"), { ...form, createdAt: serverTimestamp() });
+    const inputError = validateInputConfig(form);
+    if (inputError) return alert(inputError);
+    const payload = { ...form, ...inputFieldsForSave(form) };
+    if (editing) await updateDoc(doc(db, "notices", editing.id), payload);
+    else await addDoc(collection(db, "notices"), { ...payload, createdAt: serverTimestamp() });
     closeForm(); loadNotices();
   };
 
@@ -102,6 +120,22 @@ export default function AdminNotices() {
     }
   };
   const closeStats = () => { setViewingStats(null); setStatsLogs([]); };
+
+  const setInputType = (type) => {
+    setForm((cur) => {
+      let options = cur.inputOptions?.length ? [...cur.inputOptions] : blankOptions(type);
+      if (type === "prefer") {
+        options = options.slice(0, 2);
+        while (options.length < 2) options.push("");
+      } else if (OPTION_TYPES.has(type)) {
+        while (options.length < MIN_OPTIONS) options.push("");
+      }
+      return { ...cur, inputType: type, inputOptions: options };
+    });
+  };
+  const setOption = (i, value) => setForm((cur) => ({ ...cur, inputOptions: cur.inputOptions.map((o, j) => (j === i ? value : o)) }));
+  const addOption = () => setForm((cur) => (cur.inputOptions.length >= MAX_OPTIONS ? cur : { ...cur, inputOptions: [...cur.inputOptions, ""] }));
+  const removeOption = (i) => setForm((cur) => (cur.inputOptions.length <= MIN_OPTIONS ? cur : { ...cur, inputOptions: cur.inputOptions.filter((_, j) => j !== i) }));
 
   const f = (k) => (e) => setForm({ ...form, [k]: e.target.type === "checkbox" ? e.target.checked : e.target.value });
 
@@ -164,9 +198,55 @@ export default function AdminNotices() {
 
             {form.inputEnabled && (
               <>
-                <Field label="Input Message"><textarea value={form.inputMessage} onChange={f("inputMessage")} style={{ ...input, height: "70px", resize: "vertical" }} placeholder="Submit your email to get emails when…" /></Field>
-                <Field label="Input Placeholder"><input value={form.inputPlaceholder} onChange={f("inputPlaceholder")} style={input} placeholder="e.g. Email here" /></Field>
-                <Field label="Submit Button Text"><input value={form.inputButtonText} onChange={f("inputButtonText")} style={input} placeholder="e.g. Submit" /></Field>
+                <Field label="Input Type">
+                  <select value={form.inputType} onChange={(e) => setInputType(e.target.value)} style={input}>
+                    {INPUT_TYPES.map((t) => <option key={t.value} value={t.value}>{t.icon} {t.label}</option>)}
+                  </select>
+                  <span style={typeHint}>{INPUT_TYPE_BY_VALUE[form.inputType]?.hint}</span>
+                </Field>
+
+                <Field label={OPTION_TYPES.has(form.inputType) || ["rating", "scale", "yesno", "emoji", "rsvp"].includes(form.inputType) ? "Question" : "Input Message"}>
+                  <textarea value={form.inputMessage} onChange={f("inputMessage")} style={{ ...input, height: "70px", resize: "vertical" }} placeholder={messagePlaceholder(form.inputType)} />
+                </Field>
+
+                {OPTION_TYPES.has(form.inputType) && (
+                  <Field label={form.inputType === "prefer" ? "The two options" : `Options (${MIN_OPTIONS}–${MAX_OPTIONS})`}>
+                    <div style={optionList}>
+                      {form.inputOptions.map((opt, i) => (
+                        <div key={i} style={optionRow}>
+                          <input
+                            value={opt}
+                            onChange={(e) => setOption(i, e.target.value)}
+                            maxLength={MAX_OPTION_LENGTH}
+                            style={input}
+                            placeholder={form.inputType === "prefer" ? (i === 0 ? "Option A, e.g. Hymns" : "Option B, e.g. Modern songs") : `Option ${i + 1}`}
+                            aria-label={`Option ${i + 1}`}
+                          />
+                          {form.inputType !== "prefer" && form.inputOptions.length > MIN_OPTIONS && (
+                            <button type="button" style={removeOptBtn} onClick={() => removeOption(i)} aria-label={`Remove option ${i + 1}`}>✕</button>
+                          )}
+                        </div>
+                      ))}
+                      {form.inputType !== "prefer" && form.inputOptions.length < MAX_OPTIONS && (
+                        <button type="button" style={addOptBtn} onClick={addOption}>+ Add option</button>
+                      )}
+                    </div>
+                  </Field>
+                )}
+
+                {form.inputType === "scale" && (
+                  <div style={twoCol}>
+                    <Field label="Low end label"><input value={form.inputScaleLow} onChange={f("inputScaleLow")} style={input} placeholder="e.g. Not likely" /></Field>
+                    <Field label="High end label"><input value={form.inputScaleHigh} onChange={f("inputScaleHigh")} style={input} placeholder="e.g. Very likely" /></Field>
+                  </div>
+                )}
+
+                {["text", "longtext", "phone", "email"].includes(form.inputType) && (
+                  <Field label="Input Placeholder"><input value={form.inputPlaceholder} onChange={f("inputPlaceholder")} style={input} placeholder={form.inputType === "phone" ? "e.g. Your phone number" : form.inputType === "email" ? "e.g. Email here" : "e.g. Type here"} /></Field>
+                )}
+                {!["prefer", "yesno", "emoji", "rsvp"].includes(form.inputType) && (
+                  <Field label="Submit Button Text"><input value={form.inputButtonText} onChange={f("inputButtonText")} style={input} placeholder={form.inputType === "poll" || form.inputType === "multi" ? "e.g. Vote" : "e.g. Submit"} /></Field>
+                )}
               </>
             )}
 
@@ -201,7 +281,7 @@ export default function AdminNotices() {
               </>
             )}
             <button style={actionBtn} onClick={() => openStats(n)}>Stats</button>
-            {n.inputEnabled && <button style={actionBtn} onClick={() => openSubmissions(n)}>Submissions</button>}
+            {noticeHasInput(n) && <button style={actionBtn} onClick={() => openSubmissions(n)}>{inputTypeOf(n) === "text" || inputTypeOf(n) === "longtext" || inputTypeOf(n) === "phone" || inputTypeOf(n) === "email" ? "Submissions" : "Results"}</button>}
             {perms.canDelete && (
               <button style={{ ...actionBtn, color: "var(--color-dc2626)", borderColor: "var(--color-fca5a5)" }} onClick={() => handleDelete(n.id)}>Delete</button>
             )}
@@ -223,6 +303,8 @@ export default function AdminNotices() {
             {!loadingSubmissions && submissions.length === 0 && (
               <p style={empty}>No submissions yet.</p>
             )}
+
+            {!loadingSubmissions && <SubmissionSummary notice={viewingSubmissions} submissions={submissions} />}
 
             {!loadingSubmissions && submissions.map((s) => (
               <div key={s.id} style={submissionRow}>
@@ -273,6 +355,46 @@ export default function AdminNotices() {
           </div>
         );
       })()}
+    </div>
+  );
+}
+
+function messagePlaceholder(type) {
+  switch (type) {
+    case "poll": return "e.g. What should our next potluck theme be?";
+    case "multi": return "e.g. Which of these topics would you like covered?";
+    case "prefer": return "e.g. Which do you prefer for Sunday mornings?";
+    case "rating": return "e.g. How would you rate this month's sermon series?";
+    case "scale": return "e.g. How likely are you to invite a friend?";
+    case "yesno": return "e.g. Will you be joining us this Sunday?";
+    case "emoji": return "e.g. How did you like the new app update?";
+    case "rsvp": return "e.g. Are you coming to the church picnic?";
+    case "phone": return "e.g. Share your number and we'll text you reminders.";
+    case "email": return "Submit your email to get emails when…";
+    case "longtext": return "e.g. Share a prayer request or any feedback.";
+    default: return "Submit your email to get emails when…";
+  }
+}
+
+// Tally bars for choice / rating answers (free-text answers just list below).
+function SubmissionSummary({ notice, submissions }) {
+  const summary = summarizeSubmissions(notice, submissions);
+  if (!summary) return null;
+  return (
+    <div style={summaryBox}>
+      {summary.kind === "average" && (
+        <div style={summaryHeadline}>Average: <strong>{summary.average.toFixed(1)}</strong> / {summary.max} <span style={summaryMuted}>({summary.total} {summary.total === 1 ? "response" : "responses"})</span></div>
+      )}
+      {summary.kind === "choices" && (
+        <div style={summaryHeadline}><strong>{summary.total}</strong> {summary.total === 1 ? "response" : "responses"}</div>
+      )}
+      {summary.rows.map((row) => (
+        <div key={row.label} style={barRow}>
+          <span style={barLabel}>{row.label}</span>
+          <div style={barTrack}><div style={{ ...barFill, width: `${row.percent}%` }} /></div>
+          <span style={barCount}>{row.count} · {row.percent}%</span>
+        </div>
+      ))}
     </div>
   );
 }
@@ -349,3 +471,17 @@ const statLabel = { fontSize: "12px", color: "var(--color-7a5530)", fontFamily: 
 const statSub = { fontSize: "11px", color: "var(--color-9b7040)", fontFamily: "sans-serif" };
 const statsSection = { marginTop: "8px" };
 const statsSectionTitle = { fontSize: "12px", color: "var(--color-9b7040)", fontFamily: "sans-serif", textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 4px" };
+const typeHint = { fontSize: "12px", color: "var(--color-9b7040)", fontFamily: "sans-serif" };
+const optionList = { display: "flex", flexDirection: "column", gap: "8px" };
+const optionRow = { display: "flex", gap: "8px", alignItems: "center" };
+const removeOptBtn = { width: "34px", height: "34px", flexShrink: 0, borderRadius: "8px", border: "1px solid var(--color-fca5a5)", background: "var(--color-fdf8f3)", color: "var(--color-dc2626)", cursor: "pointer" };
+const addOptBtn = { alignSelf: "flex-start", padding: "7px 14px", borderRadius: "999px", border: "1px dashed var(--color-c97c2e)", background: "none", color: "var(--color-7a4f10)", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer" };
+const twoCol = { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" };
+const summaryBox = { margin: "10px 0 14px", padding: "14px", borderRadius: "12px", background: "var(--color-fdf8f3)", border: "1px solid var(--color-eddfc8)", display: "flex", flexDirection: "column", gap: "8px" };
+const summaryHeadline = { fontSize: "14px", color: "var(--color-3d2200)", fontFamily: "sans-serif" };
+const summaryMuted = { color: "var(--color-9b7040)", fontSize: "12px" };
+const barRow = { display: "grid", gridTemplateColumns: "minmax(60px, 140px) 1fr auto", gap: "10px", alignItems: "center", fontFamily: "sans-serif", fontSize: "13px", color: "var(--color-5c3a1e)" };
+const barLabel = { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" };
+const barTrack = { height: "10px", borderRadius: "999px", background: "var(--color-eddfc8)", overflow: "hidden" };
+const barFill = { height: "100%", background: "linear-gradient(to right, var(--color-e08930), var(--color-c97c2e))", borderRadius: "999px" };
+const barCount = { fontSize: "12px", color: "var(--color-9b7040)", whiteSpace: "nowrap" };
