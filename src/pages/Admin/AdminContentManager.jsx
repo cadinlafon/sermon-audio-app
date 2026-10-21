@@ -7,6 +7,9 @@ import { createTranscriptionCopy } from "../../utils/transcodeForTranscription";
 import { useModulePermissions } from "../../hooks/usePermissions";
 import { useAdminPin } from "../../context/AdminPinContext";
 import { logAdminAction } from "../../utils/adminAudit";
+import { zipSync, strToU8 } from "fflate";
+import { fetchTranscript, buildTranscriptText, transcriptFileBase } from "../../utils/transcripts";
+import { downloadText } from "../../utils/notes";
 
 const speakers = ["Jonathan Mcintosh", "Rusty Olps", "Jason Farley", "Mark Thiele"];
 
@@ -50,6 +53,10 @@ export default function AdminContentManager() {
   const [backfillProgress, setBackfillProgress] = useState(null);
   const [backfillSummary, setBackfillSummary] = useState(null);
   const backfillCancelRef = useRef(false);
+
+  // Transcript downloads
+  const [txBusyId, setTxBusyId] = useState(null);
+  const [txAll, setTxAll] = useState(null); // { done, total } while running
 
   const loadAudio = async () => {
     const snapshot = await getDocs(collection(db, "audio"));
@@ -150,6 +157,80 @@ export default function AdminContentManager() {
     }
   };
 
+  // ── Download transcripts ────────────────────────────
+  // Never generates anything: a recording with no transcript yet is just
+  // reported (generating costs AI usage, so that stays a deliberate action
+  // on the transcript page).
+  const downloadTranscript = async (audio) => {
+    if (txBusyId || txAll) return;
+    setTxBusyId(audio.id);
+    try {
+      const data = await fetchTranscript(audio.id);
+      if (!data || data.segments.length === 0) {
+        alert(`"${audio.title}" doesn't have a transcript yet. Open it from the audio's Transcript page to generate one.`);
+        return;
+      }
+      downloadText(buildTranscriptText(audio, data), `${transcriptFileBase(audio)}-transcript.txt`);
+    } catch (err) {
+      console.error("Transcript download failed", err);
+      alert("Couldn't download that transcript. Please try again.");
+    } finally {
+      setTxBusyId(null);
+    }
+  };
+
+  const downloadAllTranscripts = async () => {
+    if (txBusyId || txAll || audioList.length === 0) return;
+    const items = [...audioList].sort((a, b) => (b.order ?? 0) - (a.order ?? 0));
+    if (!window.confirm(`Download transcripts for all ${items.length} recordings as one .zip?\n\nThis reads one transcript per recording (${items.length} database reads). Recordings without a transcript are skipped.`)) return;
+
+    setTxAll({ done: 0, total: items.length });
+    try {
+      const files = {};
+      let found = 0;
+      let done = 0;
+      let next = 0;
+      const worker = async () => {
+        while (next < items.length) {
+          const audio = items[next++];
+          try {
+            const data = await fetchTranscript(audio.id);
+            if (data && data.segments.length > 0) {
+              const name = `${String(audio.order ?? 0).padStart(3, "0")}-${transcriptFileBase(audio)}-transcript.txt`.slice(0, 150);
+              files[files[name] ? `${audio.id}-${name}` : name] = strToU8(buildTranscriptText(audio, data));
+              found++;
+            }
+          } catch (err) {
+            console.error(`Couldn't fetch transcript for "${audio.title}"`, err);
+          }
+          done++;
+          setTxAll({ done, total: items.length });
+        }
+      };
+      await Promise.all([worker(), worker(), worker(), worker()]);
+
+      if (found === 0) {
+        alert("None of the recordings have a transcript yet.");
+        return;
+      }
+      const blob = new Blob([zipSync(files)], { type: "application/zip" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `transcripts-${new Date().toISOString().slice(0, 10)}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      alert(`Downloaded ${found} transcript${found === 1 ? "" : "s"}${found < items.length ? ` (${items.length - found} recording${items.length - found === 1 ? " has" : "s have"} no transcript yet)` : ""}.`);
+    } catch (err) {
+      console.error("Download all transcripts failed", err);
+      alert("Couldn't build the transcripts download. Please try again.");
+    } finally {
+      setTxAll(null);
+    }
+  };
+
   // ── Backfill AI transcription copies ────────────────
   const missingTranscribeCopy = audioList.filter((a) => a.audioStorageKey && !a.transcribeStorageKey);
 
@@ -221,6 +302,12 @@ export default function AdminContentManager() {
         <p style={pageSubtitle}>Reorder, edit, or remove audio listeners see.</p>
       </div>
 
+      <div style={downloadAllRow}>
+        <button onClick={downloadAllTranscripts} disabled={!!txAll || !!txBusyId || audioList.length === 0} style={txAll ? { ...downloadAllBtn, opacity: 0.6 } : downloadAllBtn}>
+          {txAll ? `Collecting transcripts… ${txAll.done} / ${txAll.total}` : "⬇ Download ALL Transcripts"}
+        </button>
+      </div>
+
       {perms.canEdit && (missingTranscribeCopy.length > 0 || backfillRunning || backfillSummary) && (
         <div style={backfillCard}>
           <div style={backfillHeader}>
@@ -274,6 +361,14 @@ export default function AdminContentManager() {
               </div>
             </div>
             <div style={actionGroup}>
+              <button
+                onClick={() => downloadTranscript(audio)}
+                disabled={!!txBusyId || !!txAll}
+                style={txBusyId === audio.id ? { ...transcriptBtn, opacity: 0.6 } : transcriptBtn}
+                title="Download this recording's transcript"
+              >
+                {txBusyId === audio.id ? "…" : "⬇ Transcript"}
+              </button>
               {perms.canEdit && (
                 <>
                   <button onClick={() => moveItem(index, "up")} style={arrowBtn} title="Move up">▲</button>
@@ -382,6 +477,18 @@ const backfillRunBtn = {
 const backfillStopBtn = {
   padding: "10px 18px", borderRadius: "10px", border: "1px solid var(--color-f0b4b4)", flexShrink: 0,
   background: "transparent", color: "var(--color-c23c3c)", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer",
+};
+
+const downloadAllRow = { display: "flex", marginBottom: "18px" };
+const downloadAllBtn = {
+  padding: "10px 18px", borderRadius: "10px", border: "none",
+  background: "linear-gradient(135deg, var(--color-c97c2e) 0%, var(--color-a85e18) 100%)",
+  color: "var(--color-fff8ee)", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer",
+  boxShadow: "0 3px 10px rgba(160,80,20,0.25)",
+};
+const transcriptBtn = {
+  padding: "6px 12px", borderRadius: "8px", border: "1px solid var(--color-eddfc8)",
+  background: "var(--color-fdf8f3)", color: "var(--color-7a4f10)", fontSize: "12px", fontFamily: "sans-serif", cursor: "pointer",
 };
 
 const toolbar = { display: "flex", gap: "10px", marginBottom: "20px", flexWrap: "wrap" };

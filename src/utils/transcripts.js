@@ -88,6 +88,18 @@ export function transcriptToText(title, speaker, paragraphs, textOf, labelOf) {
   return [`${title}${speaker ? ` — ${speaker}` : ""}`, "", ...paragraphs.map((p) => `[${formatTime(p.start)}] ${labelOf(p) ? `${labelOf(p)}: ` : ""}${textOf(p)}`)].join("\n\n");
 }
 
+// The same plain-text transcript the transcript page's "⬇ Text" button saves
+// (admin corrections and speaker labels included), built from a fetched
+// transcript so the admin Content Manager can produce it without the page.
+export function buildTranscriptText(audio, data) {
+  const paragraphs = toParagraphs(data.segments);
+  const textOf = (p) => data.edits[p.index] ?? p.segments.map((s) => s.text).join(" ");
+  const labelOf = (p) => data.speakerLabels[p.index] ?? audio?.speaker ?? "";
+  return transcriptToText(audio?.title || "Untitled", audio?.speaker, paragraphs, textOf, labelOf);
+}
+
+export const transcriptFileBase = (audio) => (audio?.title || "transcript").replace(/[^\w-]+/g, "_");
+
 const srtTime = (t) => {
   const ms = Math.round((t % 1) * 1000); const s = Math.floor(t);
   const p = (n, w = 2) => String(n).padStart(w, "0");
