@@ -1,28 +1,27 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { db } from "../firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import {
-  inputTypeOf,
-  choicesFor,
-  normalizePhone,
-  normalizeEmail,
+  fieldsOf,
+  fieldChoices,
+  validateAnswer,
+  TAP_TYPES,
   MAX_TEXT_LENGTH,
   MAX_LONGTEXT_LENGTH,
   RATING_MAX,
   SCALE_MAX,
 } from "../utils/noticeInputs";
 
-// Types answered with a single tap (no separate Submit button).
-const TAP_TO_ANSWER = new Set(["prefer", "yesno", "emoji", "rsvp"]);
+const SUMMARY_MAX = 900;
 
 export default function NoticeInputForm({ notice, user }) {
-  const type = inputTypeOf(notice);
-  const choices = choicesFor(notice);
+  const fields = useMemo(() => fieldsOf(notice), [notice]);
+  const single = fields.length === 1;
   const storageKey = `noticeSubmitted:${notice.id}`;
 
-  const [value, setValue] = useState("");          // text-like answers, rating, scale
-  const [picked, setPicked] = useState([]);        // choice answers
-  const [hoverStar, setHoverStar] = useState(0);
+  // field id -> string (text-like, rating, scale) or string[] (choices)
+  const [answers, setAnswers] = useState({});
+  const [fieldErrors, setFieldErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(() => {
     try {
@@ -33,19 +32,37 @@ export default function NoticeInputForm({ notice, user }) {
   });
   const [error, setError] = useState("");
 
-  const save = async (payload) => {
+  const setAnswer = (id, value) => {
+    setAnswers((cur) => ({ ...cur, [id]: value }));
+    setFieldErrors((cur) => (cur[id] ? { ...cur, [id]: "" } : cur));
+    if (error) setError("");
+  };
+
+  const save = async (checked) => {
     if (submitting || submitted) return;
     setError("");
     setSubmitting(true);
     try {
-      await addDoc(collection(db, "noticeSubmissions"), {
-        noticeId: notice.id,
-        inputType: type,
-        ...payload,
-        createdAt: serverTimestamp(),
-        userId: user?.uid || null,
-        userEmail: user?.email || null,
-      });
+      const payload = { noticeId: notice.id, createdAt: serverTimestamp(), userId: user?.uid || null, userEmail: user?.email || null };
+      const list = checked.map(({ field, result }) => ({
+        id: field.id,
+        label: field.label || "",
+        type: field.type,
+        value: result.value,
+        ...(result.values ? { values: result.values } : {}),
+      }));
+      payload.answers = list;
+      if (single) {
+        // Keep the original flat shape too, so older tools reading
+        // value/inputType keep working for one-field notices.
+        payload.inputType = fields[0].type;
+        payload.value = list[0].value;
+        if (list[0].values) payload.values = list[0].values;
+      } else {
+        payload.inputType = "form";
+        payload.value = list.map((a) => `${a.label || "Answer"}: ${a.value}`).join(" | ").slice(0, SUMMARY_MAX);
+      }
+      await addDoc(collection(db, "noticeSubmissions"), payload);
       setSubmitted(true);
       try {
         localStorage.setItem(storageKey, "1");
@@ -60,80 +77,115 @@ export default function NoticeInputForm({ notice, user }) {
     }
   };
 
-  const handleSubmit = () => {
-    if (type === "phone") {
-      const r = normalizePhone(value);
-      if (!r.ok) return setError(r.error);
-      return save({ value: r.value });
+  // Validate every field; save when all are fine. `override` lets a
+  // one-tap answer count before React has stored it.
+  const submit = (override = {}) => {
+    const merged = { ...answers, ...override };
+    const errors = {};
+    const checked = [];
+    for (const field of fields) {
+      const result = validateAnswer(field, merged[field.id]);
+      if (!result.ok) errors[field.id] = result.error;
+      else if (!result.empty) checked.push({ field, result });
     }
-    if (type === "email") {
-      const r = normalizeEmail(value);
-      if (!r.ok) return setError(r.error);
-      return save({ value: r.value });
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) return;
+    if (checked.length === 0) {
+      setError("Please fill in at least one field.");
+      return;
     }
-    if (type === "rating" || type === "scale") {
-      if (!value) return setError(type === "rating" ? "Tap a star to rate." : "Pick a number from the scale.");
-      return save({ value: String(value) });
-    }
-    if (type === "poll" || type === "multi") {
-      if (picked.length === 0) return setError(type === "multi" ? "Pick at least one option." : "Pick an option.");
-      return save({ value: picked.join(", "), values: picked });
-    }
-    const trimmed = value.trim();
-    if (!trimmed) return setError("Please enter a value.");
-    return save({ value: trimmed.slice(0, type === "longtext" ? MAX_LONGTEXT_LENGTH : MAX_TEXT_LENGTH) });
-  };
-
-  const choose = (option) => {
-    setError("");
-    if (TAP_TO_ANSWER.has(type)) {
-      setPicked([option]);
-      save({ value: option, values: [option] });
-    } else if (type === "multi") {
-      setPicked((cur) => (cur.includes(option) ? cur.filter((o) => o !== option) : [...cur, option]));
-    } else {
-      setPicked([option]);
-    }
+    save(checked);
   };
 
   if (submitted) {
+    const voted = fields.some((f) => ["poll", "multi", "prefer"].includes(f.type));
     return (
       <div style={successBox}>
-        <span>✓</span> {type === "poll" || type === "prefer" || type === "multi" ? "Thanks — your vote was recorded!" : "Submitted!"}
+        <span>✓</span> {voted && single ? "Thanks — your vote was recorded!" : "Submitted!"}
       </div>
     );
   }
 
-  const needsSubmitButton = !TAP_TO_ANSWER.has(type);
-  const buttonText = notice.inputButtonText || (type === "poll" || type === "multi" ? "Vote" : "Submit");
-  const submitButton = needsSubmitButton && (
-    <button style={submitBtn} onClick={handleSubmit} disabled={submitting}>
-      {submitting ? "…" : buttonText}
-    </button>
-  );
+  const tapOnly = single && TAP_TYPES.has(fields[0].type);
+  const buttonText = notice.inputButtonText || (single && ["poll", "multi"].includes(fields[0].type) ? "Vote" : "Submit");
 
-  let body;
+  return (
+    <div style={wrap}>
+      {notice.inputMessage && <p style={message}>{notice.inputMessage}</p>}
+
+      {fields.map((field) => (
+        <div key={field.id} style={fieldBlock}>
+          {field.label && (
+            <label style={fieldLabelStyle}>
+              {field.label}
+              {field.required === false && <span style={optionalTag}> (optional)</span>}
+            </label>
+          )}
+          <FieldControl
+            field={field}
+            answer={answers[field.id]}
+            onChange={(value) => setAnswer(field.id, value)}
+            onTap={tapOnly ? (option) => { setAnswer(field.id, [option]); submit({ [field.id]: [option] }); } : null}
+            onEnter={single ? () => submit() : undefined}
+            disabled={submitting}
+            inline={single && ["text", "phone", "email"].includes(field.type)}
+            submitButton={single && !tapOnly ? (
+              <button style={submitBtn} onClick={() => submit()} disabled={submitting}>{submitting ? "…" : buttonText}</button>
+            ) : null}
+          />
+          {fieldErrors[field.id] && <p style={errorText} role="alert">{fieldErrors[field.id]}</p>}
+        </div>
+      ))}
+
+      {!single && (
+        <button style={{ ...submitBtn, marginTop: "4px" }} onClick={() => submit()} disabled={submitting}>
+          {submitting ? "…" : buttonText}
+        </button>
+      )}
+      {error && <p style={errorText} role="alert">{error}</p>}
+    </div>
+  );
+}
+
+// One field's input. `submitButton` is only passed for single-field notices,
+// where it sits beside / under the control like the original layout.
+function FieldControl({ field, answer, onChange, onTap, onEnter, disabled, inline, submitButton }) {
+  const type = field.type;
+  const choices = fieldChoices(field);
+  const picked = Array.isArray(answer) ? answer : [];
+  const text = typeof answer === "string" ? answer : "";
+  const [hoverStar, setHoverStar] = useState(0);
+
+  const choose = (option) => {
+    if (onTap) return onTap(option);
+    if (type === "multi") onChange(picked.includes(option) ? picked.filter((o) => o !== option) : [...picked, option]);
+    else onChange([option]);
+  };
+
   if (type === "longtext") {
-    body = (
+    return (
       <>
         <textarea
-          value={value}
-          onChange={(e) => { setValue(e.target.value); if (error) setError(""); }}
-          placeholder={notice.inputPlaceholder || "Type here…"}
+          value={text}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={field.placeholder || "Type here…"}
           maxLength={MAX_LONGTEXT_LENGTH}
           rows={4}
           style={{ ...input, width: "100%", boxSizing: "border-box", resize: "vertical" }}
-          disabled={submitting}
+          disabled={disabled}
         />
-        <div style={{ marginTop: "8px" }}>{submitButton}</div>
+        {submitButton && <div style={{ marginTop: "8px" }}>{submitButton}</div>}
       </>
     );
-  } else if (type === "poll" || type === "multi") {
-    body = (
+  }
+
+  if (type === "poll" || type === "multi") {
+    return (
       <>
         <div style={choiceList} role={type === "poll" ? "radiogroup" : "group"}>
           {choices.map((option) => {
             const on = picked.includes(option);
+            const shape = { borderRadius: type === "poll" ? "50%" : "4px" };
             return (
               <button
                 key={option}
@@ -141,121 +193,123 @@ export default function NoticeInputForm({ notice, user }) {
                 role={type === "poll" ? "radio" : "checkbox"}
                 aria-checked={on}
                 onClick={() => choose(option)}
-                disabled={submitting}
+                disabled={disabled}
                 style={on ? { ...choiceBtn, ...choiceBtnOn } : choiceBtn}
               >
-                <span style={on ? { ...mark, ...markOn, borderRadius: type === "poll" ? "50%" : "4px" } : { ...mark, borderRadius: type === "poll" ? "50%" : "4px" }}>{on ? "✓" : ""}</span>
+                <span style={on ? { ...mark, ...markOn, ...shape } : { ...mark, ...shape }}>{on ? "✓" : ""}</span>
                 {option}
               </button>
             );
           })}
         </div>
-        <div style={{ marginTop: "10px" }}>{submitButton}</div>
+        {submitButton && <div style={{ marginTop: "10px" }}>{submitButton}</div>}
       </>
     );
-  } else if (type === "prefer") {
-    body = (
+  }
+
+  if (type === "prefer") {
+    return (
       <div style={preferRow}>
         {choices.map((option, i) => (
-          <button key={option} type="button" onClick={() => choose(option)} disabled={submitting} style={preferBtn}>
+          <button key={option} type="button" onClick={() => choose(option)} disabled={disabled} style={picked.includes(option) ? { ...preferBtn, ...choiceBtnOn } : preferBtn} aria-pressed={picked.includes(option)}>
             <span style={preferLabel}>{i === 0 ? "A" : "B"}</span>
             {option}
           </button>
         ))}
       </div>
     );
-  } else if (type === "yesno" || type === "rsvp") {
-    body = (
+  }
+
+  if (type === "yesno" || type === "rsvp") {
+    return (
       <div style={pillRow}>
         {choices.map((option) => (
-          <button key={option} type="button" onClick={() => choose(option)} disabled={submitting} style={pillBtn}>{option}</button>
+          <button key={option} type="button" onClick={() => choose(option)} disabled={disabled} aria-pressed={picked.includes(option)} style={picked.includes(option) ? { ...pillBtn, ...pillBtnOn } : pillBtn}>{option}</button>
         ))}
       </div>
     );
-  } else if (type === "emoji") {
-    body = (
+  }
+
+  if (type === "emoji") {
+    return (
       <div style={pillRow}>
         {choices.map((option) => (
-          <button key={option} type="button" onClick={() => choose(option)} disabled={submitting} style={emojiBtn} aria-label={`React ${option}`}>{option}</button>
+          <button key={option} type="button" onClick={() => choose(option)} disabled={disabled} aria-pressed={picked.includes(option)} style={picked.includes(option) ? { ...emojiBtn, ...choiceBtnOn } : emojiBtn} aria-label={`React ${option}`}>{option}</button>
         ))}
       </div>
     );
-  } else if (type === "rating") {
-    const shown = hoverStar || Number(value) || 0;
-    body = (
+  }
+
+  if (type === "rating") {
+    const shown = hoverStar || Number(text) || 0;
+    return (
       <>
-        <div style={starRow} role="radiogroup" aria-label="Star rating">
+        <div style={starRow} role="radiogroup" aria-label={field.label || "Star rating"}>
           {Array.from({ length: RATING_MAX }, (_, i) => i + 1).map((n) => (
             <button
               key={n}
               type="button"
               role="radio"
-              aria-checked={Number(value) === n}
+              aria-checked={Number(text) === n}
               aria-label={`${n} star${n === 1 ? "" : "s"}`}
-              onClick={() => { setValue(String(n)); setError(""); }}
+              onClick={() => onChange(String(n))}
               onMouseEnter={() => setHoverStar(n)}
               onMouseLeave={() => setHoverStar(0)}
-              disabled={submitting}
+              disabled={disabled}
               style={{ ...starBtn, color: n <= shown ? "var(--color-e08930)" : "var(--color-eddfc8)" }}
             >
               ★
             </button>
           ))}
         </div>
-        <div style={{ marginTop: "8px" }}>{submitButton}</div>
+        {submitButton && <div style={{ marginTop: "8px" }}>{submitButton}</div>}
       </>
     );
-  } else if (type === "scale") {
-    body = (
+  }
+
+  if (type === "scale") {
+    return (
       <>
-        <div style={scaleRow} role="radiogroup" aria-label="Scale from 1 to 10">
+        <div style={scaleRow} role="radiogroup" aria-label={field.label || "Scale from 1 to 10"}>
           {Array.from({ length: SCALE_MAX }, (_, i) => i + 1).map((n) => (
             <button
               key={n}
               type="button"
               role="radio"
-              aria-checked={Number(value) === n}
-              onClick={() => { setValue(String(n)); setError(""); }}
-              disabled={submitting}
-              style={Number(value) === n ? { ...scaleBtn, ...scaleBtnOn } : scaleBtn}
+              aria-checked={Number(text) === n}
+              onClick={() => onChange(String(n))}
+              disabled={disabled}
+              style={Number(text) === n ? { ...scaleBtn, ...scaleBtnOn } : scaleBtn}
             >
               {n}
             </button>
           ))}
         </div>
-        {(notice.inputScaleLow || notice.inputScaleHigh) && (
-          <div style={scaleLabels}><span>{notice.inputScaleLow}</span><span>{notice.inputScaleHigh}</span></div>
+        {(field.scaleLow || field.scaleHigh) && (
+          <div style={scaleLabels}><span>{field.scaleLow}</span><span>{field.scaleHigh}</span></div>
         )}
-        <div style={{ marginTop: "8px" }}>{submitButton}</div>
+        {submitButton && <div style={{ marginTop: "8px" }}>{submitButton}</div>}
       </>
-    );
-  } else {
-    // text / phone / email
-    const htmlType = type === "phone" ? "tel" : type === "email" ? "email" : "text";
-    body = (
-      <div style={row}>
-        <input
-          type={htmlType}
-          inputMode={type === "phone" ? "tel" : type === "email" ? "email" : undefined}
-          autoComplete={type === "phone" ? "tel" : type === "email" ? "email" : "off"}
-          value={value}
-          onChange={(e) => { setValue(e.target.value); if (error) setError(""); }}
-          onKeyDown={(e) => { if (e.key === "Enter") handleSubmit(); }}
-          placeholder={notice.inputPlaceholder || (type === "phone" ? "(555) 123-4567" : type === "email" ? "you@email.com" : "Enter value")}
-          maxLength={type === "text" ? MAX_TEXT_LENGTH : 254}
-          style={input}
-          disabled={submitting}
-        />
-        {submitButton}
-      </div>
     );
   }
 
+  // text / phone / email
+  const htmlType = type === "phone" ? "tel" : type === "email" ? "email" : "text";
   return (
-    <div style={wrap}>
-      {notice.inputMessage && <p style={message}>{notice.inputMessage}</p>}
-      {body}
-      {error && <p style={errorText} role="alert">{error}</p>}
+    <div style={inline ? row : undefined}>
+      <input
+        type={htmlType}
+        inputMode={type === "phone" ? "tel" : type === "email" ? "email" : undefined}
+        autoComplete={type === "phone" ? "tel" : type === "email" ? "email" : "off"}
+        value={text}
+        onChange={(e) => onChange(e.target.value)}
+        onKeyDown={(e) => { if (e.key === "Enter" && onEnter) onEnter(); }}
+        placeholder={field.placeholder || (type === "phone" ? "(555) 123-4567" : type === "email" ? "you@email.com" : "Enter value")}
+        maxLength={type === "text" ? MAX_TEXT_LENGTH : 254}
+        style={inline ? input : { ...input, width: "100%", boxSizing: "border-box" }}
+        disabled={disabled}
+      />
+      {submitButton}
     </div>
   );
 }
@@ -289,3 +343,7 @@ const scaleRow = { display: "grid", gridTemplateColumns: "repeat(10, minmax(0, 1
 const scaleBtn = { padding: "9px 0", borderRadius: "8px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fdf8f3)", color: "var(--color-7a4f10)", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer" };
 const scaleBtnOn = { background: "linear-gradient(135deg, var(--color-c97c2e), var(--color-a85e18))", color: "var(--color-fff8ee)", borderColor: "transparent" };
 const scaleLabels = { display: "flex", justifyContent: "space-between", marginTop: "4px", fontSize: "11px", color: "var(--color-9b7040)", fontFamily: "sans-serif" };
+const fieldBlock = { marginBottom: "12px" };
+const fieldLabelStyle = { display: "block", margin: "0 0 5px", fontSize: "13px", fontWeight: "600", color: "var(--color-5c3a1e)", fontFamily: "sans-serif" };
+const optionalTag = { fontWeight: "normal", color: "var(--color-9b7040)", fontSize: "12px" };
+const pillBtnOn = { borderColor: "var(--color-c97c2e)", background: "var(--color-fef3e2)" };

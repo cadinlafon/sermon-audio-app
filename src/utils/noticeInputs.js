@@ -6,15 +6,18 @@
 // (components/NoticeInputForm.jsx) and the admin results view, so adding
 // a type means adding one entry here plus its renderer.
 //
-// Stored on the notice document:
-//   inputType     one of INPUT_TYPES[].value  (missing = "text", the original)
-//   inputOptions  string[] for poll / multi / prefer
-//   inputScaleLow / inputScaleHigh  optional end labels for "scale"
-//   inputMessage  the question or prompt shown above the input
-//   inputPlaceholder / inputButtonText as before
-// `inputEnabled` stays true ONLY for the original text input: the native
-// Android app only understands that one, so every newer type is flagged by
-// `inputType` alone and Android simply doesn't show it.
+// A notice can ask for ONE OR MORE labeled fields, answered together with a
+// single Submit. Stored on the notice document:
+//   inputFields   [{ id, label, type, required, placeholder, options,
+//                    scaleLow, scaleHigh }]   (type = INPUT_TYPES[].value)
+//   inputMessage  intro text shown above the fields
+//   inputButtonText  the Submit button's text
+// Older notices stored a single unlabeled input in flat fields (inputType,
+// inputOptions, inputPlaceholder, inputScaleLow/High, inputEnabled);
+// fieldsOf() reads those as a one-field list, so nothing needs migrating.
+// `inputEnabled` stays true ONLY when the notice is exactly one plain text
+// field: the native Android app only understands that one, so everything
+// richer is flagged by `inputFields` alone and Android simply doesn't show it.
 ////////////////////////////////////////////////////////////////
 
 export const INPUT_TYPES = [
@@ -48,23 +51,83 @@ export const SCALE_MAX = 10;
 export const MAX_TEXT_LENGTH = 500;
 export const MAX_LONGTEXT_LENGTH = 2000;
 
+export const MAX_FIELDS = 10;
+export const MAX_LABEL_LENGTH = 100;
+
 export function inputTypeOf(notice) {
   return INPUT_TYPE_BY_VALUE[notice?.inputType] ? notice.inputType : "text";
 }
 
-// True when a notice asks for any kind of input.
-export function noticeHasInput(notice) {
-  if (!notice) return false;
-  return notice.inputEnabled === true || (!!notice.inputType && notice.inputType !== "none" && !!INPUT_TYPE_BY_VALUE[notice.inputType]);
+////////////////////////////////////////////////////////////////
+// FIELDS
+////////////////////////////////////////////////////////////////
+
+let fieldCounter = 0;
+function newFieldId() {
+  fieldCounter += 1;
+  return `f${Date.now().toString(36)}${fieldCounter}${Math.random().toString(36).slice(2, 5)}`;
 }
 
-// The fixed answer choices for a type (admin-defined ones come from the notice).
-export function choicesFor(notice) {
-  switch (inputTypeOf(notice)) {
+export function blankOptions(type) {
+  return type === "prefer" ? ["", ""] : ["", "", ""];
+}
+
+export function blankField(type = "text") {
+  return {
+    id: newFieldId(),
+    label: "",
+    type,
+    required: true,
+    placeholder: "",
+    options: OPTION_TYPES.has(type) ? blankOptions(type) : [],
+    scaleLow: "",
+    scaleHigh: "",
+  };
+}
+
+// The notice's fields — new-style list, or the legacy single input as one field.
+export function fieldsOf(notice) {
+  if (!notice) return [];
+  if (Array.isArray(notice.inputFields) && notice.inputFields.length > 0) {
+    return notice.inputFields
+      .filter((f) => f && INPUT_TYPE_BY_VALUE[f.type])
+      .map((f, i) => ({
+        id: f.id || `f${i + 1}`,
+        label: f.label || "",
+        type: f.type,
+        required: f.required !== false,
+        placeholder: f.placeholder || "",
+        options: Array.isArray(f.options) ? f.options : [],
+        scaleLow: f.scaleLow || "",
+        scaleHigh: f.scaleHigh || "",
+      }));
+  }
+  const legacy = notice.inputEnabled === true || (!!notice.inputType && !!INPUT_TYPE_BY_VALUE[notice.inputType]);
+  if (!legacy) return [];
+  return [{
+    id: "f1",
+    label: "",
+    type: inputTypeOf(notice),
+    required: true,
+    placeholder: notice.inputPlaceholder || "",
+    options: Array.isArray(notice.inputOptions) ? notice.inputOptions : [],
+    scaleLow: notice.inputScaleLow || "",
+    scaleHigh: notice.inputScaleHigh || "",
+  }];
+}
+
+// True when a notice asks for any kind of input.
+export function noticeHasInput(notice) {
+  return fieldsOf(notice).length > 0;
+}
+
+// The fixed answer choices for a field (admin-defined ones come from the field).
+export function fieldChoices(field) {
+  switch (field?.type) {
     case "poll":
     case "multi":
     case "prefer":
-      return (notice.inputOptions || []).filter((o) => typeof o === "string" && o.trim());
+      return (field.options || []).filter((o) => typeof o === "string" && o.trim());
     case "yesno": return YESNO_OPTIONS;
     case "emoji": return EMOJI_OPTIONS;
     case "rsvp": return RSVP_OPTIONS;
@@ -72,53 +135,85 @@ export function choicesFor(notice) {
   }
 }
 
+// Answer-by-tap types answer on one tap — but only when they're the notice's
+// single field; in a multi-field form everything waits for the shared Submit.
+export const TAP_TYPES = new Set(["prefer", "yesno", "emoji", "rsvp"]);
+
 ////////////////////////////////////////////////////////////////
 // ADMIN FORM
 ////////////////////////////////////////////////////////////////
 
-export function blankOptions(type) {
-  return type === "prefer" ? ["", ""] : ["", "", ""];
-}
-
 // Returns an error message, or null when the notice's input setup is valid.
 export function validateInputConfig(form) {
   if (!form.inputEnabled) return null;
-  const type = form.inputType || "text";
-  if (OPTION_TYPES.has(type)) {
-    const options = (form.inputOptions || []).map((o) => o.trim()).filter(Boolean);
-    const required = type === "prefer" ? 2 : MIN_OPTIONS;
-    if (options.length < required) return type === "prefer" ? "Fill in both options for the this-or-that." : `Add at least ${MIN_OPTIONS} options.`;
-    if (type === "prefer" && options.length !== 2) return "A this-or-that needs exactly two options.";
-    if (new Set(options.map((o) => o.toLowerCase())).size !== options.length) return "Each option must be different.";
+  const fields = form.inputFields || [];
+  if (fields.length === 0) return "Add at least one field, or turn input off.";
+  for (let i = 0; i < fields.length; i++) {
+    const f = fields[i];
+    const where = `Field ${i + 1}`;
+    if (fields.length > 1 && !f.label.trim()) return `${where} needs a label so people know what to answer.`;
+    if (OPTION_TYPES.has(f.type)) {
+      const options = (f.options || []).map((o) => o.trim()).filter(Boolean);
+      if (f.type === "prefer") {
+        if (options.length !== 2) return `${where}: fill in both options for the this-or-that.`;
+      } else if (options.length < MIN_OPTIONS) {
+        return `${where}: add at least ${MIN_OPTIONS} options.`;
+      }
+      if (new Set(options.map((o) => o.toLowerCase())).size !== options.length) return `${where}: each option must be different.`;
+    }
   }
   return null;
 }
 
 // What to write to Firestore for the input part of the form.
 export function inputFieldsForSave(form) {
-  if (!form.inputEnabled) {
-    return { inputEnabled: false, inputType: null, inputOptions: [] };
+  const fields = (form.inputFields || []).map((f) => ({
+    id: f.id,
+    label: (f.label || "").trim().slice(0, MAX_LABEL_LENGTH),
+    type: f.type,
+    required: f.required !== false,
+    placeholder: ["text", "longtext", "phone", "email"].includes(f.type) ? (f.placeholder || "").trim() : "",
+    options: OPTION_TYPES.has(f.type) ? (f.options || []).map((o) => o.trim().slice(0, MAX_OPTION_LENGTH)).filter(Boolean) : [],
+    scaleLow: f.type === "scale" ? (f.scaleLow || "").trim() : "",
+    scaleHigh: f.type === "scale" ? (f.scaleHigh || "").trim() : "",
+  }));
+
+  if (!form.inputEnabled || fields.length === 0) {
+    return { inputEnabled: false, inputFields: [], inputType: null, inputOptions: [], inputPlaceholder: "" };
   }
-  const type = form.inputType || "text";
+
+  // Exactly one plain text field = the original shape, which Android still shows.
+  const legacyText = fields.length === 1 && fields[0].type === "text" && !fields[0].label;
   return {
-    // Only the original text input stays "inputEnabled" (see top of file).
-    inputEnabled: type === "text",
-    inputType: type,
-    inputOptions: OPTION_TYPES.has(type) ? (form.inputOptions || []).map((o) => o.trim().slice(0, MAX_OPTION_LENGTH)).filter(Boolean) : [],
-    inputScaleLow: type === "scale" ? (form.inputScaleLow || "").trim() : "",
-    inputScaleHigh: type === "scale" ? (form.inputScaleHigh || "").trim() : "",
+    inputEnabled: legacyText,
+    inputFields: fields,
+    inputType: null,
+    inputOptions: [],
+    inputPlaceholder: legacyText ? fields[0].placeholder : "",
   };
 }
 
-// The form's "collect input" checkbox mirrors noticeHasInput.
+// The form's state for an existing notice (or a fresh one).
 export function formFromNotice(notice) {
+  const fields = fieldsOf(notice);
   return {
-    inputEnabled: noticeHasInput(notice),
-    inputType: noticeHasInput(notice) ? inputTypeOf(notice) : "text",
-    inputOptions: notice.inputOptions?.length ? [...notice.inputOptions] : blankOptions(inputTypeOf(notice)),
-    inputScaleLow: notice.inputScaleLow || "",
-    inputScaleHigh: notice.inputScaleHigh || "",
+    inputEnabled: fields.length > 0,
+    inputFields: fields.length > 0 ? fields.map((f) => ({ ...f, options: f.options.length ? [...f.options] : OPTION_TYPES.has(f.type) ? blankOptions(f.type) : [] })) : [blankField("text")],
   };
+}
+
+// Change a field's type, keeping or fixing up its options for the new type.
+export function withFieldType(field, type) {
+  let options = field.options?.length ? [...field.options] : blankOptions(type);
+  if (type === "prefer") {
+    options = options.slice(0, 2);
+    while (options.length < 2) options.push("");
+  } else if (OPTION_TYPES.has(type)) {
+    while (options.length < MIN_OPTIONS) options.push("");
+  } else {
+    options = [];
+  }
+  return { ...field, type, options };
 }
 
 ////////////////////////////////////////////////////////////////
@@ -143,27 +238,69 @@ export function normalizeEmail(raw) {
   return { ok: true, value: text };
 }
 
+/**
+ * Check one field's answer. `answer` is a string (text-like, rating, scale)
+ * or a string[] (choices). Returns { ok, empty?, value, values?, error? }.
+ * An empty optional field is { ok: true, empty: true }.
+ */
+export function validateAnswer(field, answer) {
+  const picked = Array.isArray(answer) ? answer : [];
+  const text = typeof answer === "string" ? answer.trim() : "";
+  const isChoice = OPTION_TYPES.has(field.type) || ["yesno", "emoji", "rsvp"].includes(field.type);
+  const isEmpty = isChoice ? picked.length === 0 : text === "";
+  const required = field.required !== false;
+
+  if (isEmpty) {
+    if (!required) return { ok: true, empty: true };
+    const messages = {
+      phone: "Please enter your phone number.",
+      email: "Please enter your email address.",
+      rating: "Tap a star to rate.",
+      scale: "Pick a number from the scale.",
+      multi: "Pick at least one option.",
+    };
+    return { ok: false, error: messages[field.type] || (isChoice ? "Pick an option." : "Please fill this in.") };
+  }
+
+  if (field.type === "phone") return normalizePhone(text);
+  if (field.type === "email") return normalizeEmail(text);
+  if (isChoice) return { ok: true, value: picked.join(", "), values: picked };
+  const max = field.type === "longtext" ? MAX_LONGTEXT_LENGTH : MAX_TEXT_LENGTH;
+  return { ok: true, value: text.slice(0, max) };
+}
+
 ////////////////////////////////////////////////////////////////
 // RESULTS (admin)
 ////////////////////////////////////////////////////////////////
 
+// This field's answer from one stored submission ({ value, values } or null).
+// New submissions carry `answers: [{ id, value, values }]`; older single-input
+// ones carry value/values at the top level.
+export function answerFor(submission, field, fields) {
+  if (Array.isArray(submission.answers)) {
+    const a = submission.answers.find((x) => x.id === field.id);
+    return a ? { value: a.value, values: a.values } : null;
+  }
+  return fields.length === 1 ? { value: submission.value, values: submission.values } : null;
+}
+
 /**
- * Tally submissions for the admin Submissions view.
+ * Tally one field's answers for the admin results view.
+ * @param {object} field
+ * @param {Array<{value: string, values?: string[]}>} answers
  * @returns {null | { kind: "choices", rows: Array<{label, count, percent}>, total } | { kind: "average", average, total, max, rows }}
  *   null for free-text types (the raw list is the result).
  */
-export function summarizeSubmissions(notice, submissions) {
-  const type = inputTypeOf(notice);
-  const total = submissions.length;
-  if (total === 0) return null;
+export function summarizeField(field, answers) {
+  if (answers.length === 0) return null;
 
-  if (type === "rating" || type === "scale") {
-    const max = type === "rating" ? RATING_MAX : SCALE_MAX;
+  if (field.type === "rating" || field.type === "scale") {
+    const max = field.type === "rating" ? RATING_MAX : SCALE_MAX;
     const counts = new Array(max).fill(0);
     let sum = 0;
     let n = 0;
-    for (const s of submissions) {
-      const v = Number(s.value);
+    for (const a of answers) {
+      const v = Number(a.value);
       if (Number.isInteger(v) && v >= 1 && v <= max) { counts[v - 1]++; sum += v; n++; }
     }
     if (n === 0) return null;
@@ -176,12 +313,12 @@ export function summarizeSubmissions(notice, submissions) {
     };
   }
 
-  const choices = choicesFor(notice);
+  const choices = fieldChoices(field);
   if (choices.length > 0) {
     const counts = new Map(choices.map((c) => [c, 0]));
     let answered = 0;
-    for (const s of submissions) {
-      const picked = Array.isArray(s.values) && s.values.length ? s.values : [s.value];
+    for (const a of answers) {
+      const picked = Array.isArray(a.values) && a.values.length ? a.values : [a.value];
       let counted = false;
       for (const p of picked) if (counts.has(p)) { counts.set(p, counts.get(p) + 1); counted = true; }
       if (counted) answered++;
