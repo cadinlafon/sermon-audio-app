@@ -1,5 +1,7 @@
-import { useEffect, useState } from "react";
-import { db } from "../../firebase";
+import { useEffect, useRef, useState } from "react";
+import { db, auth } from "../../firebase";
+import { supabase } from "../../supabase";
+import { buildActivityDigest, periodStart } from "../../utils/activityDigest";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { startOfToday, summarizeToday } from "../../utils/todayActivity";
 
@@ -10,6 +12,11 @@ export default function Analytics() {
   const [monthlyActivity, setMonthlyActivity] = useState([]);
   const [today, setToday] = useState({ users: [], anonymous: 0, loading: true, error: false });
   const [expanded, setExpanded] = useState(() => new Set());
+  const [aiPeriod, setAiPeriod] = useState("today");
+  const [ai, setAi] = useState({ loading: false, error: "", summary: "", period: "", at: null, events: 0 });
+  // Users + audio titles, kept from the main load so the AI summary can
+  // name people and sermons without reading those collections again.
+  const lookups = useRef({ users: [], audio: [] });
 
   const getWeekRange = () => {
     const now = new Date();
@@ -34,6 +41,10 @@ export default function Analytics() {
         const logs = logsSnap.docs.map(d => d.data());
         const { start, end } = getWeekRange();
 
+        lookups.current = {
+          users: usersSnap.docs.map(d => ({ id: d.id, ...d.data() })),
+          audio: audioSnap.docs.map(d => ({ id: d.id, ...d.data() })),
+        };
         const usersById = new Map(usersSnap.docs.map(d => [d.id, d.data()]));
         const summary = summarizeToday(todayLogsSnap.docs.map(d => d.data()), usersById);
         setToday({ ...summary, loading: false, error: false });
@@ -81,6 +92,39 @@ export default function Analytics() {
     fetchAnalytics();
   }, []);
 
+  const generateAiSummary = async () => {
+    const currentUser = auth.currentUser;
+    if (!currentUser) { setAi(a => ({ ...a, error: "Please sign in again." })); return; }
+    const period = aiPeriod;
+    setAi({ loading: true, error: "", summary: "", period, at: null, events: 0 });
+    try {
+      const start = periodStart(period);
+      // Only the chosen period is read (range queries), not the whole history.
+      const [logsSnap, listensSnap] = await Promise.all([
+        getDocs(query(collection(db, "logs"), where("createdAt", ">=", start))),
+        getDocs(query(collection(db, "appUsage"), where("createdAt", ">=", start))),
+      ]);
+      const logs = logsSnap.docs.map(d => d.data());
+      const listens = listensSnap.docs.map(d => d.data());
+      const digest = buildActivityDigest({ logs, listens, users: lookups.current.users, audio: lookups.current.audio, start });
+
+      const token = await currentUser.getIdToken();
+      const { data, error } = await supabase.functions.invoke("admin-activity-summary", {
+        headers: { Authorization: `Bearer ${token}` },
+        body: { period, digest },
+      });
+      if (error) {
+        const body = await error.context?.json?.().catch(() => null);
+        throw new Error(body?.error || error.message);
+      }
+      if (!data?.summary) throw new Error(data?.error || "No summary was returned.");
+      setAi({ loading: false, error: "", summary: data.summary, period, at: new Date(), events: logs.length + listens.length });
+    } catch (err) {
+      console.error("AI activity summary failed", err);
+      setAi({ loading: false, error: err.message || "Couldn't write the summary. Please try again.", summary: "", period, at: null, events: 0 });
+    }
+  };
+
   const toggleUser = (id) => setExpanded(prev => {
     const next = new Set(prev);
     if (next.has(id)) next.delete(id); else next.add(id);
@@ -94,6 +138,28 @@ export default function Analytics() {
       <div style={pageHeader}>
         <h1 style={pageTitle}>Analytics</h1>
         <p style={pageSubtitle}>Usage stats for the current week.</p>
+      </div>
+
+      <div style={{ ...chartCard, marginBottom: "28px" }}>
+        <div style={aiHeader}>
+          <h2 style={{ ...chartTitle, margin: 0 }}>✦ AI Summary</h2>
+          <div style={aiPeriodRow} role="group" aria-label="Summary period">
+            {[["today", "Today"], ["week", "This Week"]].map(([value, label]) => (
+              <button key={value} onClick={() => setAiPeriod(value)} aria-pressed={aiPeriod === value} style={aiPeriod === value ? { ...aiPeriodBtn, ...aiPeriodBtnActive } : aiPeriodBtn}>{label}</button>
+            ))}
+          </div>
+        </div>
+        <p style={todayHint}>An AI-written recap of what happened in the app {aiPeriod === "week" ? "this week" : "today"} — sign-ups, who was active, what they played and which pages they visited.</p>
+        <button onClick={generateAiSummary} disabled={ai.loading} style={ai.loading ? { ...aiGenerateBtn, opacity: 0.6 } : aiGenerateBtn}>
+          {ai.loading ? "Writing summary…" : ai.summary ? "↻ Regenerate" : "✦ Generate Summary"}
+        </button>
+        {ai.error && <p style={aiError} role="alert">{ai.error}</p>}
+        {ai.summary && (
+          <div style={aiResult}>
+            {ai.summary.split(/\n{2,}/).map((para, i) => <p key={i} style={aiParagraph}>{para}</p>)}
+            <p style={aiMeta}>{ai.period === "week" ? "This week" : "Today"} · based on {ai.events} recorded {ai.events === 1 ? "event" : "events"} · generated {ai.at?.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}. AI can make mistakes — check anything important.</p>
+          </div>
+        )}
       </div>
 
       <div style={grid}>
@@ -199,3 +265,13 @@ const userMeta = { fontSize: "12px", color: "var(--color-9b7040)", whiteSpace: "
 const pageList = { listStyle: "none", margin: 0, padding: "0 14px 12px", display: "flex", flexDirection: "column", gap: "6px" };
 const pageItem = { display: "flex", justifyContent: "space-between", fontSize: "13px", fontFamily: "sans-serif", color: "var(--color-5c3a1e)" };
 const pageCount = { color: "var(--color-9b7040)" };
+
+const aiHeader = { display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px", marginBottom: "6px" };
+const aiPeriodRow = { display: "flex", gap: "6px" };
+const aiPeriodBtn = { padding: "6px 14px", borderRadius: "999px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fdf8f3)", color: "var(--color-7a4f10)", fontSize: "12px", fontFamily: "sans-serif", cursor: "pointer" };
+const aiPeriodBtnActive = { background: "linear-gradient(135deg, var(--color-c97c2e), var(--color-a85e18))", color: "var(--color-fff8ee)", border: "none" };
+const aiGenerateBtn = { padding: "10px 18px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, var(--color-c97c2e) 0%, var(--color-a85e18) 100%)", color: "var(--color-fff8ee)", fontSize: "13px", fontWeight: "600", fontFamily: "sans-serif", cursor: "pointer", boxShadow: "0 3px 10px rgba(160,80,20,0.25)" };
+const aiError = { color: "var(--color-b3432c)", fontSize: "13px", fontFamily: "sans-serif", margin: "12px 0 0" };
+const aiResult = { marginTop: "16px", padding: "16px 18px", borderRadius: "12px", background: "var(--color-fdf8f3)", border: "1px solid var(--color-eddfc8)" };
+const aiParagraph = { fontSize: "14px", lineHeight: 1.65, color: "var(--color-3d2200)", fontFamily: "sans-serif", margin: "0 0 10px" };
+const aiMeta = { fontSize: "11px", color: "var(--color-9b7040)", fontFamily: "sans-serif", margin: "4px 0 0" };

@@ -14,3 +14,7 @@ verify_jwt = false
 [functions.agent-api]
 # Authenticates its own scoped agent API keys (see Admin -> Agents), not Supabase JWTs.
 verify_jwt = false
+
+[functions.admin-activity-summary]
+# Authenticates the Firebase ID token itself (and requires the admin role).
+verify_jwt = false
