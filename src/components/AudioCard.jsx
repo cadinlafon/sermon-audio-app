@@ -248,24 +248,27 @@ export default function AudioCard({ audio, onPlay, onSummarySaved, onSaveChange 
       </div>
       {showMore && (
         <div style={moreRow}>
-          <button onClick={handleCopyLink} style={iconOnlyButton} title="Copy link" aria-label="Copy link">
-            {copied ? "✓" : "🔗"}
+          <button onClick={() => navigate(`/transcripts/${audio.id}`, { state: { autoCreate: true } })} style={moreActionButton}>
+            View Transcript
+          </button>
+          <button onClick={handleCopyLink} style={moreActionButton}>
+            {copied ? "Link copied" : "Copy link"}
           </button>
           {typeof navigator !== "undefined" && navigator.share && (
-            <button onClick={handleShare} style={iconOnlyButton} title="Share" aria-label="Share">
-              ↗
+            <button onClick={handleShare} style={moreActionButton}>
+              Share
             </button>
           )}
-          <button onClick={() => setShowPlaylist(true)} style={iconOnlyButton} title="Add to playlist" aria-label="Add to playlist">☰＋</button>
+          <button onClick={() => setShowPlaylist(true)} style={moreActionButton}>
+            Add to playlist
+          </button>
           {user && (
             <button
               onClick={handleToggleDownload}
-              style={isDownloaded ? { ...iconOnlyButton, ...iconOnlyButtonActive } : iconOnlyButton}
+              style={isDownloaded ? { ...moreActionButton, ...moreActionButtonActive } : moreActionButton}
               disabled={downloading}
-              title={isDownloaded ? "Remove offline download" : "Download for offline listening"}
-              aria-label={isDownloaded ? "Remove offline download" : "Download for offline listening"}
             >
-              {downloading ? "…" : isDownloaded ? "✓" : "⬇"}
+              {downloading ? "Working…" : isDownloaded ? "Remove download" : "Download"}
             </button>
           )}
         </div>
@@ -292,8 +295,8 @@ const moreButton = { display: "inline-flex", alignItems: "center", padding: "8px
 const moreRow = { display: "flex", gap: "8px", flexWrap: "wrap", marginTop: "10px" };
 const newBadge = { display: "inline-block", fontSize: "11px", padding: "3px 10px", borderRadius: "999px", background: "var(--color-fde8b8)", color: "var(--color-8a5a10)", fontFamily: "sans-serif", marginLeft: "8px", marginBottom: "10px", fontWeight: "600" };
 const durationBadge = { display: "inline-block", fontSize: "11px", padding: "3px 10px", borderRadius: "999px", background: "var(--color-f0e4d0)", color: "var(--color-7a5530)", fontFamily: "sans-serif", marginLeft: "8px", marginBottom: "10px" };
-const iconOnlyButton = { display: "inline-flex", alignItems: "center", justifyContent: "center", width: "34px", height: "34px", borderRadius: "999px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fdf8f3)", color: "var(--color-7a4f10)", cursor: "pointer", fontSize: "14px" };
-const iconOnlyButtonActive = { background: "var(--color-e3f5e6)", color: "var(--color-2f8a4a)", borderColor: "var(--color-bfe6c8)" };
+const moreActionButton = { display: "inline-flex", alignItems: "center", justifyContent: "center", padding: "8px 14px", borderRadius: "999px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fdf8f3)", color: "var(--color-7a4f10)", cursor: "pointer", fontSize: "13px", fontFamily: "sans-serif" };
+const moreActionButtonActive = { background: "var(--color-e3f5e6)", color: "var(--color-2f8a4a)", borderColor: "var(--color-bfe6c8)" };
 const resumeTrack = { height: "5px", borderRadius: "999px", background: "var(--color-eddfc8)", overflow: "hidden", marginBottom: "14px" };
 const resumeFill = { height: "100%", background: "linear-gradient(to right, var(--color-e08930), var(--color-c97c2e))" };
 const saveErrorStyle = { color: "var(--color-a33622)", fontSize: "13px", fontFamily: "sans-serif", margin: "10px 0 0" };

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { doc, getDoc } from "firebase/firestore";
-import { db } from "../firebase";
+import { auth, db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
 import { useAudioPlayer } from "../context/AudioPlayerContext";
 import { useToast } from "../context/ToastContext";
@@ -13,6 +13,7 @@ export default function Transcript() {
   const { id } = useParams();
   const [params] = useSearchParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { isAdmin } = useAuth();
   const { current, currentTime, isPlaying, seekTo, audioRef, playSermon } = useAudioPlayer();
   const { toast } = useToast();
@@ -78,6 +79,18 @@ export default function Transcript() {
     setGenerating(false);
   };
 
+  // "View Transcript" on an audio card opens this page with autoCreate: if
+  // there's no transcript yet and the person is signed in, start making it
+  // right away (it only ever happens once per recording — the server never
+  // re-transcribes). Guests just see the sign-in note below.
+  const autoStartedRef = useRef(false);
+  const missing = data !== undefined && (!data || data.segments.length === 0);
+  useEffect(() => {
+    if (!location.state?.autoCreate || autoStartedRef.current || !missing || !audio || !auth.currentUser) return;
+    autoStartedRef.current = true;
+    generate();
+  }, [missing, audio]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const regenSections = async () => {
     setGenerating(true);
     try { await generateTranscript(audio || { id }, { mode: "sections" }); setData(await fetchTranscript(id)); toast("Sections updated", { type: "success" }); }
@@ -113,9 +126,9 @@ export default function Transcript() {
       {!data || data.segments.length === 0 ? (
         <div style={empty}>
           <div style={{ fontSize: "36px" }}>📜</div>
-          <h3 style={emptyTitle}>No transcript yet</h3>
-          <p style={muted}>Transcripts are created automatically with AI. It takes a minute or two for a long recording, and only needs to happen once.</p>
-          <button style={primary} onClick={generate} disabled={generating || !audio}>{generating ? "Transcribing…" : "✨ Generate transcript"}</button>
+          <h3 style={emptyTitle} role="status" aria-live="polite">{generating ? "Creating Transcript…" : "No transcript yet"}</h3>
+          <p style={muted}>{generating ? "This takes a minute or two for a long recording — you can leave this page open, it only happens once." : "Transcripts are created automatically with AI. It takes a minute or two for a long recording, and only needs to happen once."}</p>
+          <button style={primary} onClick={generate} disabled={generating || !audio}>{generating ? "Creating Transcript…" : "✨ Generate transcript"}</button>
           <p style={{ ...muted, marginTop: "12px" }}>Requires a signed-in account. Summaries and transcripts share one transcription, so an AI summary will appear too.</p>
         </div>
       ) : (
