@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   signInWithEmailAndPassword,
   signInWithPopup,
@@ -98,6 +98,7 @@ function GlobalSearch({ onClose }) {
 
 export default function TopBar() {
   const navigate = useNavigate();
+  const location = useLocation();
   const profileRef = useRef(null);
   const { pages } = usePages();
 
@@ -201,17 +202,40 @@ export default function TopBar() {
   //////////////////////////////////////////////////
   // CLOSE DROPDOWN
   //////////////////////////////////////////////////
+  // Closes on: a tap/click anywhere outside the box (pointerdown + touchstart,
+  // because iOS doesn't send mouse events for taps on plain page areas),
+  // Escape, and any page change. Buttons inside close it through go() below.
   useEffect(() => {
-    function handleClickOutside(event) {
+    if (!showProfile) return undefined;
+
+    function handleOutside(event) {
       if (profileRef.current && !profileRef.current.contains(event.target)) {
         setShowProfile(false);
       }
     }
+    function handleKey(event) {
+      if (event.key === "Escape") setShowProfile(false);
+    }
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () =>
-      document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+    document.addEventListener("pointerdown", handleOutside);
+    document.addEventListener("touchstart", handleOutside, { passive: true });
+    document.addEventListener("keydown", handleKey);
+    return () => {
+      document.removeEventListener("pointerdown", handleOutside);
+      document.removeEventListener("touchstart", handleOutside);
+      document.removeEventListener("keydown", handleKey);
+    };
+  }, [showProfile]);
+
+  useEffect(() => {
+    setShowProfile(false);
+  }, [location.pathname]);
+
+  // A button in the dropdown that goes to a page: go there and close the box.
+  const go = (route) => {
+    setShowProfile(false);
+    navigate(route);
+  };
 
   //////////////////////////////////////////////////
   // UI
@@ -280,7 +304,7 @@ export default function TopBar() {
 
             <p
               style={signupText}
-              onClick={() => navigate("/signup")}
+              onClick={() => go("/signup")}
             >
               Don't have an account? <span style={signupLink}>Sign up</span>
             </p>
@@ -299,7 +323,7 @@ export default function TopBar() {
             <div style={divider} />
 
             {accountPages.map((p) => (
-              <button key={p.id} style={accountButton} onClick={() => navigate(p.route)}>
+              <button key={p.id} style={accountButton} onClick={() => go(p.route)}>
                 <span style={accountIcon}>{p.icon}</span>
                 {getDisplayName(p)}
                 {p.badgeEnabled && p.badgeText && (
@@ -309,7 +333,7 @@ export default function TopBar() {
             ))}
 
             {isAdmin && (
-              <button style={adminButton} onClick={() => navigate("/admin")}>
+              <button style={adminButton} onClick={() => go("/admin")}>
                 Admin
               </button>
             )}
