@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "./firebase";
@@ -50,6 +50,7 @@ import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import AdminAccess from "./pages/AdminAccess";
 import Player from "./pages/Player";
+import PlayerSheet from "./components/PlayerSheet";
 import SuggestFeature from "./pages/SuggestFeature";
 import Contact from "./pages/Contact";
 import ListenDeepLink from "./pages/ListenDeepLink";
@@ -134,6 +135,19 @@ function App() {
   const [loading, setLoading] = useState(true);
 
   const location = useLocation();
+
+  // The player is a sheet over the page you were on, so while /player is
+  // showing, the routes underneath keep rendering the last regular page.
+  // (Opened directly, or from a redirecting page like /listen/:id, Home sits
+  // underneath instead.)
+  const onPlayer = location.pathname === "/player";
+  const underPlayerRef = useRef(null);
+  if (!onPlayer) {
+    underPlayerRef.current = location.pathname.startsWith("/listen/") ? null : location;
+  }
+  const pageLocation = onPlayer
+    ? (underPlayerRef.current || { pathname: "/", search: "", hash: "", state: null, key: "player-under" })
+    : location;
 
 
   //////////////////////////////////////////////////
@@ -360,9 +374,9 @@ function App() {
       <IosInstallPopup />
 
 
-      <div id="main-content" tabIndex={-1} className="pf-page-fade" key={location.pathname.split("/")[1] || "home"} style={{ paddingBottom: "80px", outline: "none" }}>
+      <div id="main-content" tabIndex={-1} className="pf-page-fade" key={pageLocation.pathname.split("/")[1] || "home"} style={{ paddingBottom: "80px", outline: "none" }}>
 
-        <Routes>
+        <Routes location={pageLocation}>
 
           {/* ==========================================
               PUBLIC PAGES
@@ -466,10 +480,7 @@ function App() {
             }
           />
 
-          <Route
-            path="/player"
-            element={<Player />}
-          />
+          {/* /player is rendered as <PlayerSheet> below, over the page underneath */}
 
           <Route
             path="/admin-access"
@@ -749,9 +760,11 @@ function App() {
           ========================================== */}
 
       <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 1000, display: "flex", flexDirection: "column" }}>
-        {location.pathname !== "/player" && location.pathname !== "/tv" && <MiniPlayer />}
+        {location.pathname !== "/tv" && <MiniPlayer />}
         <BottomBar />
       </div>
+
+      {onPlayer && <PlayerSheet><Player /></PlayerSheet>}
 
       <BackToTop />
 

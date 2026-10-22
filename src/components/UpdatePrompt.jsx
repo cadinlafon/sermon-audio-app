@@ -48,8 +48,8 @@ export default function UpdatePrompt() {
 // STYLES
 ////////////////////////////////////////////////////////////////
 
-// Under the sticky top bar; above the nav/mini-player stack (1000),
-// below modal dialogs.
+// Under the sticky top bar; above the nav/mini-player stack (1000) and the
+// full-screen player sheet (2500), below modal dialogs.
 const wrap = {
   position: "fixed",
   top: "72px",
@@ -58,7 +58,7 @@ const wrap = {
   display: "flex",
   justifyContent: "center",
   padding: "0 16px",
-  zIndex: 2000,
+  zIndex: 2600,
   pointerEvents: "none",
 };
 

@@ -1,3 +1,4 @@
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAudioPlayer } from "../context/AudioPlayerContext";
 
@@ -6,6 +7,37 @@ import back30 from "../assets/Player/back30.png";
 export default function MiniPlayer() {
   const { current, isPlaying, togglePlay, audioRef, duration, currentTime, settings, playError, retryPlayback, isLoading } = useAudioPlayer();
   const navigate = useNavigate();
+
+  // Swipe up on the bar to open the full player (it slides up as a sheet —
+  // see PlayerSheet.jsx). The bar lifts a little with your finger as feedback.
+  const [lift, setLift] = useState(0);
+  const touch = useRef(null);
+  const swiped = useRef(false);
+
+  const onTouchStart = (e) => {
+    const t = e.touches[0];
+    touch.current = { x: t.clientX, y: t.clientY, time: e.timeStamp };
+    swiped.current = false;
+  };
+  const onTouchMove = (e) => {
+    if (!touch.current) return;
+    const t = e.touches[0];
+    const dy = t.clientY - touch.current.y;
+    const dx = t.clientX - touch.current.x;
+    if (dy < 0 && Math.abs(dy) > Math.abs(dx)) setLift(Math.max(dy, -80));
+  };
+  const onTouchEnd = (e) => {
+    const start = touch.current;
+    touch.current = null;
+    const dy = (e.changedTouches?.[0]?.clientY ?? start?.y ?? 0) - (start?.y ?? 0);
+    const dx = (e.changedTouches?.[0]?.clientX ?? start?.x ?? 0) - (start?.x ?? 0);
+    const fast = start && dy / Math.max(1, e.timeStamp - start.time) < -0.5;
+    setLift(0);
+    if (hasAudio && dy < -10 && Math.abs(dy) > Math.abs(dx) && (dy < -40 || fast)) {
+      swiped.current = true; // the click that follows a swipe must not also fire
+      navigate("/player");
+    }
+  };
 
   const hasAudio = !!current;
   const progressPercent = hasAudio && duration ? (currentTime / duration) * 100 : 0;
@@ -24,8 +56,20 @@ export default function MiniPlayer() {
 
   return (
     <div
-      style={hasAudio ? container : { ...container, ...containerEmpty }}
-      onClick={() => hasAudio && navigate("/player")}
+      style={{
+        ...(hasAudio ? container : { ...container, ...containerEmpty }),
+        transform: lift ? `translateY(${lift}px)` : "none",
+        transition: lift ? "none" : "transform 0.2s ease-out",
+        touchAction: hasAudio ? "none" : undefined,
+      }}
+      onClick={() => {
+        if (swiped.current) { swiped.current = false; return; }
+        if (hasAudio) navigate("/player");
+      }}
+      onTouchStart={hasAudio ? onTouchStart : undefined}
+      onTouchMove={hasAudio ? onTouchMove : undefined}
+      onTouchEnd={hasAudio ? onTouchEnd : undefined}
+      onTouchCancel={hasAudio ? () => { touch.current = null; setLift(0); } : undefined}
     >
       {hasAudio && (
         <div style={progressTrack}>

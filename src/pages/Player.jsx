@@ -12,6 +12,7 @@ import PlayOnTv from "../components/PlayOnTv";
 import QueueSheet from "../components/QueueSheet";
 import DesktopMiniPlayerContent from "../components/DesktopMiniPlayerContent";
 import RelatedAudio from "../components/RelatedAudio";
+import { useSheetClose } from "../components/PlayerSheet";
 
 import back30 from "../assets/Player/back30.png";
 import forward30 from "../assets/Player/forward30.png";
@@ -44,6 +45,8 @@ export default function Player() {
     chooseOutputDevice,
   } = useAudioPlayer();
   const navigate = useNavigate();
+  const sheetClose = useSheetClose();
+  const goBack = () => (sheetClose ? sheetClose() : navigate(-1));
   const pip = useDocumentPiP();
 
   const [progress, setProgress] = useState(currentTime);
@@ -266,7 +269,7 @@ export default function Player() {
   if (!current) {
     return (
       <div style={page}>
-        <button className="pf-back-btn" style={backBtn} onClick={() => navigate(-1)}>
+        <button className="pf-back-btn" style={backBtn} onClick={goBack}>
           ← Back
         </button>
         <div style={{ ...card, alignItems: "center", padding: "60px 28px" }}>
@@ -345,7 +348,7 @@ export default function Player() {
 
       {/* HEADER: BACK + SETTINGS */}
       <div style={headerRow}>
-        <button className="pf-back-btn" style={backBtn} onClick={() => navigate(-1)}>
+        <button className="pf-back-btn" style={backBtn} onClick={goBack}>
           ← Back
         </button>
         <div style={{ display: "flex", gap: "8px" }}>
