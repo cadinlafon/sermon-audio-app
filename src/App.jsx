@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation, useNavigationType } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
@@ -148,6 +148,44 @@ function App() {
   const pageLocation = onPlayer
     ? (underPlayerRef.current || { pathname: "/", search: "", hash: "", state: null, key: "player-under" })
     : location;
+
+  //////////////////////////////////////////////////
+  // SCROLL ON PAGE CHANGE
+  //
+  // The document scrolls, and React Router doesn't reset it — so a new page
+  // used to open already scrolled down by however far the old one was.
+  // New pages open at the top; Back/Forward returns to where you were.
+  // (Keyed on the page underneath, so opening/closing the player sheet,
+  // which leaves that page in place, never moves it.)
+  //////////////////////////////////////////////////
+  const navigationType = useNavigationType();
+  const scrollPositions = useRef(new Map());
+  const pageKey = pageLocation.key;
+
+  useEffect(() => {
+    if ("scrollRestoration" in window.history) window.history.scrollRestoration = "manual";
+  }, []);
+
+  useEffect(() => {
+    const save = () => scrollPositions.current.set(pageKey, window.scrollY);
+    window.addEventListener("scroll", save, { passive: true });
+    return () => window.removeEventListener("scroll", save);
+  }, [pageKey]);
+
+  const firstPageRef = useRef(true);
+  useEffect(() => {
+    if (firstPageRef.current) { firstPageRef.current = false; return undefined; }
+    const saved = navigationType === "POP" ? scrollPositions.current.get(pageKey) : undefined;
+    const target = saved || 0;
+    window.scrollTo(0, target);
+    if (!target) return undefined;
+    // Pages load their content after mounting, so a restored position may
+    // not be reachable yet — try again as the page fills in.
+    const retries = [120, 350, 800].map((ms) => setTimeout(() => {
+      if (Math.abs(window.scrollY - target) > 4) window.scrollTo(0, target);
+    }, ms));
+    return () => retries.forEach(clearTimeout);
+  }, [pageKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
 
   //////////////////////////////////////////////////
