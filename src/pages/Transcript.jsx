@@ -5,6 +5,7 @@ import { auth, db } from "../firebase";
 import { useAuth } from "../context/AuthContext";
 import { useAudioPlayer } from "../context/AudioPlayerContext";
 import { useToast } from "../context/ToastContext";
+import { ensureTranscriptionCopy } from "../utils/transcriptionCopy";
 import { fetchTranscript, generateTranscript, saveTranscriptEdits, toParagraphs, detectTopics, transcriptToText, transcriptToSrt } from "../utils/transcripts";
 import { findReferences, referenceLabel } from "../utils/scripture";
 import { downloadText, formatTime } from "../utils/notes";
@@ -21,6 +22,7 @@ export default function Transcript() {
   const [audio, setAudio] = useState(null);
   const [data, setData] = useState(undefined); // undefined = loading, null = none yet
   const [generating, setGenerating] = useState(false);
+  const [prepStage, setPrepStage] = useState("");
   const [q, setQ] = useState("");
   const [hit, setHit] = useState(0);
   const [autoScroll, setAutoScroll] = useState(true);
@@ -69,13 +71,24 @@ export default function Transcript() {
     if (!audio) return;
     setGenerating(true);
     try {
-      await generateTranscript(audio);
+      // Long recordings from before the compressed AI copy existed are over
+      // the 25MB transcription limit. An admin's browser can build that copy
+      // right here; anyone else gets pointed to an admin (below).
+      let ready = audio;
+      if (isAdmin && audio.audioStorageKey && !audio.transcribeStorageKey) {
+        ready = await ensureTranscriptionCopy(audio, setPrepStage);
+        setAudio(ready);
+        setPrepStage("Transcribing…");
+      }
+      await generateTranscript(ready);
       const fresh = await fetchTranscript(id);
       setData(fresh);
       toast(fresh ? "Transcript ready" : "Transcript requested", { type: fresh ? "success" : "info" });
     } catch (e) {
-      toast(e.message || "Couldn't generate the transcript.", { type: "error" });
+      const tooBig = /25\s?MB/i.test(e.message || "");
+      toast(tooBig ? "This recording is too long for AI transcription as-is. An admin needs to prepare a compressed copy first (Admin → Content Manager → Create Transcript)." : (e.message || "Couldn't generate the transcript."), { type: "error" });
     }
+    setPrepStage("");
     setGenerating(false);
   };
 
@@ -127,7 +140,7 @@ export default function Transcript() {
         <div style={empty}>
           <div style={{ fontSize: "36px" }}>📜</div>
           <h3 style={emptyTitle} role="status" aria-live="polite">{generating ? "Creating Transcript…" : "No transcript yet"}</h3>
-          <p style={muted}>{generating ? "This takes a minute or two for a long recording — you can leave this page open, it only happens once." : "Transcripts are created automatically with AI. It takes a minute or two for a long recording, and only needs to happen once."}</p>
+          <p style={muted}>{generating ? `${prepStage ? `${prepStage} ` : ""}This takes a minute or two for a long recording — keep this page open, it only happens once.` : "Transcripts are created automatically with AI. It takes a minute or two for a long recording, and only needs to happen once."}</p>
           <button style={primary} onClick={generate} disabled={generating || !audio}>{generating ? "Creating Transcript…" : "✨ Generate transcript"}</button>
           <p style={{ ...muted, marginTop: "12px" }}>Requires a signed-in account. Summaries and transcripts share one transcription, so an AI summary will appear too.</p>
         </div>

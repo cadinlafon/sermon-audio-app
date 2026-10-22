@@ -9,6 +9,7 @@ import { useAdminPin } from "../../context/AdminPinContext";
 import { logAdminAction } from "../../utils/adminAudit";
 import { zipSync, strToU8 } from "fflate";
 import { fetchTranscript, generateTranscript, buildTranscriptText, transcriptFileBase } from "../../utils/transcripts";
+import { ensureTranscriptionCopy } from "../../utils/transcriptionCopy";
 import { downloadText } from "../../utils/notes";
 
 const speakers = ["Jonathan Mcintosh", "Rusty Olps", "Jason Farley", "Mark Thiele"];
@@ -253,7 +254,11 @@ export default function AdminContentManager() {
         alert(`"${audio.title}" already has a transcript — use ⬇ Transcript to download it.`);
         return;
       }
-      await generateTranscript(audio);
+      // Long recordings from before the compressed AI copy existed are over
+      // the 25MB transcription limit — build that copy first.
+      const ready = await ensureTranscriptionCopy(audio);
+      if (ready !== audio) setAudioList((list) => list.map((a) => (a.id === audio.id ? { ...a, transcribeStorageKey: ready.transcribeStorageKey } : a)));
+      await generateTranscript(ready);
       const fresh = await fetchTranscript(audio.id);
       if (!fresh || fresh.segments.length === 0) throw new Error("The transcript was requested but nothing came back yet. Try again in a moment.");
       setCreateStatus((m) => ({ ...m, [audio.id]: "done" }));
@@ -314,7 +319,10 @@ export default function AdminContentManager() {
       setCreateStatus((m) => ({ ...m, [audio.id]: "working" }));
       if (i > 0) await new Promise((resolve) => setTimeout(resolve, 800));
       try {
-        await generateTranscript(audio);
+        const ready = await ensureTranscriptionCopy(audio, (stage) => setCreateRun({ phase: "creating", index: i + 1, total: queue.length, title: audio.title, stage }));
+        if (ready !== audio) setAudioList((list) => list.map((a) => (a.id === audio.id ? { ...a, transcribeStorageKey: ready.transcribeStorageKey } : a)));
+        setCreateRun({ phase: "creating", index: i + 1, total: queue.length, title: audio.title, stage: "Transcribing…" });
+        await generateTranscript(ready);
         const fresh = await fetchTranscript(audio.id);
         if (!fresh || fresh.segments.length === 0) throw new Error("Requested, but no transcript came back yet.");
         created++;
@@ -420,7 +428,7 @@ export default function AdminContentManager() {
         <div style={createStatusBox} role="status" aria-live="polite">
           {createRun.phase === "checking"
             ? `Checking which recordings already have a transcript… ${createRun.index} / ${createRun.total}`
-            : `Creating transcript ${createRun.index} of ${createRun.total}: “${createRun.title}” — keep this tab open.`}
+            : `Creating transcript ${createRun.index} of ${createRun.total}: “${createRun.title}”${createRun.stage ? ` — ${createRun.stage}` : ""} — keep this tab open.`}
         </div>
       )}
 
