@@ -1,0 +1,718 @@
+rules_version = '2';
+
+// ─────────────────────────────────────────────────────────────────────
+// Palouse Fellowship sermon app — Firestore security rules
+//
+// Who the callers are:
+//   guest        not signed in (listening, browsing, notices, sign-up screens)
+//   user         signed in, users/{uid}.role == "user"
+//   admin        users/{uid}.role == "admin"
+//     full admin        no `permissions` map on their user doc
+//     restricted admin  has a `permissions` map (Admin → Users → Permissions)
+//
+// Also hitting this database, all as the SIGNED-IN USER (their own ID token):
+//   • the Supabase edge functions summarize-audio / audio-admin /
+//     audio-download-url (REST calls with the caller's token), and
+//   • the Android app (same collections as the web app).
+// The agent-api edge function and the Cloud Function (sendPushNotification)
+// use service credentials and bypass these rules entirely.
+//
+// Not covered by "restricted admin" per-module checks: any admin (full or
+// restricted) can write admin content collections here; the per-module
+// view/edit/delete grants are still enforced by the admin screens. What IS
+// enforced here for full admins only: changing roles/permissions, agent
+// API keys, and the Admin PIN/passkey settings.
+//
+// This file is deployed with:  firebase deploy --only firestore:rules
+// ─────────────────────────────────────────────────────────────────────
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    ////////////////////////////////////////////////////////////////////
+    // Helpers
+    ////////////////////////////////////////////////////////////////////
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isSelf(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function myDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && myDoc().role == 'admin';
+    }
+
+    // Full (unrestricted) admin: admin role AND no permissions map.
+    function isFullAdmin() {
+      return isAdmin() && (!('permissions' in myDoc()) || myDoc().permissions == null);
+    }
+
+    // True when the doc id starts with "<uid>_" (saved / listenProgress / notes
+    // docs are keyed "<uid>_<audioId>").
+    function ownsDocId(docId) {
+      return signedIn() && docId.matches(request.auth.uid + '_.*');
+    }
+
+    ////////////////////////////////////////////////////////////////////
+    // Users
+    ////////////////////////////////////////////////////////////////////
+
+    match /users/{uid} {
+      // Your own profile, or an admin looking at anyone's. (Nobody else can
+      // read other people's emails, push tokens, downloads, playlists…)
+      allow read: if isSelf(uid) || isAdmin();
+
+      // Creating your own profile at sign-up: you can only ever make yourself
+      // a plain "user" — never an admin, never with a permissions map.
+      allow create: if isSelf(uid)
+        && request.resource.data.get('role', 'user') == 'user'
+        && !('permissions' in request.resource.data);
+
+      // You may edit your own profile but never your role / permissions /
+      // disabled flags. Admins may edit anyone's, but only a FULL admin may
+      // change role or permissions (stops a restricted admin promoting
+      // themselves or others).
+      allow update: if (isSelf(uid)
+          && !request.resource.data.diff(resource.data).affectedKeys()
+               .hasAny(['role', 'permissions', 'disabled', 'disabledReason', 'disabledAt']))
+        || (isAdmin()
+          && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'permissions'])
+              || isFullAdmin()));
+
+      // Delete your own account, or (admin) remove a user.
+      allow delete: if isSelf(uid) || isAdmin();
+    }
+
+    ////////////////////////////////////////////////////////////////////
+    // App configuration
+    ////////////////////////////////////////////////////////////////////
+
+    // Maintenance mode, sign-up limits, AI toggle, Liquid Screen… read by
+    // everyone (the app needs it before sign-in), written by admins.
+    match /appConfig/status {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Dev Info page content.
+    match /appConfig/devInfo {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Admin PIN hash/salt + settings. Any admin must read it (to check their
+    // PIN); only a full admin may change it. NEVER readable by the public.
+    match /appConfig/adminSecurity {
+      allow read: if isAdmin();
+      allow write: if isFullAdmin();
+
+      match /passkeys/{passkeyId} {
+        allow read: if isAdmin();
+        allow write: if isFullAdmin();
+      }
+    }
+
+    // Admin-log retention setting.
+    match /appConfig/adminLogRetention {
+      allow read, write: if isAdmin();
+    }
+
+    ////////////////////////////////////////////////////////////////////
+    // Audio library + AI features
+    ////////////////////////////////////////////////////////////////////
+
+    match /audio/{audioId} {
+      allow read: if true;
+      allow create, delete: if isAdmin();
+
+      // Admins edit freely. Any signed-in listener may only touch the AI
+      // summary fields — that is what the summarize-audio function writes
+      // with the listener's own token (and what "Delete summary" clears).
+      allow update: if isAdmin()
+        || (signedIn()
+          && request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['aiSummary', 'aiSummaryPending', 'aiSummaryPendingAt']));
+    }
+
+    // Timestamped transcripts. summarize-audio creates one (and its AI
+    // sections/topics) with the listener's token; only admins can overwrite
+    // the transcript text afterwards or save corrections (edits,
+    // speakerLabels, editedAt).
+    match /transcripts/{audioId} {
+      allow read: if true;
+      allow create: if isAdmin()
+        || (signedIn()
+          && request.resource.data.keys()
+               .hasOnly(['segments', 'language', 'duration', 'createdAt', 'sections', 'topics']));
+      allow update: if isAdmin()
+        || (signedIn()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['sections', 'topics']));
+      allow delete: if isAdmin();
+    }
+
+    // One row each time someone runs "Summarize with AI" (written by the
+    // summarize-audio function as the caller). Append-only; admins read it.
+    match /aiSummaryLogs/{logId} {
+      allow read: if isAdmin();
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    ////////////////////////////////////////////////////////////////////
+    // Public content, admin-managed
+    ////////////////////////////////////////////////////////////////////
+
+    match /notices/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /pageNotices/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /pages/{pageId} {
+      allow read: if true;
+      allow write: if isAdmin();
+
+      match /history/{entryId} {
+        allow read, create: if isAdmin();
+        allow update, delete: if false;
+      }
+    }
+
+    match /resources/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /resourceCategories/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /resourceSections/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /doctrineWeeks/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /announcements/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Push-notification campaigns (created by the sendPushNotification
+    // Cloud Function; the popup shows the latest one to everyone).
+    match /notifications/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+
+      // Per-user "seen / opened" markers.
+      match /interactions/{uid} {
+        allow read: if isSelf(uid) || isAdmin();
+        allow create, update: if isSelf(uid);
+        allow delete: if isAdmin();
+      }
+    }
+
+    // Who has dismissed / opened a notification popup (guests record as "guest").
+    match /notificationViews/{id} {
+      allow create: if request.resource.data.userId is string
+        && (request.resource.data.userId == 'guest' || isSelf(request.resource.data.userId));
+      allow read: if isAdmin()
+        || resource.data.userId == 'guest'
+        || (signedIn() && resource.data.userId == request.auth.uid);
+      allow update, delete: if false;
+    }
+
+    // Sign-up links / referral sources (admin tooling only).
+    match /entrancePoints/{id} {
+      allow read, write: if isAdmin();
+    }
+
+    ////////////////////////////////////////////////////////////////////
+    // Notices: replies, feature suggestions
+    ////////////////////////////////////////////////////////////////////
+
+    // Replies to a notice's input (polls, forms…). Anyone can answer —
+    // guests included; only admins can read or clear them.
+    match /noticeSubmissions/{id} {
+      allow create: if request.resource.data.noticeId is string
+        && (request.resource.data.get('userId', null) == null || isSelf(request.resource.data.userId));
+      allow read, delete: if isAdmin();
+      allow update: if false;
+    }
+
+    match /suggestions/{id} {
+      allow read: if true;
+
+      // Anyone can suggest ("anon" when signed out); a signed-in author's
+      // userId must be their own.
+      allow create: if request.resource.data.title is string
+        && request.resource.data.details is string
+        && (request.resource.data.get('userId', 'anon') == 'anon' || isSelf(request.resource.data.userId));
+
+      // Signed-in users may vote / un-vote (their own uid added to or
+      // removed from `voters`); admins can change anything (status, …).
+      allow update: if isAdmin()
+        || (signedIn()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['votes', 'voters'])
+          && ((request.auth.uid in request.resource.data.voters)
+              != (request.auth.uid in resource.data.get('voters', []))));
+
+      allow delete: if isAdmin();
+    }
+
+    ////////////////////////////////////////////////////////////////////
+    // Analytics & audit trails
+    ////////////////////////////////////////////////////////////////////
+
+    // App events (page visits, logins…). Anyone can write one — including
+    // guests — but a signed-in userId must be the writer's own. Only admins
+    // can read them (they contain emails and device details). Never edited.
+    match /logs/{logId} {
+      allow create: if request.resource.data.event is string
+        && request.resource.data.keys().size() <= 60
+        && (request.resource.data.get('userId', null) == null || isSelf(request.resource.data.userId));
+      allow read: if isAdmin();
+      allow update, delete: if false;
+    }
+
+    // One row per play (guests included) for the Audio Stats page.
+    match /appUsage/{id} {
+      allow create: if request.resource.data.sermonId is string
+        && (request.resource.data.get('userId', null) == null || isSelf(request.resource.data.userId));
+      allow read: if isAdmin();
+      allow update, delete: if false;
+    }
+
+    // Admin action log. Any admin appends their own entries; only admins
+    // read; old entries can be pruned (retention) but never edited.
+    match /adminActions/{id} {
+      allow read, delete: if isAdmin();
+      allow create: if isAdmin() && request.resource.data.adminId == request.auth.uid;
+      allow update: if false;
+    }
+
+    // Daily sign-up counter used for the "max sign-ups per day" limit.
+    // Readable by all (checked during sign-up); a signed-in user may bump
+    // it by exactly one.
+    match /registrationCounts/{day} {
+      allow read: if true;
+      allow create, update: if signedIn()
+        && request.resource.data.keys().hasOnly(['count', 'updatedAt'])
+        && request.resource.data.count == (resource == null ? 1 : resource.data.get('count', 0) + 1);
+      allow delete: if false;
+    }
+
+    ////////////////////////////////////////////////////////////////////
+    // Per-user data (keyed "<uid>_<audioId>" or by uid)
+    ////////////////////////////////////////////////////////////////////
+
+    // Liked sermons.
+    match /saved/{docId} {
+      allow read: if isAdmin() || ownsDocId(docId) || (signedIn() && resource.data.userId == request.auth.uid);
+      allow create, update: if ownsDocId(docId) && request.resource.data.userId == request.auth.uid;
+      allow delete: if isAdmin() || ownsDocId(docId);
+    }
+
+    // Resume position / listen status.
+    match /listenProgress/{docId} {
+      allow read: if isAdmin() || ownsDocId(docId) || (signedIn() && resource.data.userId == request.auth.uid);
+      allow create, update: if ownsDocId(docId) && request.resource.data.userId == request.auth.uid;
+      allow delete: if isAdmin() || ownsDocId(docId);
+    }
+
+    // Sermon notes, bookmarks, entries.
+    match /notes/{docId} {
+      allow read: if isAdmin() || ownsDocId(docId) || (signedIn() && resource.data.userId == request.auth.uid);
+      allow create, update: if ownsDocId(docId) && request.resource.data.userId == request.auth.uid;
+      allow delete: if isAdmin() || ownsDocId(docId);
+    }
+
+    // Listening stats / goals totals (doc id = uid).
+    match /userStats/{uid} {
+      allow read, write: if isSelf(uid);
+      allow read, delete: if isAdmin();
+    }
+
+    // Older per-listen history (read-only for the person it belongs to).
+    match /listens/{id} {
+      allow read: if isAdmin() || (signedIn() && resource.data.userId == request.auth.uid);
+      allow write: if false;
+    }
+
+    // Public copies of shared playlists (private ones live on the user doc).
+    match /playlists/{id} {
+      // `resource == null` lets a "does it exist?" lookup answer "no" instead
+      // of an error.
+      allow read: if resource == null
+        || resource.data.get('public', false) == true
+        || isSelf(resource.data.get('ownerId', ''));
+      allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid;
+      allow update: if signedIn() && resource.data.ownerId == request.auth.uid
+        && request.resource.data.ownerId == request.auth.uid;
+      allow delete: if resource == null || isSelf(resource.data.get('ownerId', ''));
+    }
+
+    ////////////////////////////////////////////////////////////////////
+    // AI agent access (Admin → AI Agents)
+    ////////////////////////////////////////////////////////////////////
+
+    // API-key hashes and the scopes each key grants — full admins only.
+    match /agentKeys/{id} {
+      allow read, write: if isFullAdmin();
+    }
+
+    // OAuth connector state: written and read only by the agent-api edge
+    // function (service credentials, which ignore these rules).
+    match /agentOAuthClients/{id} { allow read, write: if false; }
+    match /agentOAuthCodes/{id}   { allow read, write: if false; }
+    match /agentOAuthTokens/{id}  { allow read, write: if false; }
+
+    ////////////////////////////////////////////////////////////////////
+    // PF MANAGEMENT (the leaders app, ~/leaders-pf-app)
+    //
+    // This Firebase project is shared with that app, so its rules live here
+    // too. The block below is a verbatim copy of its firestore.rules.leaders;
+    // keep the two in sync (that app has its own emulator tests,
+    // `npm run test:rules`, which build from its copy).
+    ////////////////////////////////////////////////////////////////////
+
+
+    function isLeader() {
+      return request.auth != null && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+        exists(/databases/$(database)/documents/leaders/$(request.auth.uid))
+      );
+    }
+
+    function isMainAdmin() {
+      return request.auth != null && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+        get(/databases/$(database)/documents/leaders/$(request.auth.uid)).data.role == 'main_admin'
+      );
+    }
+
+    // ── Invitations ──────────────────────────────────────────────────────
+    // The document ID is a 64-character random token, so anyone holding the link
+    // may read that one invitation (`get`), but only main admins can list them.
+    match /invitations/{token} {
+      allow get: if true;
+      allow list, delete: if isMainAdmin();
+
+      allow create: if isMainAdmin() &&
+        request.resource.data.status == 'pending' &&
+        request.resource.data.role in ['main_admin', 'leader'] &&
+        request.resource.data.invitedBy == request.auth.uid;
+
+      // The invited person marks their own invitation accepted, once.
+      allow update: if request.auth != null &&
+        resource.data.status == 'pending' &&
+        resource.data.expiresAt > request.time &&
+        request.auth.token.email == resource.data.email &&
+        request.resource.data.status == 'accepted' &&
+        request.resource.data.acceptedBy == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status', 'acceptedAt', 'acceptedBy']);
+    }
+
+    // ── Leaders ──────────────────────────────────────────────────────────
+    // A leader doc can only be created by the invited account itself, from a
+    // pending, unexpired invitation for that account's email, with exactly the
+    // role the invitation grants.
+    function invitationFor(data) {
+      return get(/databases/$(database)/documents/invitations/$(data.inviteToken)).data;
+    }
+
+    match /leaders/{uid} {
+      allow read: if request.auth != null && (request.auth.uid == uid || isLeader());
+
+      allow create: if request.auth != null &&
+        request.auth.uid == uid &&
+        invitationFor(request.resource.data).status == 'pending' &&
+        invitationFor(request.resource.data).expiresAt > request.time &&
+        invitationFor(request.resource.data).email == request.auth.token.email &&
+        invitationFor(request.resource.data).role == request.resource.data.role &&
+        request.resource.data.email == request.auth.token.email;
+
+      allow create, update, delete: if isMainAdmin();
+
+      // A manager may change their own name and phone — never their role or
+      // email, which decide what they can do and who they are.
+      allow update: if request.auth != null &&
+        request.auth.uid == uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'phone', 'updatedAt']) &&
+        request.resource.data.name is string &&
+        request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 100;
+    }
+
+    // ── Shared settings (connected Google Calendar, …) ───────────────────
+    match /leaderConfig/{name} {
+      allow read: if isLeader();
+      allow write: if isMainAdmin();
+    }
+
+    // ── Signup forms ─────────────────────────────────────────────────────
+    // Forms are public by link: anyone may load one form by its ID and submit to
+    // it while it is open. Only leaders can list forms or read submissions.
+    match /leaderForms/{slug} {
+      allow get: if true;
+      allow list, create, update, delete: if isLeader();
+
+      match /submissions/{id} {
+        allow create: if
+          get(/databases/$(database)/documents/leaderForms/$(slug)).data.status == 'open' &&
+          request.resource.data.keys().hasOnly(['answers', 'submittedAt']) &&
+          request.resource.data.answers is map &&
+          request.resource.data.answers.size() <= 50 &&
+          request.resource.data.submittedAt == request.time;
+        allow read, delete: if isLeader();
+      }
+    }
+
+    // ── Volunteer signups ────────────────────────────────────────────────
+    // A published signup is public by link: the event, positions, filled counts
+    // and the roster (names of who signed up, like a paper signup sheet).
+    // Contact details are in `volunteers`, which only leaders can read.
+    //
+    // Self-signup: a visitor may add ONE volunteer doc and bump that position's
+    // count by one, in a single batch, only while the signup is open and the
+    // position has room. The two writes are tied together with getAfter(), so
+    // neither can happen without the other.
+    //
+    // Self-cancel: the volunteer doc's ID is the SHA-256 of a secret that only
+    // the person who signed up holds (it stays in their browser). Cancelling
+    // must present that secret, so knowing a doc ID is not enough to remove
+    // someone. Requires `rules_version = '2';` at the top of the rules.
+
+    function volunteerDocPath(signupId, volunteerId) {
+      return /databases/$(database)/documents/volunteerSignups/$(signupId)/volunteers/$(volunteerId);
+    }
+
+    function rosterDocPath(signupId, volunteerId) {
+      return /databases/$(database)/documents/volunteerSignups/$(signupId)/roster/$(volunteerId);
+    }
+
+    function signupDocPath(signupId) {
+      return /databases/$(database)/documents/volunteerSignups/$(signupId);
+    }
+
+    // Signup doc, self-signup: only filledCounts (one position) + lastVolunteerId
+    // may change, and a brand-new volunteer doc for that position must be
+    // created in the same batch.
+    function selfSignupChange(signupId) {
+      let volunteerId = request.resource.data.lastVolunteerId;
+      return resource.data.status == 'open' &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['filledCounts', 'lastVolunteerId']) &&
+        !exists(volunteerDocPath(signupId, volunteerId)) &&
+        existsAfter(volunteerDocPath(signupId, volunteerId)) &&
+        request.resource.data.filledCounts.diff(resource.data.filledCounts).affectedKeys()
+          .hasOnly([getAfter(volunteerDocPath(signupId, volunteerId)).data.positionId]);
+    }
+
+    // Signup doc, self-cancel: same shape, but the volunteer doc must be deleted
+    // in the same batch and the caller must prove they hold its secret.
+    function selfCancelChange(signupId) {
+      let volunteerId = request.resource.data.lastVolunteerId;
+      return resource.data.allowCancellation == true &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['filledCounts', 'lastVolunteerId', 'cancelProof']) &&
+        request.resource.data.cancelProof is string &&
+        hashing.sha256(request.resource.data.cancelProof).toHexString().lower() == volunteerId &&
+        exists(volunteerDocPath(signupId, volunteerId)) &&
+        !existsAfter(volunteerDocPath(signupId, volunteerId)) &&
+        request.resource.data.filledCounts.diff(resource.data.filledCounts).affectedKeys()
+          .hasOnly([get(volunteerDocPath(signupId, volunteerId)).data.positionId]);
+    }
+
+    // Volunteer doc, self-signup: well-formed, for a real position with room,
+    // and the count goes up by exactly one in the same batch.
+    function validSelfSignup(signupId, volunteerId) {
+      let before = get(signupDocPath(signupId)).data;
+      let after = getAfter(signupDocPath(signupId)).data;
+      let position = request.resource.data.positionId;
+      return before.status == 'open' &&
+        after.lastVolunteerId == volunteerId &&
+        existsAfter(rosterDocPath(signupId, volunteerId)) &&
+        request.resource.data.keys().hasOnly(['positionId', 'name', 'email', 'phone', 'source', 'createdAt']) &&
+        request.resource.data.source == 'self' &&
+        request.resource.data.createdAt == request.time &&
+        request.resource.data.name is string &&
+        request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 100 &&
+        request.resource.data.email is string && request.resource.data.email.size() <= 200 &&
+        request.resource.data.phone is string && request.resource.data.phone.size() <= 40 &&
+        position in before.spotsByPosition &&
+        after.filledCounts[position] == before.filledCounts.get(position, 0) + 1 &&
+        after.filledCounts[position] <= before.spotsByPosition[position];
+    }
+
+    // Volunteer doc, self-cancel: only a self-signup can be self-cancelled, and
+    // the count goes down by exactly one in the same batch. (The secret is
+    // checked on the signup doc's update, which this forces to happen.)
+    function validSelfCancel(signupId, volunteerId) {
+      let before = get(signupDocPath(signupId)).data;
+      let after = getAfter(signupDocPath(signupId)).data;
+      let position = resource.data.positionId;
+      return before.allowCancellation == true &&
+        resource.data.source == 'self' &&
+        !existsAfter(rosterDocPath(signupId, volunteerId)) &&
+        after.lastVolunteerId == volunteerId &&
+        after.cancelProof is string &&
+        hashing.sha256(after.cancelProof).toHexString().lower() == volunteerId &&
+        after.filledCounts[position] == before.filledCounts[position] - 1 &&
+        after.filledCounts[position] >= 0;
+    }
+
+    // Roster entry, self-signup: must be created together with its volunteer doc
+    // (which is validated above) and carry exactly that name and position.
+    function validRosterEntry(signupId, volunteerId) {
+      return !exists(volunteerDocPath(signupId, volunteerId)) &&
+        existsAfter(volunteerDocPath(signupId, volunteerId)) &&
+        request.resource.data.keys().hasOnly(['positionId', 'name', 'createdAt']) &&
+        request.resource.data.createdAt == request.time &&
+        request.resource.data.name == getAfter(volunteerDocPath(signupId, volunteerId)).data.name &&
+        request.resource.data.positionId == getAfter(volunteerDocPath(signupId, volunteerId)).data.positionId;
+    }
+
+    // Roster entry, self-cancel: goes only when its volunteer doc goes in the same
+    // batch (and that delete is what checks the secret).
+    function removedWithVolunteer(signupId, volunteerId) {
+      return exists(volunteerDocPath(signupId, volunteerId)) &&
+        !existsAfter(volunteerDocPath(signupId, volunteerId));
+    }
+
+    match /volunteerSignups/{id} {
+      allow get: if resource.data.status != 'draft' || isLeader();
+      allow list, create, delete: if isLeader();
+      allow update: if isLeader() || selfSignupChange(id) || selfCancelChange(id);
+
+      match /volunteers/{volunteerId} {
+        allow read, update: if isLeader();
+        allow create: if isLeader() || validSelfSignup(id, volunteerId);
+        allow delete: if isLeader() || validSelfCancel(id, volunteerId);
+      }
+
+      match /roster/{volunteerId} {
+        allow read: if isLeader() || get(signupDocPath(id)).data.status != 'draft';
+        allow create: if isLeader() || validRosterEntry(id, volunteerId);
+        allow update: if isLeader();
+        allow delete: if isLeader() || removedWithVolunteer(id, volunteerId);
+      }
+    }
+
+    // ── Announcements ────────────────────────────────────────────────────
+    // Any leader can read, post and comment. A post or comment must be under the
+    // poster's own account. Only a post's author or a main admin can edit or
+    // delete it; other leaders may only touch its comment summary fields (the
+    // count and who commented last), which change when they comment.
+    match /leaderAnnouncements/{id} {
+      allow read: if isLeader();
+      allow create: if isLeader() && request.resource.data.createdBy == request.auth.uid;
+      allow update: if isLeader() && (
+        (
+          (resource.data.createdBy == request.auth.uid || isMainAdmin()) &&
+          request.resource.data.createdBy == resource.data.createdBy &&
+          request.resource.data.createdByName == resource.data.createdByName
+        ) ||
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['commentCount', 'lastCommentAt', 'lastCommentBy', 'lastCommentByName'])
+      );
+      allow delete: if isLeader() && (resource.data.createdBy == request.auth.uid || isMainAdmin());
+
+      // A comment can be removed by whoever wrote it, by the announcement's
+      // author, or by a main admin. Comments can't be edited.
+      match /comments/{commentId} {
+        allow read: if isLeader();
+        allow create: if isLeader() &&
+          request.resource.data.createdBy == request.auth.uid &&
+          request.resource.data.body is string &&
+          request.resource.data.body.size() > 0 && request.resource.data.body.size() <= 2000;
+        allow delete: if isLeader() && (
+          resource.data.createdBy == request.auth.uid ||
+          isMainAdmin() ||
+          get(/databases/$(database)/documents/leaderAnnouncements/$(id)).data.createdBy == request.auth.uid
+        );
+      }
+    }
+
+    // ── People directory ─────────────────────────────────────────────────
+    match /leaderPeople/{id} { allow read, write: if isLeader(); }
+    match /leaderGroups/{id} { allow read, write: if isLeader(); }
+
+    // ── Inventory, finance ledger, email list ────────────────────────────
+    match /leaderInventory/{id}    { allow read, write: if isLeader(); }
+    match /leaderTransactions/{id} { allow read, write: if isLeader(); }
+    match /leaderEmailList/{id}    { allow read, write: if isLeader(); }
+
+    // ── Saved resources ──────────────────────────────────────────────────
+    // Each resource has a visibility: "personal" (only its creator), "leaders"
+    // (every leader) or "admins" (main admins). Nobody — not even a main admin —
+    // can read someone else's personal resource.
+    //
+    // The app loads the list with one query per case (mine / leaders / admins),
+    // because a query is only allowed when it can't return a hidden document.
+    function canSeeSaved(data) {
+      return data.createdBy == request.auth.uid ||
+        data.visibility == 'leaders' ||
+        (data.visibility == 'admins' && isMainAdmin());
+    }
+
+    // Its creator can always change or delete a resource; a main admin can too,
+    // for anything they are allowed to see.
+    function canManageSaved(data) {
+      return data.createdBy == request.auth.uid || (isMainAdmin() && data.visibility != 'personal');
+    }
+
+    match /leaderSaved/{id} {
+      allow read: if isLeader() && canSeeSaved(resource.data);
+
+      allow create: if isLeader() &&
+        request.resource.data.createdBy == request.auth.uid &&
+        request.resource.data.type in ['link', 'document', 'image', 'note', 'file'] &&
+        request.resource.data.visibility in ['personal', 'leaders', 'admins'] &&
+        (request.resource.data.visibility != 'admins' || isMainAdmin()) &&
+        (request.resource.data.pinned == false || (isMainAdmin() && request.resource.data.visibility != 'personal'));
+
+      // Pinning is for main admins and never applies to personal resources;
+      // anyone who can manage a resource may un-pin it.
+      allow update: if isLeader() &&
+        canManageSaved(resource.data) &&
+        request.resource.data.createdBy == resource.data.createdBy &&
+        request.resource.data.type == resource.data.type &&
+        request.resource.data.visibility in ['personal', 'leaders', 'admins'] &&
+        (request.resource.data.visibility != 'admins' || isMainAdmin()) &&
+        (
+          request.resource.data.pinned == false ||
+          (request.resource.data.pinned == resource.data.pinned && request.resource.data.visibility != 'personal') ||
+          (isMainAdmin() && request.resource.data.visibility != 'personal')
+        );
+
+      allow delete: if isLeader() && canManageSaved(resource.data);
+    }
+
+    // Each leader's own favorites and recently-opened list. Private to them.
+    match /leaderSavedUsers/{uid} {
+      allow read, write: if isLeader() && request.auth.uid == uid;
+    }
+
+    // Anything not listed above is closed.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
