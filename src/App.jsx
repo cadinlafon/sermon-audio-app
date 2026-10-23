@@ -78,6 +78,7 @@ import Logs from "./pages/Admin/Logs";
 import AdminNotifications from "./pages/Admin/AdminNotifications";
 import AdminSuggestions from "./pages/Admin/AdminSuggestions";
 import AdminNotices from "./pages/Admin/AdminNotices";
+import DevInfoAdmin from "./pages/Admin/DevInfoAdmin";
 import SendNotifactions from "./pages/Admin/SendNotifactions";
 import Referrals from "./pages/Admin/Referrals";
 import DoctrineAdmin from "./pages/Admin/DoctrineAdmin";
@@ -744,6 +745,11 @@ function App() {
               <Route
                 path="notices"
                 element={<ModuleGate moduleKey="notices"><AdminNotices /></ModuleGate>}
+              />
+
+              <Route
+                path="dev-info"
+                element={<ModuleGate moduleKey="devInfo"><DevInfoAdmin /></ModuleGate>}
               />
 
               <Route

@@ -1,37 +1,27 @@
-const GITHUB_URL = "https://github.com/cadinlafon/sermon-audio-app";
-const LIVE_URL = "https://app.palousefellowship.com";
-
-const TECH_STACK = [
-  { group: "Frontend", items: ["React 19", "Vite", "React Router v7", "Progressive Web App (vite-plugin-pwa)"] },
-  { group: "Data & Auth", items: ["Firebase Authentication", "Cloud Firestore"] },
-  { group: "Backend", items: ["Supabase Edge Functions (Deno)", "Backblaze B2 audio storage"] },
-  { group: "Charts", items: ["Recharts"] },
-  { group: "Hosting", items: ["Firebase Hosting"] },
-];
-
-const FEATURES = [
-  { icon: "🎧", label: "Audio Streaming" },
-  { icon: "🗂️", label: "Sermon Management" },
-  { icon: "🕘", label: "Listen History" },
-  { icon: "⏯️", label: "Progress Tracking" },
-  { icon: "🔍", label: "Search & Filter" },
-  { icon: "📊", label: "Analytics Dashboard" },
-  { icon: "📱", label: "Progressive Web App" },
-  { icon: "⚡", label: "Real-time Data" },
-  { icon: "🤖", label: "AI Audio Summaries" },
-  { icon: "🛡️", label: "Restricted Admin Permissions" },
-  { icon: "📖", label: "Doctrine Campaigns" },
-  { icon: "🔔", label: "Notices & Alerts" },
-];
-
-const SUPABASE_FUNCTIONS = [
-  { name: "audio-admin", desc: "Admin audio upload & management" },
-  { name: "audio-download-url", desc: "Signed URLs for private audio playback" },
-  { name: "public-image", desc: "Public image proxy/serving" },
-  { name: "summarize-audio", desc: "AI-generated sermon audio summaries" },
-];
+import { useEffect, useState } from "react";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../firebase";
+import { DEV_INFO_DEFAULTS, mergeDevInfo } from "../data/devInfoDefaults";
+import { isHttpUrl } from "../lib/resourceTypes";
 
 export default function DevInfo() {
+  // Content is editable in Admin → Dev Info (stored in Firestore). The page
+  // shows the built-in defaults first and swaps in the saved copy when it
+  // arrives; if that can't be read it just keeps showing the defaults.
+  const [info, setInfo] = useState(() => mergeDevInfo(null));
+
+  useEffect(() => {
+    let cancelled = false;
+    getDoc(doc(db, "appConfig", "devInfo"))
+      .then((snap) => { if (!cancelled && snap.exists()) setInfo(mergeDevInfo(snap.data())); })
+      .catch((err) => console.warn("Couldn't load Dev Info content; showing defaults", err));
+    return () => { cancelled = true; };
+  }, []);
+
+  const { appName, license, githubUrl, liveUrl, techStack, features, backendFunctions, supportText } = info;
+  const githubOk = isHttpUrl(githubUrl) ? githubUrl : DEV_INFO_DEFAULTS.githubUrl;
+  const liveOk = isHttpUrl(liveUrl) ? liveUrl : DEV_INFO_DEFAULTS.liveUrl;
+
   return (
     <div style={page}>
       <h1 style={pageTitle}>Dev Info</h1>
@@ -43,14 +33,14 @@ export default function DevInfo() {
           <span style={cardIcon}>📱</span>
           <h2 style={cardTitle}>App Info</h2>
         </div>
-        <InfoRow label="Name" value="Sermon Audio App (Palouse Fellowship)" />
+        <InfoRow label="Name" value={appName} />
         <InfoRow label="Version" value={__APP_VERSION__} />
-        <InfoRow label="License" value="Open source" />
+        <InfoRow label="License" value={license} />
         <div style={linkRow}>
-          <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" style={linkBtn}>
+          <a href={githubOk} target="_blank" rel="noopener noreferrer" style={linkBtn}>
             💻 GitHub Repo
           </a>
-          <a href={LIVE_URL} target="_blank" rel="noopener noreferrer" style={linkBtn}>
+          <a href={liveOk} target="_blank" rel="noopener noreferrer" style={linkBtn}>
             🌐 Live Demo
           </a>
         </div>
@@ -62,7 +52,7 @@ export default function DevInfo() {
           <span style={cardIcon}>🛠️</span>
           <h2 style={cardTitle}>Tech Stack</h2>
         </div>
-        {TECH_STACK.map((group) => (
+        {techStack.map((group) => (
           <div key={group.group} style={stackGroup}>
             <p style={stackGroupLabel}>{group.group}</p>
             <div style={chipRow}>
@@ -81,7 +71,7 @@ export default function DevInfo() {
           <h2 style={cardTitle}>Features</h2>
         </div>
         <div style={featureGrid}>
-          {FEATURES.map((f) => (
+          {features.map((f) => (
             <div key={f.label} style={featureTile}>
               <span style={featureIcon}>{f.icon}</span>
               <span style={featureLabel}>{f.label}</span>
@@ -96,8 +86,8 @@ export default function DevInfo() {
           <span style={cardIcon}>⚙️</span>
           <h2 style={cardTitle}>Backend Functions</h2>
         </div>
-        {SUPABASE_FUNCTIONS.map((fn, i) => (
-          <div key={fn.name} style={fnRow(i === SUPABASE_FUNCTIONS.length - 1)}>
+        {backendFunctions.map((fn, i) => (
+          <div key={fn.name} style={fnRow(i === backendFunctions.length - 1)}>
             <span style={fnName}>{fn.name}</span>
             <span style={fnDesc}>{fn.desc}</span>
           </div>
@@ -110,12 +100,9 @@ export default function DevInfo() {
           <span style={cardIcon}>📞</span>
           <h2 style={cardTitle}>Support</h2>
         </div>
-        <p style={supportText}>
-          Found a bug or have a feature request? Open an issue on{" "}
-          <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" style={inlineLink}>
-            GitHub
-          </a>
-          , or use the Suggest a Feature page in the app.
+        <p style={supportTextStyle}>
+          {supportText}{" "}
+          <a href={githubOk} target="_blank" rel="noopener noreferrer" style={inlineLink}>View on GitHub</a>
         </p>
       </div>
     </div>
@@ -303,7 +290,7 @@ const fnDesc = {
   color: "var(--color-9b7040)",
 };
 
-const supportText = {
+const supportTextStyle = {
   fontFamily: "sans-serif",
   fontSize: "14px",
   color: "var(--color-5c3a1e)",
