@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { db } from "../../firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { uploadPrivateAudio } from "../../utils/privateAudioUpload";
-import { getNextAudioOrder } from "../../utils/audioOrder";
+import { getNextAudioOrder, getBottomAudioOrder, ADD_TO_TOP, ADD_TO_BOTTOM } from "../../utils/audioOrder";
 import { createTranscriptionCopy } from "../../utils/transcodeForTranscription";
 import BulkUploadAudio from "./BulkUploadAudio";
 import UploadProgress from "../../components/UploadProgress";
@@ -15,16 +15,16 @@ const speakers = ["Jonathan Mcintosh", "Rusty Olps", "Jason Farley", "Mark Thiel
 // number" by reading the collection — so the pick + write is queued to
 // keep two simultaneous uploads from getting the same number.
 let orderQueue = Promise.resolve();
-function addAudioDoc(data) {
+function addAudioDoc(data, position = ADD_TO_TOP) {
   const run = orderQueue.then(async () => {
-    const order = await getNextAudioOrder();
+    const order = position === ADD_TO_BOTTOM ? await getBottomAudioOrder() : await getNextAudioOrder();
     return addDoc(collection(db, "audio"), { ...data, order, createdAt: serverTimestamp() });
   });
   orderQueue = run.catch(() => {});
   return run;
 }
 
-function SingleUploadForm({ canAddAnother, onUploadAnother, onRemove }) {
+function SingleUploadForm({ position, canAddAnother, onUploadAnother, onRemove }) {
   const perms = useModulePermissions("upload");
   const pinCtx = useAdminPin();
   const requirePin = pinCtx?.requirePin || (async () => true);
@@ -67,6 +67,9 @@ function SingleUploadForm({ canAddAnother, onUploadAnother, onRemove }) {
     if (!perms.requireEdit()) return;
     if (!file || !title || !speaker) { alert("Title, speaker, and file are required."); return; }
     if (!(await requirePin("uploadAudio"))) return;
+    // Where it goes is decided when you press Upload, even if you flip the
+    // toggle while it uploads.
+    const placeAt = position;
     setUploading(true);
     setProgress(null);
     try {
@@ -98,7 +101,7 @@ function SingleUploadForm({ canAddAnother, onUploadAnother, onRemove }) {
         duration,
         audioStorageKey,
         ...(transcribeStorageKey ? { transcribeStorageKey } : {}),
-      });
+      }, placeAt);
 
       setTitle(""); setSpeaker(""); setType("sermon"); setFile(null); setDuration(null);
       alert("Upload successful 🎉");
@@ -202,6 +205,9 @@ function SingleUploadForm({ canAddAnother, onUploadAnother, onRemove }) {
 export default function UploadAudio() {
   const [mode, setMode] = useState("single");
   const [formIds, setFormIds] = useState([1]);
+  // Where new recordings are placed in the list. Always starts on "top"
+  // (the normal behavior) each time this page opens.
+  const [position, setPosition] = useState(ADD_TO_TOP);
   const nextFormId = useRef(2);
 
   const addForm = () => setFormIds((ids) => [...ids, nextFormId.current++]);
@@ -229,13 +235,43 @@ export default function UploadAudio() {
         </button>
       </div>
 
-      {mode === "bulk" && <BulkUploadAudio speakers={speakers} />}
+      <div style={positionBox}>
+        <div style={positionLabel}>Where should new uploads go?</div>
+        <div style={positionRow} role="radiogroup" aria-label="Where new uploads go in the list">
+          <button
+            type="button"
+            role="radio"
+            aria-checked={position === ADD_TO_TOP}
+            style={position === ADD_TO_TOP ? { ...positionBtn, ...positionBtnActive } : positionBtn}
+            onClick={() => setPosition(ADD_TO_TOP)}
+          >
+            Add to top (Newest → Oldest)
+          </button>
+          <button
+            type="button"
+            role="radio"
+            aria-checked={position === ADD_TO_BOTTOM}
+            style={position === ADD_TO_BOTTOM ? { ...positionBtn, ...positionBtnActive } : positionBtn}
+            onClick={() => setPosition(ADD_TO_BOTTOM)}
+          >
+            Add to bottom (as oldest)
+          </button>
+        </div>
+        <div style={positionHint}>
+          {position === ADD_TO_TOP
+            ? "New recordings appear first, as the newest."
+            : "New recordings go to the very bottom, as the oldest — use this to add older sermons that aren't in the library yet."}
+        </div>
+      </div>
+
+      {mode === "bulk" && <BulkUploadAudio speakers={speakers} position={position} />}
 
       {mode === "single" && (
         <div style={formStack}>
           {formIds.map((id, i) => (
             <SingleUploadForm
               key={id}
+              position={position}
               canAddAnother={i === formIds.length - 1}
               onUploadAnother={addForm}
               onRemove={i > 0 ? () => removeForm(id) : undefined}
@@ -246,6 +282,13 @@ export default function UploadAudio() {
     </div>
   );
 }
+
+const positionBox = { background: "var(--color-fffdf9)", border: "1px solid var(--color-eddfc8)", borderRadius: "14px", padding: "14px 16px", marginBottom: "18px" };
+const positionLabel = { fontSize: "12px", fontFamily: "sans-serif", color: "var(--color-9b7040)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "8px" };
+const positionRow = { display: "flex", gap: "8px", flexWrap: "wrap" };
+const positionBtn = { padding: "9px 14px", borderRadius: "10px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fdf8f3)", color: "var(--color-7a4f10)", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer" };
+const positionBtnActive = { background: "linear-gradient(135deg, var(--color-c97c2e), var(--color-a85e18))", color: "var(--color-fff8ee)", border: "1px solid transparent" };
+const positionHint = { fontSize: "12px", fontFamily: "sans-serif", color: "var(--color-9b7040)", marginTop: "8px", lineHeight: 1.5 };
 
 const formStack = { display: "flex", flexDirection: "column", gap: "20px" };
 const actionRow = { display: "flex", gap: "10px", flexWrap: "wrap" };

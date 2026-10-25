@@ -3,7 +3,7 @@ import { useRef, useState } from "react";
 import { db } from "../../firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { uploadPrivateAudio } from "../../utils/privateAudioUpload";
-import { getNextAudioOrder } from "../../utils/audioOrder";
+import { getNextAudioOrder, getBottomAudioOrder, ADD_TO_BOTTOM } from "../../utils/audioOrder";
 import { createTranscriptionCopy } from "../../utils/transcodeForTranscription";
 import {
   expandToAudioFiles,
@@ -16,7 +16,7 @@ import { useAdminPin } from "../../context/AdminPinContext";
 
 const fmt = (s) => (s == null ? "—" : `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`);
 
-export default function BulkUploadAudio({ speakers }) {
+export default function BulkUploadAudio({ speakers, position }) {
   const perms = useModulePermissions("upload");
   const pinCtx = useAdminPin();
   const requirePin = pinCtx?.requirePin || (async () => true);
@@ -133,7 +133,9 @@ export default function BulkUploadAudio({ speakers }) {
     setRunning(true);
     setSummary(null);
 
-    let nextOrder = await getNextAudioOrder();
+    // Newest-first lists: the top is the highest number. "Bottom" reserves a
+    // block of numbers below the current lowest for this whole batch.
+    let nextOrder = position === ADD_TO_BOTTOM ? await getBottomAudioOrder(toUpload.length) : await getNextAudioOrder();
     let succeeded = 0;
     let failed = 0;
 

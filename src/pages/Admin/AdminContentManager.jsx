@@ -683,7 +683,7 @@ const card = {
 const cardLeft = { display: "flex", alignItems: "center", gap: "14px" };
 
 const orderBadge = {
-  width: "32px", height: "32px", borderRadius: "8px",
+  minWidth: "32px", height: "32px", padding: "0 5px", boxSizing: "border-box", borderRadius: "8px",
   background: "var(--color-f6e4b0)", color: "var(--color-7a5a10)", fontSize: "11px",
   fontFamily: "sans-serif", display: "flex", alignItems: "center",
   justifyContent: "center", flexShrink: 0,
