@@ -4,6 +4,7 @@ import { supabase } from "../../supabase";
 import { buildActivityDigest, periodStart } from "../../utils/activityDigest";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { startOfToday, summarizeToday } from "../../utils/todayActivity";
+import ClarityInsights from "../../components/Admin/ClarityInsights";
 
 const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
@@ -174,6 +175,8 @@ export default function Analytics() {
         <StatCard icon="🤖" label="PWA on Android" value={stats.pwaAndroid} color="var(--color-16a34a)" />
         <StatCard icon="💻" label="PWA on Desktop" value={stats.pwaDesktop} color="var(--color-6d28d9)" />
       </div>
+
+      <ClarityInsights />
 
       <div style={{ ...chartCard, marginBottom: "28px" }}>
         <h2 style={{ ...chartTitle, margin: "0 0 4px" }}>These users used the app today</h2>

@@ -126,6 +126,12 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    // Saved copy of the Microsoft Clarity export (the API allows only 10
+    // calls a day, so admins share one cached result).
+    match /appConfig/clarityInsights {
+      allow read, write: if isAdmin();
+    }
+
     // Admin-log retention setting.
     match /appConfig/adminLogRetention {
       allow read, write: if isAdmin();

@@ -18,3 +18,7 @@ verify_jwt = false
 [functions.admin-activity-summary]
 # Authenticates the Firebase ID token itself (and requires the admin role).
 verify_jwt = false
+
+[functions.clarity-insights]
+# Authenticates the Firebase ID token itself (and requires the admin role).
+verify_jwt = false
