@@ -1,5 +1,6 @@
 import { auth } from "../firebase";
 import { supabase } from "../supabase";
+import { functionErrorMessage } from "./privateAudioUpload";
 
 // Public images (e.g. a doctrine week's header photo) live in the same
 // private Backblaze bucket as audio, just under an "images/" prefix.
@@ -18,7 +19,7 @@ export async function uploadPublicImage(file, onProgress) {
     headers: { Authorization: `Bearer ${token}` },
     body: { action: "upload", fileName: file.name, mediaType: "image" },
   });
-  if (error || !data?.uploadUrl) throw new Error(error?.message || "Could not prepare upload.");
+  if (error || !data?.uploadUrl) throw new Error(await functionErrorMessage(error, "Could not prepare upload."));
 
   const sha1 = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-1", await file.arrayBuffer())))
     .map((b) => b.toString(16).padStart(2, "0"))

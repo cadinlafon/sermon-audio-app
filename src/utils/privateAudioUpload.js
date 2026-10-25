@@ -1,6 +1,16 @@
 import { auth } from "../firebase";
 import { supabase } from "../supabase";
 
+// supabase-js hides the server's own message behind a generic "Edge Function
+// returned a non-2xx status code"; the real reason ("Admin access required.",
+// "Storage is unavailable."…) is in the response body.
+export async function functionErrorMessage(error, fallback) {
+  const body = await error?.context?.json?.().catch(() => null);
+  const status = error?.context?.status;
+  const reason = body?.error || error?.message || fallback;
+  return status ? `${reason} (${status})` : reason;
+}
+
 export async function uploadPrivateAudio(file, onProgress) {
   const user = auth.currentUser;
   if (!user) throw new Error("Please sign in.");
@@ -10,7 +20,7 @@ export async function uploadPrivateAudio(file, onProgress) {
     headers: { Authorization: `Bearer ${token}` },
     body: { action: "upload", fileName: file.name },
   });
-  if (error || !data?.uploadUrl) throw new Error(error?.message || "Could not prepare upload.");
+  if (error || !data?.uploadUrl) throw new Error(await functionErrorMessage(error, "Could not prepare upload."));
 
   const sha1 = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-1", await file.arrayBuffer())))
     .map((b) => b.toString(16).padStart(2, "0"))
@@ -51,5 +61,5 @@ export async function deletePrivateAudio(storageKey) {
   if (!storageKey) return;
   const token = await auth.currentUser?.getIdToken();
   const { error } = await supabase.functions.invoke("audio-admin", { headers: { Authorization: `Bearer ${token}` }, body: { action: "delete", storageKey } });
-  if (error) throw new Error(error.message || "Could not delete audio.");
+  if (error) throw new Error(await functionErrorMessage(error, "Could not delete audio."));
 }

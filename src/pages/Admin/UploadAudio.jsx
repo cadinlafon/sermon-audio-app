@@ -104,7 +104,7 @@ function SingleUploadForm({ canAddAnother, onUploadAnother, onRemove }) {
       alert("Upload successful 🎉");
     } catch (err) {
       console.error(err);
-      alert("Upload failed.");
+      alert(`Upload failed: ${err?.message || "unknown error"}`);
     }
     setUploading(false);
     setProgress(null);
