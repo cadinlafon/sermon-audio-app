@@ -32,13 +32,31 @@ async function fetchWithRetry(url: string, init?: RequestInit, attempts = 3) {
   return response!;
 }
 
+class Forbidden extends Error {
+  constructor(public detail: string) { super("forbidden"); }
+}
+
 async function requireAdmin(r: Request) {
   const token = r.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
   if (!token || !projectId) throw new Error("unauthorized");
   const { payload } = await jwtVerify(token, jwks, { audience: projectId, issuer: `https://securetoken.google.com/${projectId}` });
   const user = await fetchWithRetry(`https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/users/${payload.sub}`, { headers: { Authorization: `Bearer ${token}` } });
-  const record = user.ok ? await user.json() : null;
-  if (record?.fields?.role?.stringValue !== "admin") throw new Error("forbidden");
+  // Say WHY when the admin check fails (the app shows this to the admin):
+  // "your profile couldn't be read" and "your profile isn't an admin" need
+  // very different fixes, and both used to look identical.
+  if (!user.ok) {
+    const body = await user.text().catch(() => "");
+    console.error("requireAdmin: profile read failed", user.status, body.slice(0, 300));
+    let reason = body;
+    try { reason = JSON.parse(body)?.error?.message || body; } catch { /* not JSON — use the raw text */ }
+    throw new Forbidden(`Couldn't read your profile (Firestore ${user.status}: ${String(reason || "no details").slice(0, 160)})`);
+  }
+  const record = await user.json();
+  const role = record?.fields?.role?.stringValue;
+  if (role !== "admin") {
+    console.error("requireAdmin: profile read ok but role is", role);
+    throw new Forbidden(`Your profile's role is "${role ?? "missing"}", not "admin"`);
+  }
 }
 async function authorize() {
   if (!keyId || !applicationKey || !bucketId) throw new Error("unconfigured");
@@ -81,6 +99,9 @@ Deno.serve(async (r) => {
     return json(r, { error: "Invalid request" }, 400);
   } catch (e) {
     const message = e instanceof Error ? e.message : "";
+    if (e instanceof Forbidden) return json(r, { error: `Admin access required. ${e.detail}.` }, 403);
+    // Anything else (a bad/expired token, Backblaze trouble…) — log it so it shows in the function logs.
+    if (message !== "unauthorized") console.error("audio-admin failed:", e);
     return json(r, { error: message === "forbidden" ? "Admin access required." : message === "unauthorized" ? "Please sign in." : "Storage is unavailable." }, message === "forbidden" ? 403 : message === "unauthorized" ? 401 : 503);
   }
 });
