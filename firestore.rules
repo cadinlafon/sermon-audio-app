@@ -121,6 +121,11 @@ service cloud.firestore {
       }
     }
 
+    // Extra pages under Admin → Analytics (links to Clarity, Google Analytics…).
+    match /appConfig/analyticsPages {
+      allow read, write: if isAdmin();
+    }
+
     // Admin-log retention setting.
     match /appConfig/adminLogRetention {
       allow read, write: if isAdmin();

@@ -3,6 +3,7 @@ import { usePermissions } from "../../hooks/usePermissions";
 import { ADMIN_MODULES, NO_ACCESS_MESSAGE } from "../../config/adminModules";
 import { AdminPinProvider, useAdminPin } from "../../context/AdminPinContext";
 import useAdminIdleTimeout from "../../hooks/useAdminIdleTimeout";
+import { useAnalyticsPages } from "../../utils/analyticsPages";
 
 export default function AdminLayout() {
   useAdminIdleTimeout();
@@ -18,6 +19,7 @@ function AdminShell() {
   const location = useLocation();
   const { canView } = usePermissions();
   const pin = useAdminPin();
+  const analyticsPages = useAnalyticsPages();
   const navLinks = ADMIN_MODULES.map((m) => ({
     to: `/admin/${m.path}`,
     label: m.label,
@@ -42,18 +44,37 @@ function AdminShell() {
           {navLinks.map(({ to, label, icon, accessible }) => {
             const active = accessible && location.pathname.startsWith(to);
 
-            return (
-              <Link
-                key={to}
-                to={to}
-                title={accessible ? undefined : NO_ACCESS_MESSAGE}
-                style={!accessible ? { ...link, ...linkDisabled } : active ? { ...link, ...linkActive } : link}
-              >
-                <span style={linkIcon}>{icon}</span>
-                <span>{label}</span>
+            const isAnalytics = to === "/admin/analytics";
+            // On Analytics the sidebar opens its sub-pages: the built-in App
+            // page plus the external dashboards set up in Admin → Advanced.
+            const showSub = isAnalytics && active;
 
-                {active && <span style={activeDot} />}
-              </Link>
+            return (
+              <div key={to}>
+                <Link
+                  to={to}
+                  title={accessible ? undefined : NO_ACCESS_MESSAGE}
+                  style={!accessible ? { ...link, ...linkDisabled } : active && !showSub ? { ...link, ...linkActive } : showSub ? { ...link, color: "var(--color-fde8b8)" } : link}
+                  aria-expanded={isAnalytics ? showSub : undefined}
+                >
+                  <span style={linkIcon}>{icon}</span>
+                  <span>{label}</span>
+
+                  {isAnalytics ? <span style={chevron} aria-hidden="true">{showSub ? "▾" : "▸"}</span> : active && <span style={activeDot} />}
+                </Link>
+
+                {showSub && (
+                  <div style={subNav}>
+                    <Link to={to} style={{ ...subLink, ...subLinkActive }}>App</Link>
+                    {analyticsPages.map((p) => (
+                      <a key={p.id} href={p.url} target="_blank" rel="noopener noreferrer" style={subLink}>
+                        {p.label}
+                        <span style={externalMark} aria-hidden="true">↗</span>
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
             );
           })}
         </nav>
@@ -168,6 +189,45 @@ const linkActive = {
 const linkDisabled = {
   color: "rgba(255,220,160,0.28)",
   cursor: "not-allowed",
+};
+
+const chevron = {
+  marginLeft: "auto",
+  fontSize: "11px",
+  opacity: 0.7,
+};
+
+// The sub-pages sit further in, with a guide line, so they read as part of Analytics.
+const subNav = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "2px",
+  margin: "2px 0 4px 22px",
+  paddingLeft: "10px",
+  borderLeft: "1px solid rgba(255,220,160,0.22)",
+};
+
+const subLink = {
+  display: "flex",
+  alignItems: "center",
+  gap: "8px",
+  padding: "7px 10px",
+  borderRadius: "8px",
+  fontSize: "12.5px",
+  color: "rgba(255,220,160,0.7)",
+  textDecoration: "none",
+  fontFamily: "sans-serif",
+};
+
+const subLinkActive = {
+  background: "rgba(224,137,48,0.18)",
+  color: "var(--color-fde8b8)",
+};
+
+const externalMark = {
+  marginLeft: "auto",
+  fontSize: "11px",
+  opacity: 0.6,
 };
 
 const linkIcon = {

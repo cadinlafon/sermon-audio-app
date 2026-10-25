@@ -4,6 +4,8 @@ import { db } from "../../firebase";
 import { useModulePermissions } from "../../hooks/usePermissions";
 import { useAdminPin } from "../../context/AdminPinContext";
 import { logAdminAction } from "../../utils/adminAudit";
+import { loadAnalyticsPages, saveAnalyticsPages } from "../../utils/analyticsPages";
+import { isHttpUrl } from "../../lib/resourceTypes";
 
 const AUDIENCE_OPTIONS = [
   { value: "guest", label: "Guests" },
@@ -22,6 +24,7 @@ export default function Settings() {
   const [audioAiAudiences, setAudioAiAudiences] = useState(["guest", "user", "admin"]);
   const [registrationEnabled, setRegistrationEnabled] = useState(true);
   const [liquidScreen, setLiquidScreen] = useState(false);
+  const [analyticsPages, setAnalyticsPages] = useState([]); // [{ id, label, url }]
   const [maxDailyRegistrations, setMaxDailyRegistrations] = useState("");
   const [todayRegistrationCount, setTodayRegistrationCount] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -63,6 +66,7 @@ export default function Settings() {
       setLoading(false);
     };
     fetchConfig();
+    loadAnalyticsPages().then(setAnalyticsPages);
 
     const todayKey = new Date().toISOString().slice(0, 10);
     getDoc(doc(db, "registrationCounts", todayKey))
@@ -100,8 +104,24 @@ export default function Settings() {
     );
   };
 
+  const updateAnalyticsPage = (id, patch) => setAnalyticsPages((list) => list.map((p) => (p.id === id ? { ...p, ...patch } : p)));
+  const moveAnalyticsPage = (i, dir) => setAnalyticsPages((list) => {
+    const j = i + dir;
+    if (j < 0 || j >= list.length) return list;
+    const next = [...list];
+    [next[i], next[j]] = [next[j], next[i]];
+    return next;
+  });
+
   const handleSave = async () => {
     if (!perms.requireEdit()) return;
+    // Blank rows are ignored; every other row needs a name and a real web address.
+    const filledPages = analyticsPages.filter((p) => p.label.trim() || p.url.trim());
+    const badPage = filledPages.find((p) => !p.label.trim() || !isHttpUrl(p.url));
+    if (badPage) {
+      alert(`Analytics page "${badPage.label.trim() || badPage.url.trim()}" needs a name and a full link starting with https://`);
+      return;
+    }
     setSaving(true);
     try {
       const after = {
@@ -125,6 +145,9 @@ export default function Settings() {
         before: originalConfig,
         after,
       });
+
+      await saveAnalyticsPages(filledPages);
+      setAnalyticsPages(filledPages);
 
       setOriginalConfig(after);
       setSaved(true);
@@ -325,6 +348,41 @@ export default function Settings() {
         </div>
       </div>
 
+      <div style={{ ...card, marginTop: "20px" }}>
+        <div style={sectionHeader}>
+          <span style={sectionIcon}>📈</span>
+          <h2 style={sectionTitle}>Analytics Pages</h2>
+        </div>
+
+        <div style={toggleHint}>
+          These show under <strong>Analytics</strong> in the admin sidebar, after the built-in <strong>App</strong> page. Each opens its link in a new tab.
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "14px" }}>
+          {analyticsPages.map((p, i) => (
+            <div key={p.id} style={{ display: "flex", flexDirection: "column", gap: "8px", padding: "12px", borderRadius: "12px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fdf8f3)" }}>
+              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                <input style={input} value={p.label} onChange={(e) => updateAnalyticsPage(p.id, { label: e.target.value })} placeholder="Name, e.g. Microsoft Clarity" aria-label={`Analytics page ${i + 1} name`} disabled={!perms.canEdit} />
+                {perms.canEdit && (
+                  <div style={{ display: "flex", gap: "5px", flexShrink: 0 }}>
+                    <button type="button" style={analyticsToolBtn} onClick={() => moveAnalyticsPage(i, -1)} disabled={i === 0} aria-label={`Move ${p.label || "page"} up`}>▲</button>
+                    <button type="button" style={analyticsToolBtn} onClick={() => moveAnalyticsPage(i, 1)} disabled={i === analyticsPages.length - 1} aria-label={`Move ${p.label || "page"} down`}>▼</button>
+                    <button type="button" style={{ ...analyticsToolBtn, color: "var(--color-dc2626)", borderColor: "var(--color-fca5a5)" }} onClick={() => setAnalyticsPages((l) => l.filter((x) => x.id !== p.id))} aria-label={`Remove ${p.label || "page"}`}>✕</button>
+                  </div>
+                )}
+              </div>
+              <input style={input} value={p.url} onChange={(e) => updateAnalyticsPage(p.id, { url: e.target.value })} placeholder="https://…" aria-label={`Analytics page ${i + 1} link`} disabled={!perms.canEdit} />
+            </div>
+          ))}
+          {analyticsPages.length === 0 && <div style={toggleHint}>No extra analytics pages yet — only the built-in App page shows.</div>}
+          {perms.canEdit && (
+            <button type="button" style={{ alignSelf: "flex-start", padding: "9px 16px", borderRadius: "999px", border: "1px dashed var(--color-c97c2e)", background: "none", color: "var(--color-7a4f10)", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer" }} onClick={() => setAnalyticsPages((l) => [...l, { id: `page-${Date.now().toString(36)}`, label: "", url: "" }])}>
+              + Add analytics page
+            </button>
+          )}
+        </div>
+      </div>
+
       <div style={saveRow}>
         {perms.canEdit && (
           <button onClick={handleSave} disabled={saving} style={saving ? { ...saveBtn, opacity: 0.6 } : saveBtn}>
@@ -382,3 +440,4 @@ const input = { padding: "10px 12px", borderRadius: "10px", border: "1px solid v
 const saveRow = { display: "flex", alignItems: "center", gap: "14px", marginTop: "20px" };
 const saveBtn = { padding: "12px 24px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, var(--color-c97c2e), var(--color-a85e18))", color: "var(--color-fff8ee)", fontSize: "14px", fontFamily: "sans-serif", cursor: "pointer", boxShadow: "0 3px 10px rgba(160,80,20,0.25)" };
 const savedMsg = { fontSize: "13px", fontFamily: "sans-serif", color: "var(--color-16a34a)", fontWeight: "600" };
+const analyticsToolBtn = { width: "30px", height: "30px", borderRadius: "8px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fffdf9)", color: "var(--color-7a4f10)", cursor: "pointer", fontSize: "12px" };
