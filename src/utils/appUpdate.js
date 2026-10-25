@@ -28,7 +28,7 @@ const SAFE_RECHECK_MS = 20 * 1000;
 const AUTO_LOOP_GUARD_MS = 2 * 60 * 1000;
 const AUTO_UPDATE_KEY = "pf-auto-update-at";
 
-let state = { updateReady: false, seq: 0 };
+let state = { updateReady: false, seq: 0, details: null };
 // A small ("auto") update is waiting for a safe moment to apply itself.
 let autoPending = false;
 const listeners = new Set();
@@ -76,10 +76,11 @@ export function getAppUpdateState() {
   return state;
 }
 
-function showPrompt() {
+function showPrompt(details = null) {
   // seq lets the prompt tell "same update I already dismissed"
   // apart from a newer deploy landing after a dismissal.
-  setState({ updateReady: true, seq: state.seq + 1 });
+  // `details` is the release's "what changed" list (see scripts/release-notes.mjs).
+  setState({ updateReady: true, seq: state.seq + 1, details });
 }
 
 function autoApply() {
@@ -102,11 +103,16 @@ function recentlyAutoUpdated() {
 // wants to be delivered; anything unclear falls back to the button.
 async function handleUpdateReady() {
   let mode = "prompt";
+  let details = null;
   try {
     const response = await fetch(`/version.json?t=${Date.now()}`, { cache: "no-store" });
     if (response.ok) {
       const data = await response.json();
       if (data?.mode === "auto") mode = "auto";
+      const notes = Array.isArray(data?.notes) ? data.notes.filter((n) => typeof n === "string" && n.trim()).slice(0, 60) : [];
+      if (notes.length > 0 || data?.version) {
+        details = { version: typeof data.version === "string" ? data.version : "", notes, releasedAt: typeof data.releasedAt === "string" ? data.releasedAt : "" };
+      }
     }
   } catch {
     // offline / blocked — keep the button
@@ -121,7 +127,7 @@ async function handleUpdateReady() {
     // as it becomes safe (see the timer / visibility check below).
     autoPending = true;
   }
-  showPrompt();
+  showPrompt(details);
 }
 
 export function registerAppUpdates() {
