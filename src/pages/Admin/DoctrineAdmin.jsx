@@ -1,3 +1,4 @@
+import DoctrineBanner, { BANNER_DEFAULTS, BANNER_LIMITS, bannerSettings } from "../../components/DoctrineBanner";
 import { useEffect, useRef, useState } from "react";
 import { db } from "../../firebase";
 import { doc, getDoc, setDoc, serverTimestamp, deleteField } from "firebase/firestore";
@@ -18,8 +19,14 @@ const blankForm = {
   audioFiles: [],
   imageURL: "",
   imageStorageKey: "",
+  imageFocusX: BANNER_DEFAULTS.focusX,
+  imageFocusY: BANNER_DEFAULTS.focusY,
+  imageZoom: BANNER_DEFAULTS.zoom,
+  imageHeight: BANNER_DEFAULTS.height,
   questions: [],
 };
+
+const resetFraming = { imageFocusX: BANNER_DEFAULTS.focusX, imageFocusY: BANNER_DEFAULTS.focusY, imageZoom: BANNER_DEFAULTS.zoom, imageHeight: BANNER_DEFAULTS.height };
 
 export default function DoctrineAdmin() {
   const perms = useModulePermissions("doctrine");
@@ -143,7 +150,7 @@ export default function DoctrineAdmin() {
     setImageProgress(null);
     try {
       const { url, storageKey } = await uploadPublicImage(file, setImageProgress);
-      setForm((f) => ({ ...f, imageURL: url, imageStorageKey: storageKey }));
+      setForm((f) => ({ ...f, imageURL: url, imageStorageKey: storageKey, ...resetFraming }));
     } catch (err) {
       console.error(err);
       alert("Image upload failed.");
@@ -153,7 +160,7 @@ export default function DoctrineAdmin() {
   };
 
   const handleImageRemove = () => {
-    setForm((f) => ({ ...f, imageURL: "", imageStorageKey: "" }));
+    setForm((f) => ({ ...f, imageURL: "", imageStorageKey: "", ...resetFraming }));
   };
 
   //////////////////////////////////////////////////
@@ -261,8 +268,24 @@ export default function DoctrineAdmin() {
         <Field label="Image">
           {form.imageURL ? (
             <div>
-              <img src={form.imageURL} alt="" style={imagePreview} />
+              <DoctrineBanner
+                url={form.imageURL}
+                settings={bannerSettings({ imageFocusX: form.imageFocusX, imageFocusY: form.imageFocusY, imageZoom: form.imageZoom, imageHeight: form.imageHeight })}
+                onChange={({ focusX, focusY }) => setForm((f) => ({ ...f, imageFocusX: focusX, imageFocusY: focusY }))}
+              />
+              <p style={framingHint}>Drag the picture to choose what shows. This is how it looks on the Doctrine page (on a phone the banner is narrower, so the sides are trimmed more).</p>
+
+              <div style={framingGrid}>
+                <FramingSlider label="Left ↔ right" min={0} max={100} step={1} value={form.imageFocusX} onChange={(v) => setForm((f) => ({ ...f, imageFocusX: v }))} display={`${Math.round(form.imageFocusX)}%`} />
+                <FramingSlider label="Up ↕ down" min={0} max={100} step={1} value={form.imageFocusY} onChange={(v) => setForm((f) => ({ ...f, imageFocusY: v }))} display={`${Math.round(form.imageFocusY)}%`} />
+                <FramingSlider label="Zoom" min={BANNER_LIMITS.zoom[0]} max={BANNER_LIMITS.zoom[1]} step={0.05} value={form.imageZoom} onChange={(v) => setForm((f) => ({ ...f, imageZoom: v }))} display={`${Math.round(form.imageZoom * 100)}%`} />
+                <FramingSlider label="Banner height" min={BANNER_LIMITS.height[0]} max={BANNER_LIMITS.height[1]} step={10} value={form.imageHeight} onChange={(v) => setForm((f) => ({ ...f, imageHeight: v }))} display={`${Math.round(form.imageHeight)}px`} />
+              </div>
+
               <div style={rowActions}>
+                <button type="button" style={smallBtn} onClick={() => setForm((f) => ({ ...f, ...resetFraming }))}>
+                  Reset framing
+                </button>
                 <button type="button" style={smallBtn} onClick={() => imageInputRef.current.click()} disabled={imageUploading}>
                   Replace
                 </button>
@@ -476,7 +499,9 @@ const smallBtn = { padding: "5px 10px", borderRadius: "8px", border: "1px solid 
 const progressTrack = { height: "6px", background: "var(--color-eddfc8)", borderRadius: "999px", overflow: "hidden", marginTop: "8px" };
 const progressFill = { height: "100%", background: "linear-gradient(to right, var(--color-e08930), var(--color-c97c2e))", borderRadius: "999px", transition: "width 0.2s ease-out" };
 
-const imagePreview = { width: "100%", height: "160px", objectFit: "cover", borderRadius: "10px", border: "1px solid var(--color-eddfc8)", marginBottom: "8px", display: "block" };
+const framingHint = { fontSize: "12px", color: "var(--color-9b7040)", fontFamily: "sans-serif", margin: "8px 0 10px", lineHeight: 1.5 };
+const framingGrid = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "10px 18px", marginBottom: "4px" };
+const sliderLabelRow = { display: "flex", justifyContent: "space-between", fontSize: "11px", fontFamily: "sans-serif", color: "var(--color-9b7040)", letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: "2px" };
 
 const audioFilesStack = { display: "flex", flexDirection: "column", gap: "10px", marginBottom: "10px" };
 const audioFileCard = { display: "flex", flexDirection: "column", gap: "8px", padding: "12px", borderRadius: "12px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fdf8f3)" };
@@ -495,3 +520,20 @@ const hintText = { fontSize: "13px", color: "var(--color-b08050)", fontFamily: "
 
 const toastBox = { position: "fixed", bottom: "24px", right: "24px", background: "var(--color-166534)", color: "var(--color-ffffff)", padding: "12px 18px", borderRadius: "10px", fontSize: "13px", fontFamily: "sans-serif", boxShadow: "0 4px 16px rgba(0,0,0,0.2)", zIndex: 4000 };
 const toastError = { background: "var(--color-991b1b)" };
+
+function FramingSlider({ label, min, max, step, value, onChange, display }) {
+  return (
+    <label style={{ display: "block" }}>
+      <div style={sliderLabelRow}><span>{label}</span><span>{display}</span></div>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        style={{ width: "100%", accentColor: "var(--color-c97c2e)" }}
+      />
+    </label>
+  );
+}

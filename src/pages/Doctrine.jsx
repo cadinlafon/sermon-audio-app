@@ -1,3 +1,4 @@
+import DoctrineBanner, { bannerSettings } from "../components/DoctrineBanner";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { db } from "../firebase";
@@ -111,7 +112,7 @@ export default function Doctrine() {
 
       {/* CONTENT */}
       <div style={card}>
-        {content.imageURL && <img src={content.imageURL} alt="" style={cardImage} />}
+        {content.imageURL && <DoctrineBanner url={content.imageURL} settings={bannerSettings(content)} bleed />}
 
         <h2 style={cardTitle}>{content.title || "Untitled"}</h2>
 
@@ -427,14 +428,6 @@ const card = {
   padding: "24px 22px",
   boxShadow: "0 2px 10px rgba(160,100,40,0.06)",
   overflow: "hidden",
-};
-
-const cardImage = {
-  display: "block",
-  width: "calc(100% + 44px)",
-  height: "200px",
-  objectFit: "cover",
-  margin: "-24px -22px 20px",
 };
 
 const questionsList = {
