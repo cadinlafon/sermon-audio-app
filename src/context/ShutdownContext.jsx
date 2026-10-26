@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
+import { DEFAULT_IDLE_MINUTES, clampIdleMinutes } from "../utils/adminIdle";
 import { db } from "../firebase";
 
 const ShutdownContext = createContext();
@@ -26,6 +27,11 @@ export function ShutdownProvider({ children }) {
   const [returnDate, setReturnDate] = useState("");
   const [audioAiEnabled, setAudioAiEnabled] = useState(true);
   const [audioAiAudiences, setAudioAiAudiences] = useState(["guest", "user", "admin"]);
+  // Admin inactivity timeout (Admin → Advanced). `configLoaded` lets the admin
+  // area wait for the real values instead of briefly using the defaults.
+  const [adminTimeoutEnabled, setAdminTimeoutEnabled] = useState(true);
+  const [adminTimeoutMinutes, setAdminTimeoutMinutes] = useState(DEFAULT_IDLE_MINUTES);
+  const [configLoaded, setConfigLoaded] = useState(false);
   const [liquidScreen, setLiquidScreen] = useState(() => document.documentElement.getAttribute("data-liquid") === "on");
 
   useEffect(() => {
@@ -41,18 +47,21 @@ export function ShutdownProvider({ children }) {
         setReturnDate(data.returnDate);
         if (data.audioAiEnabled !== undefined) setAudioAiEnabled(data.audioAiEnabled);
         if (data.audioAiAudiences !== undefined) setAudioAiAudiences(data.audioAiAudiences);
+        setAdminTimeoutEnabled(data.adminTimeoutEnabled !== false);
+        setAdminTimeoutMinutes(clampIdleMinutes(data.adminTimeoutMinutes ?? DEFAULT_IDLE_MINUTES));
         const liquid = data.liquidScreen === true;
         setLiquidScreen(liquid);
         applyLiquidScreen(liquid);
       }
-    });
+      setConfigLoaded(true);
+    }, () => setConfigLoaded(true));
 
     return () => unsub();
 
   }, []);
 
   return (
-    <ShutdownContext.Provider value={{ shutdown, message, returnDate, audioAiEnabled, audioAiAudiences, liquidScreen }}>
+    <ShutdownContext.Provider value={{ shutdown, message, returnDate, audioAiEnabled, audioAiAudiences, liquidScreen, adminTimeoutEnabled, adminTimeoutMinutes, configLoaded }}>
       {children}
     </ShutdownContext.Provider>
   );

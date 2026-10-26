@@ -10,7 +10,18 @@
 import { useEffect } from "react";
 import { PIN_UNLOCK_SESSION_KEY } from "../config/adminSecurity";
 
-export const ADMIN_IDLE_MS = 5 * 60 * 1000;
+// Defaults; admins can turn the timeout off or change the length in
+// Admin → Advanced (stored on appConfig/status, see ShutdownContext).
+export const DEFAULT_IDLE_MINUTES = 5;
+export const MIN_IDLE_MINUTES = 1;
+export const MAX_IDLE_MINUTES = 240;
+export const ADMIN_IDLE_MS = DEFAULT_IDLE_MINUTES * 60 * 1000;
+
+export function clampIdleMinutes(value) {
+  const n = Math.round(Number(value));
+  if (!Number.isFinite(n)) return DEFAULT_IDLE_MINUTES;
+  return Math.min(MAX_IDLE_MINUTES, Math.max(MIN_IDLE_MINUTES, n));
+}
 export const ADMIN_LAST_ACTIVITY_KEY = "pfAdminLastActivity";
 
 function storageGet(key) {

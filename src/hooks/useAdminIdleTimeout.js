@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useShutdown } from "../context/ShutdownContext";
 import {
-  ADMIN_IDLE_MS,
   getLastAdminActivity,
   isAdminBusy,
   recordAdminActivity,
@@ -19,12 +19,18 @@ const RECORD_THROTTLE_MS = 5 * 1000;
 // after a laptop sleeps or a background tab's timers are throttled.
 export default function useAdminIdleTimeout() {
   const navigate = useNavigate();
+  // On/off and length are set in Admin → Advanced. Nothing runs until the
+  // saved setting has loaded, so a longer limit isn't cut short by the default.
+  const { adminTimeoutEnabled, adminTimeoutMinutes, configLoaded } = useShutdown();
+  const idleMs = adminTimeoutMinutes * 60 * 1000;
 
   useEffect(() => {
+    if (!configLoaded || !adminTimeoutEnabled) return undefined;
+
     // Coming back to /admin after being away from it for longer than the
     // limit: it should be locked again, same as if it had timed out here.
     const previous = getLastAdminActivity();
-    if (previous && Date.now() - previous > ADMIN_IDLE_MS) relockAdmin();
+    if (previous && Date.now() - previous > idleMs) relockAdmin();
     recordAdminActivity();
 
     let lastRecorded = Date.now();
@@ -45,7 +51,7 @@ export default function useAdminIdleTimeout() {
         return;
       }
       const last = getLastAdminActivity() ?? lastRecorded;
-      if (Date.now() - last < ADMIN_IDLE_MS) return;
+      if (Date.now() - last < idleMs) return;
       expiredNow = true;
       relockAdmin();
       setAdminExpired(true);
@@ -62,5 +68,5 @@ export default function useAdminIdleTimeout() {
       clearInterval(interval);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [navigate]);
+  }, [navigate, configLoaded, adminTimeoutEnabled, idleMs]);
 }

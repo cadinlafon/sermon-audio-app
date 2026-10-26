@@ -6,6 +6,7 @@ import { useAdminPin } from "../../context/AdminPinContext";
 import { logAdminAction } from "../../utils/adminAudit";
 import { loadAnalyticsPages, saveAnalyticsPages } from "../../utils/analyticsPages";
 import { isHttpUrl } from "../../lib/resourceTypes";
+import { DEFAULT_IDLE_MINUTES, MIN_IDLE_MINUTES, MAX_IDLE_MINUTES, clampIdleMinutes } from "../../utils/adminIdle";
 
 const AUDIENCE_OPTIONS = [
   { value: "guest", label: "Guests" },
@@ -24,6 +25,8 @@ export default function Settings() {
   const [audioAiAudiences, setAudioAiAudiences] = useState(["guest", "user", "admin"]);
   const [registrationEnabled, setRegistrationEnabled] = useState(true);
   const [liquidScreen, setLiquidScreen] = useState(false);
+  const [adminTimeoutEnabled, setAdminTimeoutEnabled] = useState(true);
+  const [adminTimeoutMinutes, setAdminTimeoutMinutes] = useState(String(DEFAULT_IDLE_MINUTES));
   const [analyticsPages, setAnalyticsPages] = useState([]); // [{ id, label, url }]
   const [maxDailyRegistrations, setMaxDailyRegistrations] = useState("");
   const [todayRegistrationCount, setTodayRegistrationCount] = useState(null);
@@ -51,6 +54,8 @@ export default function Settings() {
           if (data.audioAiAudiences !== undefined) setAudioAiAudiences(data.audioAiAudiences);
           if (data.registrationEnabled !== undefined) setRegistrationEnabled(data.registrationEnabled);
           setLiquidScreen(data.liquidScreen === true);
+          setAdminTimeoutEnabled(data.adminTimeoutEnabled !== false);
+          setAdminTimeoutMinutes(String(clampIdleMinutes(data.adminTimeoutMinutes ?? DEFAULT_IDLE_MINUTES)));
           if (data.maxDailyRegistrations) setMaxDailyRegistrations(String(data.maxDailyRegistrations));
           setOriginalConfig({
             shutdown: data.shutdown || false,
@@ -60,6 +65,8 @@ export default function Settings() {
             registrationEnabled: data.registrationEnabled !== undefined ? data.registrationEnabled : true,
             maxDailyRegistrations: data.maxDailyRegistrations || 0,
             liquidScreen: data.liquidScreen === true,
+            adminTimeoutEnabled: data.adminTimeoutEnabled !== false,
+            adminTimeoutMinutes: clampIdleMinutes(data.adminTimeoutMinutes ?? DEFAULT_IDLE_MINUTES),
           });
         }
       } catch (err) { console.error("Failed to load config:", err); }
@@ -115,6 +122,11 @@ export default function Settings() {
 
   const handleSave = async () => {
     if (!perms.requireEdit()) return;
+    const minutes = Number(adminTimeoutMinutes);
+    if (adminTimeoutEnabled && (!Number.isInteger(minutes) || minutes < MIN_IDLE_MINUTES || minutes > MAX_IDLE_MINUTES)) {
+      alert(`The inactivity timeout must be a whole number of minutes between ${MIN_IDLE_MINUTES} and ${MAX_IDLE_MINUTES}.`);
+      return;
+    }
     // Blank rows are ignored; every other row needs a name and a real web address.
     const filledPages = analyticsPages.filter((p) => p.label.trim() || p.url.trim());
     const badPage = filledPages.find((p) => !p.label.trim() || !isHttpUrl(p.url));
@@ -129,6 +141,8 @@ export default function Settings() {
         audioAiEnabled, audioAiAudiences,
         registrationEnabled, maxDailyRegistrations: Number(maxDailyRegistrations) || 0,
         liquidScreen,
+        adminTimeoutEnabled,
+        adminTimeoutMinutes: clampIdleMinutes(adminTimeoutMinutes),
       };
 
       await updateDoc(configRef, {
@@ -381,6 +395,53 @@ export default function Settings() {
             </button>
           )}
         </div>
+      </div>
+
+      <div style={{ ...card, marginTop: "20px" }}>
+        <div style={sectionHeader}>
+          <span style={sectionIcon}>⏱️</span>
+          <h2 style={sectionTitle}>Admin Inactivity Timeout</h2>
+        </div>
+
+        <div style={toggleRow}>
+          <div>
+            <div style={toggleLabel}>Sign out of the admin dashboard when idle</div>
+            <div style={toggleHint}>When on, the dashboard locks and sends you back to the app after this long with no activity, with a "Sign back in" button. Uploads in progress aren't interrupted.</div>
+          </div>
+          <button
+            onClick={() => setAdminTimeoutEnabled(!adminTimeoutEnabled)}
+            style={adminTimeoutEnabled ? { ...toggle, ...toggleOn } : toggle}
+            aria-label="Toggle admin inactivity timeout"
+            aria-pressed={adminTimeoutEnabled}
+          >
+            <div style={adminTimeoutEnabled ? { ...toggleKnob, transform: "translateX(22px)" } : toggleKnob} />
+          </button>
+        </div>
+
+        {adminTimeoutEnabled ? (
+          <Field label="Length (minutes)">
+            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
+              <input
+                type="number"
+                min={MIN_IDLE_MINUTES}
+                max={MAX_IDLE_MINUTES}
+                step="1"
+                value={adminTimeoutMinutes}
+                onChange={(e) => setAdminTimeoutMinutes(e.target.value)}
+                style={{ ...input, width: "110px" }}
+                aria-label="Inactivity timeout in minutes"
+              />
+              {[2, 5, 10, 15, 30, 60].map((m) => (
+                <button key={m} type="button" onClick={() => setAdminTimeoutMinutes(String(m))} style={String(m) === String(adminTimeoutMinutes) ? { ...logsToggleBtn, background: "var(--color-f6e4b0)", borderColor: "var(--color-c97c2e)" } : logsToggleBtn}>{m} min</button>
+              ))}
+            </div>
+            <div style={toggleHint}>Between {MIN_IDLE_MINUTES} and {MAX_IDLE_MINUTES} minutes. The default is {DEFAULT_IDLE_MINUTES}.</div>
+          </Field>
+        ) : (
+          <div style={{ ...statusBanner, background: "var(--color-fee2e2)", border: "1px solid var(--color-fca5a5)" }}>
+            <span style={{ color: "var(--color-dc2626)" }}>⚠️ The timeout is OFF — anyone using a browser where you're signed in as admin stays in the dashboard until they close it or log out.</span>
+          </div>
+        )}
       </div>
 
       <div style={saveRow}>
