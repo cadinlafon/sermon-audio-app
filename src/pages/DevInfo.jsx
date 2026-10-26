@@ -3,8 +3,49 @@ import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { DEV_INFO_DEFAULTS, mergeDevInfo } from "../data/devInfoDefaults";
 import { isHttpUrl } from "../lib/resourceTypes";
+import HumanCheck from "../components/HumanCheck";
+import { useAuth } from "../context/AuthContext";
+
+const VERIFIED_KEY = "pf-human-verified";
+const VERIFIED_FOR_MS = 30 * 60 * 1000;
+
+function rememberedVerification() {
+  try {
+    const at = Number(sessionStorage.getItem(VERIFIED_KEY));
+    return at > 0 && Date.now() - at < VERIFIED_FOR_MS;
+  } catch {
+    return false;
+  }
+}
 
 export default function DevInfo() {
+  // Same quick security check as the Contact page, once per visit (it's
+  // remembered for 30 minutes). Signed-in admins skip it.
+  const { isAdmin } = useAuth();
+  const [passed, setPassed] = useState(rememberedVerification);
+  const allowed = passed || isAdmin;
+
+  if (!allowed) {
+    return (
+      <div style={page}>
+        <h1 style={pageTitle}>Dev Info</h1>
+        <p style={pageSubtitle}>Everything about how this app is built.</p>
+        <HumanCheck
+          title="Verify to see Dev Info"
+          body="Complete the quick check below to view how this app is built."
+          onVerified={() => {
+            try { sessionStorage.setItem(VERIFIED_KEY, String(Date.now())); } catch { /* private mode — just this view */ }
+            setPassed(true);
+          }}
+        />
+      </div>
+    );
+  }
+
+  return <DevInfoContent />;
+}
+
+function DevInfoContent() {
   // Content is editable in Admin → Dev Info (stored in Firestore). The page
   // shows the built-in defaults first and swaps in the saved copy when it
   // arrives; if that can't be read it just keeps showing the defaults.

@@ -22,3 +22,7 @@ verify_jwt = false
 [functions.clarity-insights]
 # Authenticates the Firebase ID token itself (and requires the admin role).
 verify_jwt = false
+
+[functions.verify-human]
+# Public on purpose (visitors aren't signed in yet); it only checks a Turnstile token.
+verify_jwt = false

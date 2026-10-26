@@ -15,6 +15,7 @@ import googleLogo from "../assets/auth/google-logo.png";
 import { logEvent } from "../utils/logEvent";
 import { getTrafficData } from "../utils/trafficSource";
 import { checkRegistrationAllowed, recordRegistration } from "../utils/registrationGate";
+import HumanCheck from "../components/HumanCheck";
 
 const REFERRAL_OPTIONS = [
   "Church Email",
@@ -44,11 +45,18 @@ export default function SignUp() {
   const [referralSource, setReferralSource] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  // Cloudflare Turnstile "quick check" (verified server-side) — creating an
+  // account, by email or Google, is locked until it's passed.
+  const [human, setHuman] = useState(false);
 
   //////////////////////////////////////////////////
   // EMAIL SIGNUP
   //////////////////////////////////////////////////
   const handleSignUp = async () => {
+    if (!human) {
+      setError("Please complete the security check first.");
+      return;
+    }
     if (!fullName || !email || !password || !referralSource) {
       setError("Please fill out all fields.");
       return;
@@ -121,6 +129,10 @@ export default function SignUp() {
   // GOOGLE SIGNUP
   //////////////////////////////////////////////////
   const signUpWithGoogle = async () => {
+    if (!human) {
+      setError("Please complete the security check first.");
+      return;
+    }
     if (!referralSource) {
       setError("Please select how you found this app first.");
       return;
@@ -203,11 +215,16 @@ export default function SignUp() {
       <div style={contentArea}>
         <div style={card}>
 
+          {/* SECURITY CHECK */}
+          <div style={{ marginBottom: "16px" }}>
+            <HumanCheck compact title="Quick security check" onVerified={() => { setHuman(true); setError(""); }} />
+          </div>
+
           {/* GOOGLE */}
           <button
             onClick={signUpWithGoogle}
-            style={googleButton}
-            disabled={loading}
+            style={human ? googleButton : { ...googleButton, opacity: 0.55, cursor: "not-allowed" }}
+            disabled={loading || !human}
           >
             <img
               src={googleLogo}
@@ -285,10 +302,12 @@ export default function SignUp() {
 
           <button
             onClick={handleSignUp}
-            disabled={loading}
+            disabled={loading || !human}
             style={
               loading
                 ? { ...primaryButton, opacity: 0.7 }
+                : !human
+                ? { ...primaryButton, opacity: 0.55, cursor: "not-allowed" }
                 : primaryButton
             }
           >
