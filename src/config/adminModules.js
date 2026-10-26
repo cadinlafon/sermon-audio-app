@@ -18,6 +18,7 @@ export const ADMIN_MODULES = [
   { key: "pageManager", path: "pagemanager", label: "Page Manager", icon: "🧭", actions: ["view", "edit"] },
   { key: "devInfo", path: "dev-info", label: "Dev Info", icon: "🧑‍💻", actions: ["view", "edit"] },
   { key: "pageNotices", path: "pagenotices", label: "Page Notices", icon: "📄", actions: ["view", "edit", "delete"] },
+  { key: "reports", path: "reports", label: "Reports", icon: "🛟", actions: ["view", "edit", "delete"] },
   { key: "suggestions", path: "suggestions", label: "Suggestions", icon: "💡", actions: ["view", "edit", "delete"] },
   { key: "logs", path: "logs", label: "Logs", icon: "📋", actions: ["view", "edit"] },
   { key: "referrals", path: "referrals", label: "Referrals", icon: "📣", actions: ["view", "edit", "delete"] },

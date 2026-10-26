@@ -289,6 +289,31 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // "Report a Problem" (profile sidebar). A signed-in person creates their own
+    // report and can read their own (with the replies); the only change they
+    // may make is clearing the "you have a new reply" flag. Admins read, tag,
+    // reply to and delete everything.
+    match /problemReports/{id} {
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['userId', 'userName', 'userEmail', 'title', 'details', 'createdAt', 'tags', 'replies', 'adminSeen', 'userUnread'])
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0 && request.resource.data.title.size() <= 120
+        && request.resource.data.details is string
+        && request.resource.data.details.size() > 0 && request.resource.data.details.size() <= 3000
+        && request.resource.data.tags == []
+        && request.resource.data.replies == []
+        && request.resource.data.adminSeen == false
+        && request.resource.data.userUnread == false
+        && request.resource.data.createdAt == request.time;
+      allow read: if isAdmin() || (signedIn() && resource.data.userId == request.auth.uid);
+      allow update: if isAdmin()
+        || (signedIn() && resource.data.userId == request.auth.uid
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['userUnread'])
+            && request.resource.data.userUnread == false);
+      allow delete: if isAdmin();
+    }
+
     ////////////////////////////////////////////////////////////////////
     // Analytics & audit trails
     ////////////////////////////////////////////////////////////////////

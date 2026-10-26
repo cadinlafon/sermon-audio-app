@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { getDisplayName, BADGE_COLORS } from "../lib/pageManager";
 import { logEvent } from "../utils/logEvent";
 import { useToast } from "../context/ToastContext";
+import { createReport, MAX_TITLE, MAX_DETAILS } from "../utils/problemReports";
 
 ////////////////////////////////////////////////////////////////
 // PROFILE SIDEBAR
@@ -26,9 +27,13 @@ function Icon({ icon, size }) {
   return <span style={{ fontSize: size, lineHeight: 1 }} aria-hidden="true">{icon}</span>;
 }
 
-export default function ProfileSidebar({ user, isAdmin, pages, onClose, onGo, onLogout }) {
+export default function ProfileSidebar({ user, isAdmin, pages, unreadReplies = 0, onClose, onGo, onLogout }) {
   const { toast } = useToast();
   const [entered, setEntered] = useState(false);
+  const [reportTitle, setReportTitle] = useState("");
+  const [reportDetails, setReportDetails] = useState("");
+  const [sending, setSending] = useState(false);
+  const [reportError, setReportError] = useState("");
   const closeRef = useRef(null);
   const returnFocusTo = useRef(null);
 
@@ -69,6 +74,23 @@ export default function ProfileSidebar({ user, isAdmin, pages, onClose, onGo, on
       toast("App link copied — paste it to share.", { type: "success" });
     } catch (err) {
       if (err?.name !== "AbortError") toast(`Share this link: ${url}`, { type: "info" });
+    }
+  };
+
+  const submitReport = async (e) => {
+    e.preventDefault();
+    if (sending) return;
+    setReportError("");
+    setSending(true);
+    try {
+      await createReport(user, { title: reportTitle, details: reportDetails });
+      // Like every button in here, sending closes the sidebar.
+      onClose();
+      toast("Report sent — thank you! You'll see a dot here when we reply.", { type: "success", duration: 6000 });
+    } catch (err) {
+      console.error("Couldn't send the report", err);
+      setReportError(err?.code === "permission-denied" ? "Couldn't send — please sign in again and retry." : err?.message || "Couldn't send the report. Please try again.");
+      setSending(false);
     }
   };
 
@@ -120,9 +142,43 @@ export default function ProfileSidebar({ user, isAdmin, pages, onClose, onGo, on
                   {p.badgeEnabled && p.badgeText && <span style={miniBadge(p.badgeColor)}>{p.badgeText}</span>}
                 </button>
               ))}
+              <button type="button" style={listButton} onClick={() => onGo("/my-reports")}>
+                <span style={listIcon}><Icon icon="📨" size={18} /></span>
+                <span>My Reports</span>
+                {unreadReplies > 0 && <span style={replyDot} role="status" aria-label={`${unreadReplies} new ${unreadReplies === 1 ? "reply" : "replies"}`} />}
+              </button>
             </nav>
           </>
         )}
+
+        <div style={divider} />
+
+        {/* REPORT A PROBLEM — fills the space above Admin / Log out */}
+        <form style={reportBox} onSubmit={submitReport}>
+          <div style={reportHeading}>Report a Problem</div>
+          <input
+            style={reportInput}
+            value={reportTitle}
+            onChange={(e) => setReportTitle(e.target.value)}
+            placeholder="Title"
+            maxLength={MAX_TITLE}
+            aria-label="Problem title"
+            disabled={sending}
+          />
+          <textarea
+            style={{ ...reportInput, minHeight: "84px", resize: "vertical" }}
+            value={reportDetails}
+            onChange={(e) => setReportDetails(e.target.value)}
+            placeholder="What went wrong? What were you doing?"
+            maxLength={MAX_DETAILS}
+            aria-label="Problem details"
+            disabled={sending}
+          />
+          {reportError && <div style={reportErrorStyle} role="alert">{reportError}</div>}
+          <button type="submit" style={reportSubmit} disabled={sending || !reportTitle.trim() || !reportDetails.trim()}>
+            {sending ? "Sending…" : "Submit"}
+          </button>
+        </form>
 
         <div style={{ flex: 1 }} />
         <div style={divider} />
@@ -180,6 +236,14 @@ const quickLabel = { fontSize: "12px", lineHeight: 1.25, textAlign: "center", wo
 const list = { display: "flex", flexDirection: "column", gap: "6px" };
 const listButton = { display: "flex", alignItems: "center", gap: "12px", width: "100%", padding: "11px 12px", borderRadius: "10px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fdf8f3)", color: "var(--color-7a4f10)", fontSize: "14px", fontFamily: "sans-serif", textAlign: "left", cursor: "pointer" };
 const listIcon = { width: "22px", display: "inline-flex", justifyContent: "center", flexShrink: 0 };
+
+const replyDot = { marginLeft: "auto", width: "10px", height: "10px", borderRadius: "50%", background: "var(--color-dc2626)", flexShrink: 0 };
+
+const reportBox = { display: "flex", flexDirection: "column", gap: "8px", padding: "12px", borderRadius: "12px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fdf8f3)" };
+const reportHeading = { fontSize: "13px", fontWeight: "700", color: "var(--color-5c3a1e)", letterSpacing: "0.02em" };
+const reportInput = { width: "100%", boxSizing: "border-box", padding: "9px 11px", borderRadius: "8px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fffdf9)", color: "var(--color-3d2200)", fontSize: "13px", fontFamily: "sans-serif", outline: "none" };
+const reportErrorStyle = { fontSize: "12px", color: "var(--color-b3432c)" };
+const reportSubmit = { padding: "10px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, var(--color-c97c2e) 0%, var(--color-a85e18) 100%)", color: "var(--color-fff8ee)", fontSize: "13px", fontWeight: "600", fontFamily: "sans-serif", cursor: "pointer" };
 
 const bottomRow = { display: "flex", gap: "10px" };
 const adminBtn = { flex: 1, padding: "12px", borderRadius: "10px", border: "1px solid var(--color-e0a458)", background: "var(--color-fdf1e2)", color: "var(--color-a85e18)", fontSize: "14px", fontWeight: "600", fontFamily: "sans-serif", cursor: "pointer" };

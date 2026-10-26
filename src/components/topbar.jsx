@@ -22,6 +22,7 @@ import { usePages } from "../context/PagesContext";
 import { isVisibleInNav, sortForNavigation } from "../lib/pageManager";
 import ThemeToggle from "./ThemeToggle";
 import ProfileSidebar from "./ProfileSidebar";
+import { useMyReports } from "../utils/problemReports";
 
 import googleLogo from "../assets/auth/google-logo.png";
 
@@ -114,6 +115,8 @@ export default function TopBar() {
   const accountPages = sortForNavigation((pages || []).filter((p) => p.navSlot === "account" && isVisibleInNav(p)));
 
   const [showProfile, setShowProfile] = useState(false);
+  // Replies from an admin that this person hasn't read yet (dot on the profile icon + in the sidebar).
+  const { unread: unreadReplies } = useMyReports(user);
   const [showSearch, setShowSearch] = useState(false);
 
   const [email, setEmail] = useState("");
@@ -254,7 +257,7 @@ export default function TopBar() {
 
         <div ref={profileRef} style={rightSide}>
         <div
-          style={{ cursor: "pointer" }}
+          style={{ cursor: "pointer", position: "relative" }}
           onClick={() => setShowProfile(!showProfile)}
         >
           {user ? (
@@ -264,6 +267,9 @@ export default function TopBar() {
           ) : (
             <div style={guestCircle}>
             </div>
+          )}
+          {user && unreadReplies > 0 && (
+            <span style={avatarDot} role="status" aria-label={`${unreadReplies} new ${unreadReplies === 1 ? "reply" : "replies"} to your reports`} />
           )}
         </div>
 
@@ -320,6 +326,7 @@ export default function TopBar() {
             user={user}
             isAdmin={isAdmin}
             pages={accountPages}
+            unreadReplies={unreadReplies}
             onClose={() => setShowProfile(false)}
             onGo={go}
             onLogout={handleLogout}
@@ -376,6 +383,18 @@ const profileCircle = {
   fontWeight: "600",
   boxShadow: "0 3px 10px rgba(160,80,20,0.32)",
   transition: "transform 0.15s ease"
+};
+
+const avatarDot = {
+  position: "absolute",
+  top: "-2px",
+  right: "-2px",
+  width: "12px",
+  height: "12px",
+  borderRadius: "50%",
+  background: "var(--color-dc2626)",
+  border: "2px solid var(--color-fffdf9)",
+  pointerEvents: "none",
 };
 
 const guestCircle = {

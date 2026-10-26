@@ -79,6 +79,8 @@ import AdminNotifications from "./pages/Admin/AdminNotifications";
 import AdminSuggestions from "./pages/Admin/AdminSuggestions";
 import AdminNotices from "./pages/Admin/AdminNotices";
 import DevInfoAdmin from "./pages/Admin/DevInfoAdmin";
+import ProblemReports from "./pages/Admin/ProblemReports";
+import MyReports from "./pages/MyReports";
 import SendNotifactions from "./pages/Admin/SendNotifactions";
 import Referrals from "./pages/Admin/Referrals";
 import DoctrineAdmin from "./pages/Admin/DoctrineAdmin";
@@ -588,6 +590,8 @@ function App() {
           <Route path="/playlists/:id" element={<PlaylistDetail />} />
 
           {/* Public unified search */}
+          <Route path="/my-reports" element={<MyReports />} />
+
           <Route path="/search" element={<Search />} />
           <Route path="/transcripts/:id" element={<Transcript />} />
 
@@ -745,6 +749,11 @@ function App() {
               <Route
                 path="notices"
                 element={<ModuleGate moduleKey="notices"><AdminNotices /></ModuleGate>}
+              />
+
+              <Route
+                path="reports"
+                element={<ModuleGate moduleKey="reports"><ProblemReports /></ModuleGate>}
               />
 
               <Route

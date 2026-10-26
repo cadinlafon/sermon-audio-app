@@ -4,6 +4,7 @@ import { ADMIN_MODULES, NO_ACCESS_MESSAGE } from "../../config/adminModules";
 import { AdminPinProvider, useAdminPin } from "../../context/AdminPinContext";
 import useAdminIdleTimeout from "../../hooks/useAdminIdleTimeout";
 import { useAnalyticsPages } from "../../utils/analyticsPages";
+import { useUnseenReportCount } from "../../utils/problemReports";
 
 export default function AdminLayout() {
   useAdminIdleTimeout();
@@ -20,6 +21,8 @@ function AdminShell() {
   const { canView } = usePermissions();
   const pin = useAdminPin();
   const analyticsPages = useAnalyticsPages();
+  // Red dot on the Reports button while any problem report hasn't been opened.
+  const unseenReports = useUnseenReportCount(canView("reports"));
   const navLinks = ADMIN_MODULES.map((m) => ({
     to: `/admin/${m.path}`,
     label: m.label,
@@ -60,7 +63,7 @@ function AdminShell() {
                   <span style={linkIcon}>{icon}</span>
                   <span>{label}</span>
 
-                  {isAnalytics ? <span style={chevron} aria-hidden="true">{showSub ? "▾" : "▸"}</span> : active && <span style={activeDot} />}
+                  {isAnalytics ? <span style={chevron} aria-hidden="true">{showSub ? "▾" : "▸"}</span> : to === "/admin/reports" && unseenReports > 0 ? <span style={unseenDot} role="status" aria-label={`${unseenReports} unopened ${unseenReports === 1 ? "report" : "reports"}`} /> : active && <span style={activeDot} />}
                 </Link>
 
                 {showSub && (
@@ -234,6 +237,15 @@ const linkIcon = {
   fontSize: "16px",
   width: "20px",
   textAlign: "center",
+};
+
+const unseenDot = {
+  marginLeft: "auto",
+  minWidth: "9px",
+  height: "9px",
+  borderRadius: "50%",
+  background: "var(--color-dc2626)",
+  boxShadow: "0 0 0 2px rgba(239,68,68,0.28)",
 };
 
 const activeDot = {
