@@ -19,8 +19,9 @@ import {
 import { auth, db, googleProvider } from "../firebase";
 import { logEvent } from "../utils/logEvent";
 import { usePages } from "../context/PagesContext";
-import { getDisplayName, isVisibleInNav, sortForNavigation, BADGE_COLORS } from "../lib/pageManager";
+import { isVisibleInNav, sortForNavigation } from "../lib/pageManager";
 import ThemeToggle from "./ThemeToggle";
+import ProfileSidebar from "./ProfileSidebar";
 
 import googleLogo from "../assets/auth/google-logo.png";
 
@@ -206,7 +207,7 @@ export default function TopBar() {
   // because iOS doesn't send mouse events for taps on plain page areas),
   // Escape, and any page change. Buttons inside close it through go() below.
   useEffect(() => {
-    if (!showProfile) return undefined;
+    if (!showProfile || user) return undefined;
 
     function handleOutside(event) {
       if (profileRef.current && !profileRef.current.contains(event.target)) {
@@ -225,7 +226,7 @@ export default function TopBar() {
       document.removeEventListener("touchstart", handleOutside);
       document.removeEventListener("keydown", handleKey);
     };
-  }, [showProfile]);
+  }, [showProfile, user]);
 
   useEffect(() => {
     setShowProfile(false);
@@ -313,37 +314,16 @@ export default function TopBar() {
           </div>
         )}
 
-        {/* LOGGED IN */}
+        {/* LOGGED IN — a full sidebar (see ProfileSidebar.jsx) */}
         {showProfile && user && (
-          <div style={dropdown}>
-            <div style={userName}>
-              {user.displayName || user.email}
-            </div>
-
-            <div style={divider} />
-
-            {accountPages.map((p) => (
-              <button key={p.id} style={accountButton} onClick={() => go(p.route)}>
-                <span style={accountIcon}>{p.icon}</span>
-                {getDisplayName(p)}
-                {p.badgeEnabled && p.badgeText && (
-                  <span style={miniBadge(p.badgeColor)}>{p.badgeText}</span>
-                )}
-              </button>
-            ))}
-
-            {isAdmin && (
-              <button style={adminButton} onClick={() => go("/admin")}>
-                Admin
-              </button>
-            )}
-
-            <div style={divider} />
-
-            <button style={logoutButton} onClick={handleLogout}>
-              LOG OUT
-            </button>
-          </div>
+          <ProfileSidebar
+            user={user}
+            isAdmin={isAdmin}
+            pages={accountPages}
+            onClose={() => setShowProfile(false)}
+            onGo={go}
+            onLogout={handleLogout}
+          />
         )}
         </div>
       </div>
@@ -513,75 +493,12 @@ const orLine = {
   background: "var(--color-eddfc8)"
 };
 
-const userName = {
-  fontWeight: "normal",
-  fontFamily: "'Georgia', serif",
-  fontSize: "15px",
-  color: "var(--color-3d2200)"
-};
 
-const divider = {
-  height: "1px",
-  background: "var(--color-eddfc8)",
-  margin: "2px 0"
-};
 
-const accountButton = {
-  display: "flex",
-  alignItems: "center",
-  gap: "10px",
-  background: "var(--color-fdf8f3)",
-  border: "1px solid var(--color-eddfc8)",
-  padding: "10px 12px",
-  cursor: "pointer",
-  borderRadius: "8px",
-  fontSize: "13px",
-  fontFamily: "sans-serif",
-  color: "var(--color-7a4f10)",
-  textAlign: "left"
-};
 
-const adminButton = {
-  ...accountButton,
-  background: "var(--color-fdf1e2)",
-  border: "1px solid var(--color-e0a458)",
-  color: "var(--color-a85e18)",
-  fontWeight: "600"
-};
 
-const accountIcon = {
-  fontSize: "14px",
-  lineHeight: 1,
-  flexShrink: 0,
-};
 
-const miniBadge = (color) => {
-  const c = BADGE_COLORS[color] || BADGE_COLORS.amber;
-  return {
-    marginLeft: "auto",
-    fontSize: "10px",
-    fontWeight: "700",
-    padding: "2px 7px",
-    borderRadius: "999px",
-    background: c.bg,
-    color: c.color,
-    fontFamily: "sans-serif",
-    whiteSpace: "nowrap",
-  };
-};
 
-const logoutButton = {
-  background: "transparent",
-  color: "var(--color-a85e18)",
-  border: "1px solid var(--color-e0a458)",
-  padding: "10px",
-  cursor: "pointer",
-  borderRadius: "8px",
-  fontSize: "13px",
-  fontWeight: "600",
-  letterSpacing: "0.04em",
-  fontFamily: "sans-serif"
-};
 
 const errorText = {
   color: "var(--color-b3432c)",

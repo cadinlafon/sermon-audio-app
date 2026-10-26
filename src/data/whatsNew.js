@@ -19,6 +19,17 @@
 
 export const WHATS_NEW = [
   {
+    id: "account-sidebar-2026-10-26",
+    date: "2026-10-26",
+    title: "A New Account Sidebar",
+    details:
+      "Tapping your profile icon now opens a full sidebar instead of a small menu. Your name is at the top, with big one-tap buttons for Share App, Suggest Feature and Settings, then the rest of your pages, with Log out at the bottom. Tap outside it, or any button inside it, to close it.",
+    minor: [
+      "New Share App button — send a friend the link to the app",
+      "Admins get their Admin button right next to Log out",
+    ],
+  },
+  {
     id: "continue-listening-2026-10-01",
     date: "2026-10-01",
     title: "Continue Listening, Right on Home",
