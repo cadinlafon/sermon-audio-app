@@ -23,7 +23,7 @@ import { isVisibleInNav, sortForNavigation } from "../lib/pageManager";
 import ThemeToggle from "./ThemeToggle";
 import ProfileSidebar from "./ProfileSidebar";
 import { useMyReports } from "../utils/problemReports";
-
+import accountIcon from "./account-icon.jpg";
 import googleLogo from "../assets/auth/google-logo.png";
 
 const TYPE_LABEL = { sundayschool: "Sunday School", homily: "Homily", sermon: "Sermon" };
@@ -261,13 +261,16 @@ export default function TopBar() {
           onClick={() => setShowProfile(!showProfile)}
         >
           {user ? (
-            <div style={profileCircle}>
-              {user.email?.charAt(0).toUpperCase()}
-            </div>
-          ) : (
-            <div style={guestCircle}>
-            </div>
-          )}
+  <div style={profileCircle}>
+    {user.email?.charAt(0).toUpperCase()}
+  </div>
+) : (
+  <img
+    src={accountIcon}
+    alt="Account"
+    style={guestImage}
+  />
+)}
           {user && unreadReplies > 0 && (
             <span style={avatarDot} role="status" aria-label={`${unreadReplies} new ${unreadReplies === 1 ? "reply" : "replies"} to your reports`} />
           )}
@@ -356,7 +359,14 @@ const topBar = {
   zIndex: 1000,
   fontFamily: "sans-serif"
 };
-
+const guestImage = {
+  width: "36px",
+  height: "36px",
+  borderRadius: "50%",
+  objectFit: "cover",
+  display: "block",
+  cursor: "pointer"
+};
 const title = {
   fontWeight: "normal",
   fontSize: "17px",
