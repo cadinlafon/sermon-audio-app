@@ -94,6 +94,13 @@
     /* Page transition + loading shimmer */
     @keyframes pf-page-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
     .pf-page-fade { animation: pf-page-in 0.22s ease-out; }
+    /* Audio card entrance animations (Audio Page Manager → Advanced → Card animations) */
+    @keyframes pf-card-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+    @keyframes pf-card-in-lively { from { opacity: 0; transform: translateY(18px) scale(0.97); } to { opacity: 1; transform: none; } }
+    .pf-card-subtle { animation: pf-card-in 0.35s ease-out both; }
+    .pf-card-lively { animation: pf-card-in-lively 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+    .pf-card-lively:hover { transform: translateY(-3px); }
+    @media (prefers-reduced-motion: reduce) { .pf-card-subtle, .pf-card-lively { animation: none; } .pf-card-lively:hover { transform: none; } }
     @keyframes pf-shimmer { 0% { opacity: 1; } 50% { opacity: 0.45; } 100% { opacity: 1; } }
     .pf-skel { animation: pf-shimmer 1.4s ease-in-out infinite; }
     @keyframes pf-stripes { from { background-position: 0 0; } to { background-position: 28px 0; } }

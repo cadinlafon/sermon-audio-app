@@ -9,7 +9,7 @@ import UploadProgress from "../../components/UploadProgress";
 import { useModulePermissions } from "../../hooks/usePermissions";
 import { useAdminPin } from "../../context/AdminPinContext";
 
-const speakers = ["Jonathan Mcintosh", "Rusty Olps", "Jason Farley", "Mark Thiele"];
+const speakers = ["Jonathan McIntosh", "Rusty Olps", "Jason Farley", "Mark Thiele"];
 
 // Several forms can upload at once, and each one picks "the next order
 // number" by reading the collection — so the pick + write is queued to
@@ -29,6 +29,7 @@ function SingleUploadForm({ position, canAddAnother, onUploadAnother, onRemove }
   const pinCtx = useAdminPin();
   const requirePin = pinCtx?.requirePin || (async () => true);
   const [title, setTitle] = useState("");
+  const [series, setSeries] = useState("");
   const [speaker, setSpeaker] = useState("");
   const [type, setType] = useState("sermon");
   const [file, setFile] = useState(null);
@@ -96,6 +97,7 @@ function SingleUploadForm({ position, canAddAnother, onUploadAnother, onRemove }
 
       await addAudioDoc({
         title,
+        ...(series.trim() ? { series: series.trim() } : {}),
         speaker,
         type,
         duration,
@@ -103,7 +105,7 @@ function SingleUploadForm({ position, canAddAnother, onUploadAnother, onRemove }
         ...(transcribeStorageKey ? { transcribeStorageKey } : {}),
       }, placeAt);
 
-      setTitle(""); setSpeaker(""); setType("sermon"); setFile(null); setDuration(null);
+      setTitle(""); setSeries(""); setSpeaker(""); setType("sermon"); setFile(null); setDuration(null);
       alert("Upload successful 🎉");
     } catch (err) {
       console.error(err);
@@ -125,6 +127,17 @@ function SingleUploadForm({ position, canAddAnother, onUploadAnother, onRemove }
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             style={input}
+          />
+        </div>
+
+        <div style={fieldGroup}>
+          <label style={fieldLabel}>Series <span style={{ textTransform: "none", letterSpacing: 0 }}>(optional)</span></label>
+          <input
+            placeholder="e.g. The Book of John"
+            value={series}
+            onChange={(e) => setSeries(e.target.value)}
+            style={input}
+            maxLength={100}
           />
         </div>
 

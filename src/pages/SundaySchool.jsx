@@ -1,27 +1,17 @@
-import { useEffect, useState } from "react";
 import { db } from "../firebase";
-import {
-  collection,
-  getDocs,
-  query,
-  where,
-} from "firebase/firestore";
+import { collection, getDocs, query, where } from "firebase/firestore";
 import { useAudioPlayer } from "../context/AudioPlayerContext";
 import useAudioList from "../hooks/useAudioList";
-import useOnlineStatus from "../hooks/useOnlineStatus";
-import AudioCard from "../components/AudioCard";
-import PlayAllBar from "../components/PlayAllBar";
-import useAudioFilters from "../hooks/useAudioFilters";
-import AudioFilterBar, { NoResults } from "../components/AudioFilterBar";
-import SkeletonList from "../components/Skeleton";
+import usePageNotices from "../hooks/usePageNotices";
+import AudioListView from "../components/AudioListView";
 
+// Sunday School. Everything about how the page looks and behaves is set in
+// Admin → Audio Page Manager and rendered by AudioListView. (Sunday School has
+// always listed lessons oldest first — that is still its default sort.)
 export default function SundaySchool() {
-  const [notices, setNotices] = useState([]);
-
-
   const { playSermon } = useAudioPlayer();
+  const notices = usePageNotices();
 
-  const isOnline = useOnlineStatus();
   const [lessons, setLessons, loading] = useAudioList(
     async () => {
       const q = query(collection(db, "audio"), where("type", "==", "sundayschool"));
@@ -33,60 +23,18 @@ export default function SundaySchool() {
     (a) => a.type === "sundayschool"
   );
 
-  useEffect(() => {
-    async function fetchNotices() {
-      const snap = await getDocs(collection(db, "pageNotices"));
-      const data = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-      setNotices(data.filter((n) => n.enabled && (n.page === "sundayschool" || n.page === "all")));
-    }
-    fetchNotices();
-  }, []);
-
   const saveSummaryLocally = (id, aiSummary) => {
     setLessons((items) => items.map((item) => item.id === id ? { ...item, aiSummary } : item));
   };
 
-  // Sunday School has always listed lessons in order (oldest first).
-  const f = useAudioFilters(lessons, "sundayschool", { defaultSort: "oldest" });
-  const displayList = f.result;
-
   return (
-    <div style={page}>
-      <h1 style={pageTitle}>Sunday School</h1>
-
-      <AudioFilterBar f={f} loading={loading} />
-
-      {notices.filter((n) => n.position === "top").map((n) => (
-        <div key={n.id} style={noticeBox}>
-          <strong style={noticeTitle}>{n.title}</strong>
-          <p style={noticeMsg}>{n.message}</p>
-        </div>
-      ))}
-
-      {loading && lessons.length === 0 && <SkeletonList />}
-      {!loading && displayList.length === 0 && <NoResults f={f} offlineNothing={!isOnline && lessons.length === 0} />}
-
-      <PlayAllBar items={displayList} filtered={f.chips.length > 0} />
-      {displayList.map((item) => (
-        <AudioCard key={item.id} audio={item} onPlay={playSermon} onSummarySaved={saveSummaryLocally} />
-      ))}
-
-      {notices.filter((n) => n.position === "bottom").map((n) => (
-        <div key={n.id} style={noticeBox}>
-          <strong style={noticeTitle}>{n.title}</strong>
-          <p style={noticeMsg}>{n.message}</p>
-        </div>
-      ))}
-    </div>
+    <AudioListView
+      pageKey="sundayschool"
+      items={lessons}
+      loading={loading}
+      onPlay={playSermon}
+      onSummarySaved={saveSummaryLocally}
+      notices={notices}
+    />
   );
 }
-
-const page = { padding: "32px 20px 60px", maxWidth: "860px", margin: "0 auto", background: "var(--color-fdf8f3)", minHeight: "100vh", fontFamily: "'Georgia', serif" };
-const pageTitle = { textAlign: "center", marginBottom: "28px", fontSize: "28px", fontWeight: "normal", color: "var(--color-3d2200)" };
-const controls = { display: "flex", gap: "10px", marginBottom: "20px", flexWrap: "wrap", justifyContent: "center" };
-const pillButton = { padding: "9px 18px", borderRadius: "999px", border: "1px solid var(--color-c8922a)", background: "transparent", color: "var(--color-7a4f10)", cursor: "pointer", fontSize: "13px", fontFamily: "sans-serif" };
-const inputStyle = { padding: "9px 16px", borderRadius: "999px", border: "1px solid var(--color-eddfc8)", fontSize: "13px", fontFamily: "sans-serif", background: "var(--color-fffdf9)", color: "var(--color-3d2200)", outline: "none" };
-const noticeBox = { background: "var(--color-fffbee)", border: "1px solid var(--color-f0d898)", borderRadius: "14px", padding: "14px 18px", marginBottom: "14px" };
-const noticeTitle = { fontSize: "15px", color: "var(--color-3d2200)", fontFamily: "'Georgia', serif" };
-const noticeMsg = { fontSize: "13px", color: "var(--color-7a5530)", fontFamily: "sans-serif", lineHeight: 1.6, margin: "4px 0 0" };
-const emptyText = { textAlign: "center", color: "var(--color-b08050)", fontStyle: "italic", fontFamily: "sans-serif", padding: "30px 0" };

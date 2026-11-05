@@ -63,7 +63,7 @@ import WhatsNew from "./pages/WhatsNew";
 import DevInfo from "./pages/DevInfo";
 
 // Admin
-import PageNotices from "./pages/Admin/PageNotices";
+import AudioPageManager from "./pages/Admin/AudioPageManager";
 import AdminGate from "./pages/Admin/AdminGate";
 import AdminLayout from "./pages/Admin/AdminLayout";
 import ModuleGate from "./pages/Admin/ModuleGate";
@@ -762,9 +762,10 @@ function App() {
               />
 
               <Route
-                path="pagenotices"
-                element={<ModuleGate moduleKey="pageNotices"><PageNotices /></ModuleGate>}
+                path="audio-pages"
+                element={<ModuleGate moduleKey="audioPages"><AudioPageManager /></ModuleGate>}
               />
+              <Route path="pagenotices" element={<Navigate to="/admin/audio-pages" replace />} />
 
               <Route
                 path="referrals"

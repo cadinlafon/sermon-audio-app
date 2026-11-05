@@ -32,6 +32,9 @@ export function ShutdownProvider({ children }) {
   const [adminTimeoutEnabled, setAdminTimeoutEnabled] = useState(true);
   const [adminTimeoutMinutes, setAdminTimeoutMinutes] = useState(DEFAULT_IDLE_MINUTES);
   const [configLoaded, setConfigLoaded] = useState(false);
+  // Audio Page Manager settings (see data/audioPageDefaults.js) — raw; use
+  // useAudioConfig() to read them resolved and validated.
+  const [audioPages, setAudioPages] = useState(null);
   const [liquidScreen, setLiquidScreen] = useState(() => document.documentElement.getAttribute("data-liquid") === "on");
 
   useEffect(() => {
@@ -49,6 +52,7 @@ export function ShutdownProvider({ children }) {
         if (data.audioAiAudiences !== undefined) setAudioAiAudiences(data.audioAiAudiences);
         setAdminTimeoutEnabled(data.adminTimeoutEnabled !== false);
         setAdminTimeoutMinutes(clampIdleMinutes(data.adminTimeoutMinutes ?? DEFAULT_IDLE_MINUTES));
+        setAudioPages(data.audioPages && typeof data.audioPages === "object" ? data.audioPages : null);
         const liquid = data.liquidScreen === true;
         setLiquidScreen(liquid);
         applyLiquidScreen(liquid);
@@ -61,7 +65,7 @@ export function ShutdownProvider({ children }) {
   }, []);
 
   return (
-    <ShutdownContext.Provider value={{ shutdown, message, returnDate, audioAiEnabled, audioAiAudiences, liquidScreen, adminTimeoutEnabled, adminTimeoutMinutes, configLoaded }}>
+    <ShutdownContext.Provider value={{ shutdown, message, returnDate, audioAiEnabled, audioAiAudiences, liquidScreen, adminTimeoutEnabled, adminTimeoutMinutes, configLoaded, audioPages }}>
       {children}
     </ShutdownContext.Provider>
   );

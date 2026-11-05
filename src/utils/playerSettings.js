@@ -20,7 +20,13 @@ export const DEFAULT_SETTINGS = {
   // Resume by itself when a Bluetooth / wired audio device reconnects after
   // the browser paused playback because it disconnected (car, headphones).
   autoResumeOnReconnect: true,
+  // Which of speed / skip intervals the VISITOR has changed themselves. The
+  // admin's defaults (Audio Page Manager → Playback) apply to the rest.
+  touched: { speed: false, skipBack: false, skipForward: false },
 };
+
+// Preferences an admin can set a default for.
+export const ADMIN_DEFAULTABLE = ["speed", "skipBack", "skipForward"];
 
 const KEY = "playerSettings:v1";
 
@@ -38,7 +44,28 @@ function sanitize(raw) {
   s.showRemaining = !!s.showRemaining;
   s.showNotesWhilePlaying = s.showNotesWhilePlaying !== false;
   s.autoResumeOnReconnect = s.autoResumeOnReconnect !== false;
+  // Settings saved before `touched` existed: anything not at the old built-in
+  // default was clearly the visitor's own choice — keep it.
+  const hadTouched = raw && typeof raw === "object" && raw.touched && typeof raw.touched === "object";
+  s.touched = {
+    speed: hadTouched ? !!raw.touched.speed : s.speed !== DEFAULT_SETTINGS.speed,
+    skipBack: hadTouched ? !!raw.touched.skipBack : s.skipBack !== DEFAULT_SETTINGS.skipBack,
+    skipForward: hadTouched ? !!raw.touched.skipForward : s.skipForward !== DEFAULT_SETTINGS.skipForward,
+  };
   return s;
+}
+
+// The visitor's settings with the admin's defaults filled in under anything
+// they haven't changed themselves.
+export function applyAdminDefaults(settings, admin) {
+  if (!admin) return settings;
+  const t = settings.touched || {};
+  return {
+    ...settings,
+    speed: t.speed ? settings.speed : admin.defaultSpeed,
+    skipBack: t.skipBack ? settings.skipBack : admin.skipBack,
+    skipForward: t.skipForward ? settings.skipForward : admin.skipForward,
+  };
 }
 
 export function loadPlayerSettings() {

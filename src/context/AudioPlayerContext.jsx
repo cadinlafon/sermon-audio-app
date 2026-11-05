@@ -1,11 +1,13 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "../firebase";
 import { trackListenTime, trackPlay, recordListen, noteSession } from "../utils/listenTracker";
 import { saveListenProgress } from "../utils/listenProgress";
 import { getLocalBlobUrl } from "../utils/offlineDownloads";
-import { loadPlayerSettings, savePlayerSettings, loadQueue, saveQueue, loadHistory, saveHistory, slimTrack } from "../utils/playerSettings";
+import { loadPlayerSettings, savePlayerSettings, applyAdminDefaults, ADMIN_DEFAULTABLE, loadQueue, saveQueue, loadHistory, saveHistory, slimTrack } from "../utils/playerSettings";
+import { useShutdown } from "./ShutdownContext";
+import { resolveAudioConfig } from "../data/audioPageDefaults";
 import { supabase } from "../supabase";
 import useCastSync from "../hooks/useCastSync";
 import { setAppBusy } from "../utils/appUpdate";
@@ -37,8 +39,19 @@ export function AudioPlayerProvider({ children }) {
 
   // Player preferences (skip intervals, speed, volume, repeat, shuffle...) —
   // remembered per device, see utils/playerSettings.js.
-  const [settings, setSettings] = useState(loadPlayerSettings);
+  // The visitor's own choices (rawSettings) with the admin's playback defaults
+  // (Audio Page Manager → Playback) filled in under anything they haven't changed.
+  const { audioPages } = useShutdown() || {};
+  const adminConfig = useMemo(() => resolveAudioConfig(audioPages), [audioPages]);
+  const adminPlayback = adminConfig.playback;
+  const adminQuality = adminConfig.advanced.quality;
+  const [rawSettings, setSettings] = useState(loadPlayerSettings);
+  const settings = useMemo(() => applyAdminDefaults(rawSettings, adminPlayback), [rawSettings, adminPlayback]);
   const settingsRef = useRef(settings);
+  const playbackRef = useRef(adminPlayback);
+  playbackRef.current = adminPlayback;
+  const qualityRef = useRef(adminQuality);
+  qualityRef.current = adminQuality;
   const cast = useCastSync({
     audioRef,
     current,
@@ -47,7 +60,10 @@ export function AudioPlayerProvider({ children }) {
   });
   const updateSettings = useCallback((patch) => {
     setSettings((prev) => {
-      const next = { ...prev, ...(typeof patch === "function" ? patch(prev) : patch) };
+      const changes = typeof patch === "function" ? patch(prev) : patch;
+      const next = { ...prev, ...changes };
+      // Changing speed or a skip interval makes it the visitor's own choice.
+      next.touched = { ...prev.touched, ...Object.fromEntries(ADMIN_DEFAULTABLE.filter((k) => k in changes).map((k) => [k, true])) };
       savePlayerSettings(next);
       return next;
     });
@@ -94,6 +110,25 @@ export function AudioPlayerProvider({ children }) {
   }, [current]);
 
   useEffect(() => { settingsRef.current = settings; }, [settings]);
+
+  // "Remember the listener's last speed" switched OFF: every new track starts
+  // at the default speed again.
+  useEffect(() => {
+    if (adminPlayback.rememberSpeed) return;
+    setSettings((prev) => (prev.touched.speed ? { ...prev, touched: { ...prev.touched, speed: false } } : prev));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [current?.id, adminPlayback.rememberSpeed]);
+
+  // Background playback switched OFF: audio stops when the app is sent to the
+  // background (tab hidden, phone locked / app switched).
+  useEffect(() => {
+    if (adminPlayback.backgroundPlayback) return undefined;
+    const onHide = () => {
+      if (document.visibilityState === "hidden") audioRef.current?.pause();
+    };
+    document.addEventListener("visibilitychange", onHide);
+    return () => document.removeEventListener("visibilitychange", onHide);
+  }, [adminPlayback.backgroundPlayback]);
   useEffect(() => { historyRef.current = history; saveHistory(history); }, [history]);
   // The queue survives reloads.
   useEffect(() => { queueRef.current = queue; saveQueue(queue); }, [queue]);
@@ -148,6 +183,7 @@ export function AudioPlayerProvider({ children }) {
     userRef.current = user;
     if (!user || autoResumeAttemptedRef.current) return;
     autoResumeAttemptedRef.current = true;
+    if (!playbackRef.current.rememberPosition) return;
 
     (async () => {
       try {
@@ -202,6 +238,7 @@ export function AudioPlayerProvider({ children }) {
     const sermon = currentRef.current;
     const user = userRef.current;
     if (!audio || !sermon || !user) return;
+    if (!playbackRef.current.rememberPosition) return; // admin turned "remember playback position" off
     const duration = audio.duration || 0;
     const position = completed ? duration : audio.currentTime;
     void saveListenProgress(user.uid, sermon.id, { position, duration });
@@ -369,8 +406,11 @@ export function AudioPlayerProvider({ children }) {
     // Passing the storage key directly (when we already have it) skips
     // a redundant server-side Firestore lookup — the id/collection path
     // stays as a fallback for callers that only have an id.
-    const body = sermon.audioStorageKey
-      ? { storageKey: sermon.audioStorageKey }
+    // "Data saver" quality (Audio Page Manager → Advanced) streams the small
+    // voice-quality copy made at upload time, when the recording has one.
+    const streamKey = qualityRef.current === "saver" && sermon.transcribeStorageKey ? sermon.transcribeStorageKey : sermon.audioStorageKey;
+    const body = streamKey
+      ? { storageKey: streamKey }
       : { audioId: sermon.id, collection: sermon.collection || "audio" };
 
     const { data, error } = await supabase.functions.invoke("audio-download-url", {
@@ -600,6 +640,8 @@ export function AudioPlayerProvider({ children }) {
         audio.play().catch(() => {});
         return;
       }
+      // Admin turned "auto-play next" off: stop when a recording ends.
+      if (!playbackRef.current.autoPlayNext) return;
       advance(true);
     };
 
@@ -826,6 +868,7 @@ export function AudioPlayerProvider({ children }) {
         isLoading,
         settings,
         updateSettings,
+        playbackConfig: adminPlayback,
         sleepTimerMode,
         sleepTimerRemaining,
         setSleepTimer,

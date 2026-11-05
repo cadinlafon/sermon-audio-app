@@ -3,18 +3,31 @@ import { DURATIONS, MONTHS, SORTS, STATUSES } from "../hooks/useAudioFilters";
 
 // Search + sort + filters for an audio list, with active-filter chips,
 // a result count, and reset. Pair with useAudioFilters().
-export default function AudioFilterBar({ f, showType, loading }) {
+//
+//   searchCfg   the page's search settings (Audio Page Manager → Search & Filtering):
+//               { enabled, placeholder, filters: { category, speaker, … }, filtersOpenByDefault }
+//   categories  [{ id, plural }] the categories on this page, for the category filter
+//   view/onView List or Grid (shows the toggle when onView is given)
+//   showLiked   false hides "Liked only" (favorites switched off)
+export default function AudioFilterBar({ f, showType, loading, searchCfg, categories, view, onView, showLiked = true }) {
   const { filters, set, reset, options, chips, result, total } = f;
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(!!searchCfg?.filtersOpenByDefault);
   const advancedActive = chips.filter((c) => c.key !== "search").length;
+  const flt = searchCfg?.filters || {};
+  const on = (k) => flt[k] !== false;
+  const searchOn = searchCfg ? searchCfg.enabled !== false : true;
+  const typeChoices = categories && categories.length > 0 ? categories : null;
+  const showTypeFilter = typeChoices ? on("category") && typeChoices.length > 1 : !!showType;
+  const showSeries = on("series") && options.series.length > 0;
+  const anyFilterOn = on("speaker") || showTypeFilter || showSeries || on("length") || on("date") || on("progress") || (on("liked") && showLiked) || on("downloaded");
 
   return (
     <div style={wrap}>
       <div style={topRow}>
-        <div style={searchWrap}>
+        {searchOn && <div style={searchWrap}>
           <input
             type="search"
-            placeholder="Search title or speaker…"
+            placeholder={searchCfg?.placeholder || "Search title or speaker…"}
             value={filters.search}
             onChange={(e) => set({ search: e.target.value })}
             style={searchInput}
@@ -23,62 +36,91 @@ export default function AudioFilterBar({ f, showType, loading }) {
           {filters.search && (
             <button style={clearBtn} onClick={() => set({ search: "" })} aria-label="Clear search" title="Clear search">✕</button>
           )}
-        </div>
+        </div>}
         <select value={filters.sort} onChange={(e) => set({ sort: e.target.value })} style={select} aria-label="Sort">
           {SORTS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
         </select>
-        <button style={advancedActive ? { ...toggleBtn, ...toggleOn } : toggleBtn} onClick={() => setOpen((v) => !v)} aria-expanded={open}>
-          ⚙ Filters{advancedActive ? ` (${advancedActive})` : ""}
-        </button>
+        {anyFilterOn && (
+          <button style={advancedActive ? { ...toggleBtn, ...toggleOn } : toggleBtn} onClick={() => setOpen((v) => !v)} aria-expanded={open}>
+            ⚙ Filters{advancedActive ? ` (${advancedActive})` : ""}
+          </button>
+        )}
+        {onView && (
+          <div style={viewToggle} role="group" aria-label="View">
+            {[["list", "☰ List"], ["grid", "▦ Grid"]].map(([v, l]) => (
+              <button key={v} type="button" onClick={() => onView(v)} aria-pressed={view === v} style={view === v ? { ...viewBtn, ...viewBtnOn } : viewBtn}>{l}</button>
+            ))}
+          </div>
+        )}
       </div>
 
-      {open && (
+      {open && anyFilterOn && (
         <div style={panel}>
-          <label style={field}>
-            <span style={label}>Speaker</span>
-            <select value={filters.speaker} onChange={(e) => set({ speaker: e.target.value })} style={select}>
-              <option value="all">All speakers</option>
-              {options.speakers.map((s) => <option key={s}>{s}</option>)}
-            </select>
-          </label>
-          {showType && (
+          {on("speaker") && (
             <label style={field}>
-              <span style={label}>Type</span>
-              <select value={filters.type} onChange={(e) => set({ type: e.target.value })} style={select}>
-                <option value="all">All types</option>
-                <option value="sermon">Sermons</option>
-                <option value="homily">Homilies</option>
+              <span style={label}>Speaker</span>
+              <select value={filters.speaker} onChange={(e) => set({ speaker: e.target.value })} style={select}>
+                <option value="all">All speakers</option>
+                {options.speakers.map((s) => <option key={s}>{s}</option>)}
               </select>
             </label>
           )}
-          <label style={field}>
-            <span style={label}>Length</span>
-            <select value={filters.duration} onChange={(e) => set({ duration: e.target.value })} style={select}>
-              {DURATIONS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-            </select>
-          </label>
-          <label style={field}>
-            <span style={label}>Year</span>
-            <select value={filters.year} onChange={(e) => set({ year: e.target.value })} style={select}>
-              <option value="all">Any year</option>
-              {options.years.map((y) => <option key={y} value={y}>{y}</option>)}
-            </select>
-          </label>
-          <label style={field}>
-            <span style={label}>Month</span>
-            <select value={filters.month} onChange={(e) => set({ month: e.target.value })} style={select}>
-              <option value="all">Any month</option>
-              {MONTHS.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
-            </select>
-          </label>
-          <label style={field}>
-            <span style={label}>Progress</span>
-            <select value={filters.status} onChange={(e) => set({ status: e.target.value })} style={select}>
-              {STATUSES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-            </select>
-          </label>
-          <label style={check}><input type="checkbox" checked={filters.liked} onChange={(e) => set({ liked: e.target.checked })} /> Liked only</label>
-          <label style={check}><input type="checkbox" checked={filters.downloaded} onChange={(e) => set({ downloaded: e.target.checked })} /> Downloaded only (works offline)</label>
+          {showTypeFilter && (
+            <label style={field}>
+              <span style={label}>{typeChoices ? "Category" : "Type"}</span>
+              <select value={filters.type} onChange={(e) => set({ type: e.target.value })} style={select}>
+                <option value="all">All {typeChoices ? "categories" : "types"}</option>
+                {typeChoices
+                  ? typeChoices.map((c) => <option key={c.id} value={c.id}>{c.plural}</option>)
+                  : [<option key="sermon" value="sermon">Sermons</option>, <option key="homily" value="homily">Homilies</option>]}
+              </select>
+            </label>
+          )}
+          {showSeries && (
+            <label style={field}>
+              <span style={label}>Series</span>
+              <select value={filters.series} onChange={(e) => set({ series: e.target.value })} style={select}>
+                <option value="all">All series</option>
+                {options.series.map((s) => <option key={s}>{s}</option>)}
+              </select>
+            </label>
+          )}
+          {on("length") && (
+            <label style={field}>
+              <span style={label}>Length</span>
+              <select value={filters.duration} onChange={(e) => set({ duration: e.target.value })} style={select}>
+                {DURATIONS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+              </select>
+            </label>
+          )}
+          {on("date") && (
+            <>
+              <label style={field}>
+                <span style={label}>Year</span>
+                <select value={filters.year} onChange={(e) => set({ year: e.target.value })} style={select}>
+                  <option value="all">Any year</option>
+                  {options.years.map((y) => <option key={y} value={y}>{y}</option>)}
+                </select>
+              </label>
+              <label style={field}>
+                <span style={label}>Month</span>
+                <select value={filters.month} onChange={(e) => set({ month: e.target.value })} style={select}>
+                  <option value="all">Any month</option>
+                  {MONTHS.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
+                </select>
+              </label>
+            </>
+          )}
+          {on("progress") && (
+            <label style={field}>
+              <span style={label}>Progress</span>
+              <select value={filters.status} onChange={(e) => set({ status: e.target.value })} style={select}>
+                {STATUSES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+              </select>
+            </label>
+          )}
+          {on("liked") && showLiked && <label style={check}><input type="checkbox" checked={filters.liked} onChange={(e) => set({ liked: e.target.checked })} /> Liked only</label>}
+          {on("downloaded") && <label style={check}><input type="checkbox" checked={filters.downloaded} onChange={(e) => set({ downloaded: e.target.checked })} /> Downloaded only (works offline)</label>}
         </div>
       )}
 
@@ -100,7 +142,7 @@ export default function AudioFilterBar({ f, showType, loading }) {
 }
 
 // Shown when filters leave nothing: says why and offers one-tap fixes.
-export function NoResults({ f, offlineNothing }) {
+export function NoResults({ f, offlineNothing, emptyMessage, noResultsMessage }) {
   const { chips, set, reset, filters } = f;
   if (offlineNothing) {
     return (
@@ -117,7 +159,7 @@ export function NoResults({ f, offlineNothing }) {
       <h3 style={emptyTitle}>{chips.length ? "No matches" : "Nothing here yet"}</h3>
       {chips.length > 0 ? (
         <>
-          <p style={emptyText}>Nothing fits {chips.length === 1 ? "this filter" : "all of these filters"}. Try one of these:</p>
+          <p style={emptyText}>{noResultsMessage || `Nothing fits ${chips.length === 1 ? "this filter" : "all of these filters"}.`} Try one of these:</p>
           <div style={sugRow}>
             {chips.map((c) => (
               <button key={c.key} style={sugBtn} onClick={() => set(c.clear)}>Remove {c.label}</button>
@@ -127,7 +169,7 @@ export function NoResults({ f, offlineNothing }) {
           {filters.search && <p style={emptyHint}>Tip: search matches titles and speakers — try a shorter or different word.</p>}
         </>
       ) : (
-        <p style={emptyText}>Check back soon for new recordings.</p>
+        <p style={emptyText}>{emptyMessage || "Check back soon for new recordings."}</p>
       )}
     </div>
   );
@@ -141,6 +183,9 @@ const clearBtn = { position: "absolute", right: "8px", top: "50%", transform: "t
 const select = { padding: "9px 14px", borderRadius: "999px", border: "1px solid var(--color-eddfc8)", fontSize: "13px", fontFamily: "sans-serif", background: "var(--color-fffdf9)", color: "var(--color-3d2200)", maxWidth: "100%" };
 const toggleBtn = { padding: "9px 16px", borderRadius: "999px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fffdf9)", color: "var(--color-7a4f10)", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer" };
 const toggleOn = { background: "var(--color-fde8b8)", borderColor: "var(--color-e5c27a)", fontWeight: "600" };
+const viewToggle = { display: "inline-flex", borderRadius: "999px", border: "1px solid var(--color-eddfc8)", overflow: "hidden", background: "var(--color-fffdf9)" };
+const viewBtn = { padding: "9px 14px", border: "none", background: "transparent", color: "var(--color-7a4f10)", fontSize: "13px", fontFamily: "sans-serif", cursor: "pointer" };
+const viewBtnOn = { background: "var(--color-fde8b8)", fontWeight: "600" };
 const panel = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "12px", background: "var(--color-fffdf9)", border: "1px solid var(--color-eddfc8)", borderRadius: "16px", padding: "14px", margin: "12px auto 0", maxWidth: "640px" };
 const field = { display: "flex", flexDirection: "column", gap: "4px" };
 const label = { fontSize: "11px", color: "var(--color-9b7040)", fontFamily: "sans-serif", textTransform: "uppercase", letterSpacing: "0.05em" };

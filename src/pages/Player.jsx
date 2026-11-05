@@ -43,6 +43,7 @@ export default function Player() {
     setSleepTimer,
     outputDeviceSupported,
     chooseOutputDevice,
+    playbackConfig,
   } = useAudioPlayer();
   const navigate = useNavigate();
   const sheetClose = useSheetClose();
@@ -365,12 +366,14 @@ export default function Player() {
       </div>
 
       <div style={card}>
-        {/* ARTWORK / LOGO */}
-        <div style={artworkRing}>
-          <div style={artworkInner}>
-            <img src="/icons/icon-512.png" style={artworkImg} alt="Palouse Fellowship" />
+        {/* ARTWORK / LOGO — size set in Admin → Audio Page Manager → Playback */}
+        {playbackConfig?.playerStyle !== "minimal" && (
+          <div style={playbackConfig?.playerStyle === "compact" ? { ...artworkRing, width: "110px", height: "110px", marginBottom: "16px" } : artworkRing}>
+            <div style={playbackConfig?.playerStyle === "compact" ? { ...artworkInner, width: "94px", height: "94px" } : artworkInner}>
+              <img src="/icons/icon-512.png" style={playbackConfig?.playerStyle === "compact" ? { ...artworkImg, width: "64px", height: "64px" } : artworkImg} alt="Palouse Fellowship" />
+            </div>
           </div>
-        </div>
+        )}
 
         {/* TITLE BLOCK */}
         <div style={titleBlock}>

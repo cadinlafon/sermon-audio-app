@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { auth, db } from "../../firebase";
-import { collection, getDocs, updateDoc, deleteDoc, doc } from "firebase/firestore";
+import { collection, getDocs, updateDoc, deleteDoc, deleteField, doc } from "firebase/firestore";
 import { supabase } from "../../supabase";
 import { deletePrivateAudio, uploadPrivateAudio } from "../../utils/privateAudioUpload";
 import { createTranscriptionCopy } from "../../utils/transcodeForTranscription";
@@ -12,7 +12,7 @@ import { fetchTranscript, generateTranscript, buildTranscriptText, transcriptFil
 import { ensureTranscriptionCopy } from "../../utils/transcriptionCopy";
 import { downloadText } from "../../utils/notes";
 
-const speakers = ["Jonathan Mcintosh", "Rusty Olps", "Jason Farley", "Mark Thiele"];
+const speakers = ["Jonathan McIntosh", "Rusty Olps", "Jason Farley", "Mark Thiele"];
 
 function toDateInputValue(audio) {
   if (audio.date) return audio.date;
@@ -41,6 +41,7 @@ export default function AdminContentManager() {
   // Edit modal state
   const [editing, setEditing] = useState(null);
   const [editTitle, setEditTitle] = useState("");
+  const [editSeries, setEditSeries] = useState("");
   const [editSpeaker, setEditSpeaker] = useState("");
   const [editType, setEditType] = useState("sermon");
   const [editDate, setEditDate] = useState("");
@@ -94,6 +95,7 @@ export default function AdminContentManager() {
   const openEdit = (audio) => {
     setEditing(audio);
     setEditTitle(audio.title || "");
+    setEditSeries(audio.series || "");
     setEditSpeaker(audio.speaker || "");
     setEditType(audio.type || "sermon");
     setEditDate(toDateInputValue(audio));
@@ -107,7 +109,7 @@ export default function AdminContentManager() {
     if (!editTitle || !editSpeaker) { alert("Title and speaker are required."); return; }
     setSaving(true);
     try {
-      const updates = { title: editTitle, speaker: editSpeaker, type: editType, date: editDate };
+      const updates = { title: editTitle, speaker: editSpeaker, type: editType, date: editDate, series: editSeries.trim() || deleteField() };
       let previousStorageKey;
 
       if (editFile) {
@@ -126,8 +128,8 @@ export default function AdminContentManager() {
         targetType: "audio",
         targetId: editing.id,
         targetLabel: editTitle,
-        before: { title: editing.title, speaker: editing.speaker, type: editing.type, date: editing.date },
-        after: updates,
+        before: { title: editing.title, speaker: editing.speaker, type: editing.type, date: editing.date, series: editing.series || "" },
+        after: { ...updates, series: editSeries.trim() }, // (not `updates` itself: it holds a delete marker the audit log can't store)
       });
 
       closeEdit();
@@ -551,6 +553,13 @@ export default function AdminContentManager() {
             <div style={modalBody}>
               <Field label="Title">
                 <input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} style={input} />
+              </Field>
+
+              <Field label="Series (optional)">
+                <input value={editSeries} onChange={(e) => setEditSeries(e.target.value)} style={input} list="series-suggestions" maxLength={100} placeholder="e.g. The Book of John" />
+                <datalist id="series-suggestions">
+                  {[...new Set(audioList.map((a) => a.series).filter(Boolean))].sort().map((name) => <option key={name} value={name} />)}
+                </datalist>
               </Field>
 
               <Field label="Date">

@@ -9,12 +9,27 @@ export const DURATIONS = [["any", "Any length"], ["short", "Under 15 min"], ["me
 export const STATUSES = [["all", "Any progress"], ["unstarted", "Not started"], ["in-progress", "In progress"], ["completed", "Completed"]];
 export const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
-export const DEFAULT_FILTERS = { search: "", speaker: "all", type: "all", sort: "newest", duration: "any", year: "all", month: "all", status: "all", liked: false, downloaded: false };
+export const DEFAULT_FILTERS = { search: "", speaker: "all", type: "all", series: "all", sort: "newest", duration: "any", year: "all", month: "all", status: "all", liked: false, downloaded: false };
 
 const dateOf = (a) => {
   if (a.date && /^\d{4}-\d{2}-\d{2}/.test(a.date)) return { y: Number(a.date.slice(0, 4)), m: Number(a.date.slice(5, 7)) };
   if (a.createdAt?.seconds) { const d = new Date(a.createdAt.seconds * 1000); return { y: d.getFullYear(), m: d.getMonth() + 1 }; }
   return null;
+};
+
+// The text search looks at — only the fields the admin left on.
+const searchText = (i, fields) => {
+  const parts = [];
+  if (fields.title !== false) parts.push(i.title);
+  if (fields.speaker !== false) parts.push(i.speaker);
+  if (fields.series) parts.push(i.series);
+  if (fields.summary) parts.push(i.aiSummary);
+  if (fields.date) {
+    parts.push(i.date);
+    const d = dateOf(i);
+    if (d) parts.push(`${MONTHS[d.m - 1]} ${d.y}`);
+  }
+  return parts.filter(Boolean).join(" ").toLowerCase();
 };
 
 const inDuration = (seconds, bucket) => {
@@ -26,34 +41,83 @@ const inDuration = (seconds, bucket) => {
 
 // Search / filter / sort state for an audio list, remembered per page.
 // `items` arrive ordered by `order` ascending (oldest first), as the pages fetch them.
-export default function useAudioFilters(items, storageKey, { defaultSort = "newest" } = {}) {
+//
+// Options (from the Audio Page Manager — see data/audioPageDefaults.js):
+//   defaultSort      the page's default sort. It applies until the visitor picks
+//                    a sort themselves (then theirs is remembered).
+//   legacyDefault    the sort the page used before it was configurable — a stored
+//                    sort that differs from it counts as the visitor's own choice.
+//   defaultType      category selection on open ("all" or a category id), same rule.
+//   remember         false = filters never persist (every visit starts fresh).
+//   persist          false = don't touch localStorage at all (the admin preview).
+//   searchFields     { title, speaker, series, summary, date } — what search looks at.
+//   typeLabel        (id) => display name for a category (for chips).
+export default function useAudioFilters(items, storageKey, {
+  defaultSort = "newest", legacyDefault, defaultType = "all", remember = true, persist = true,
+  searchFields = { title: true, speaker: true }, typeLabel,
+} = {}) {
   const key = `audioFilters:${storageKey}`;
-  const base = { ...DEFAULT_FILTERS, sort: defaultSort };
-  const [filters, setFilters] = useState(() => {
-    try { return { ...base, ...JSON.parse(localStorage.getItem(key) || "{}"), search: "" }; } catch { return { ...base }; }
+  const legacy = legacyDefault || defaultSort;
+  const base = { ...DEFAULT_FILTERS, sort: defaultSort, type: defaultType };
+  const canStore = persist && remember;
+
+  const [initial] = useState(() => {
+    if (!canStore) return { filters: { ...base }, chosen: {} };
+    try {
+      const stored = JSON.parse(localStorage.getItem(key) || "{}");
+      const { chosen: storedChosen, ...rest } = stored;
+      const sortChosen = storedChosen?.sort ?? (rest.sort !== undefined && rest.sort !== legacy);
+      const typeChosen = storedChosen?.type ?? (rest.type !== undefined && rest.type !== "all");
+      const merged = { ...base, ...rest, search: "" };
+      if (!sortChosen) merged.sort = defaultSort;
+      if (!typeChosen) merged.type = defaultType;
+      return { filters: merged, chosen: { sort: !!sortChosen, type: !!typeChosen } };
+    } catch { return { filters: { ...base }, chosen: {} }; }
   });
+  const [chosen, setChosen] = useState(initial.chosen);
+  const [filters, setFilters] = useState(initial.filters);
   const userState = useUserAudioState();
 
   // Remember everything except the search text.
   useEffect(() => {
-    try { localStorage.setItem(key, JSON.stringify({ ...filters, search: "" })); } catch { /* ignore */ }
-  }, [filters, key]);
+    if (!canStore) return;
+    try { localStorage.setItem(key, JSON.stringify({ ...filters, search: "", chosen })); } catch { /* ignore */ }
+  }, [filters, chosen, key, canStore]);
 
-  const set = useCallback((patch) => setFilters((f) => ({ ...f, ...patch })), []);
-  const reset = useCallback(() => setFilters({ ...DEFAULT_FILTERS, sort: defaultSort }), [defaultSort]);
+  // The page's defaults changed (admin edited them, or settings just loaded):
+  // follow them for anything the visitor hasn't chosen themselves.
+  useEffect(() => {
+    setFilters((f) => ({
+      ...f,
+      ...(chosen.sort ? null : { sort: defaultSort }),
+      ...(chosen.type ? null : { type: defaultType }),
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [defaultSort, defaultType]);
+
+  const set = useCallback((patch) => {
+    setFilters((f) => ({ ...f, ...patch }));
+    if ("sort" in patch || "type" in patch) setChosen((c) => ({ ...c, ...("sort" in patch ? { sort: true } : null), ...("type" in patch ? { type: true } : null) }));
+  }, []);
+  const reset = useCallback(() => {
+    setFilters({ ...DEFAULT_FILTERS, sort: defaultSort, type: defaultType });
+    setChosen({});
+  }, [defaultSort, defaultType]);
 
   const options = useMemo(() => {
     const speakers = [...new Set(items.map((i) => i.speaker).filter(Boolean))].sort((a, b) => a.localeCompare(b));
     const years = [...new Set(items.map((i) => dateOf(i)?.y).filter(Boolean))].sort((a, b) => b - a);
-    return { speakers, years };
+    const series = [...new Set(items.map((i) => (typeof i.series === "string" ? i.series.trim() : "")).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+    return { speakers, years, series };
   }, [items]);
 
   const result = useMemo(() => {
     const q = filters.search.trim().toLowerCase();
     let list = items.filter((i) => {
-      if (q && !`${i.title || ""} ${i.speaker || ""}`.toLowerCase().includes(q)) return false;
+      if (q && !searchText(i, searchFields).includes(q)) return false;
       if (filters.speaker !== "all" && i.speaker !== filters.speaker) return false;
       if (filters.type !== "all" && i.type !== filters.type) return false;
+      if (filters.series !== "all" && (i.series || "").trim() !== filters.series) return false;
       if (!inDuration(i.duration, filters.duration)) return false;
       const d = dateOf(i);
       if (filters.year !== "all" && d?.y !== Number(filters.year)) return false;
@@ -78,14 +142,15 @@ export default function useAudioFilters(items, storageKey, { defaultSort = "newe
       default: list = [...list].sort((a, b) => byOrder(b, a));
     }
     return list;
-  }, [items, filters, userState]);
+  }, [items, filters, userState, searchFields]);
 
   // Active filters, for chips (the sort order isn't a filter).
   const chips = useMemo(() => {
     const c = [];
     if (filters.search.trim()) c.push({ key: "search", label: `“${filters.search.trim()}”`, clear: { search: "" } });
     if (filters.speaker !== "all") c.push({ key: "speaker", label: filters.speaker, clear: { speaker: "all" } });
-    if (filters.type !== "all") c.push({ key: "type", label: filters.type === "homily" ? "Homilies" : filters.type === "sundayschool" ? "Sunday School" : "Sermons", clear: { type: "all" } });
+    if (filters.type !== "all") c.push({ key: "type", label: typeLabel ? typeLabel(filters.type) : filters.type === "homily" ? "Homilies" : filters.type === "sundayschool" ? "Sunday School" : "Sermons", clear: { type: "all" } });
+    if (filters.series !== "all") c.push({ key: "series", label: `Series: ${filters.series}`, clear: { series: "all" } });
     if (filters.duration !== "any") c.push({ key: "duration", label: DURATIONS.find((d) => d[0] === filters.duration)[1], clear: { duration: "any" } });
     if (filters.year !== "all") c.push({ key: "year", label: String(filters.year), clear: { year: "all" } });
     if (filters.month !== "all") c.push({ key: "month", label: MONTHS[filters.month - 1], clear: { month: "all" } });
@@ -93,7 +158,7 @@ export default function useAudioFilters(items, storageKey, { defaultSort = "newe
     if (filters.liked) c.push({ key: "liked", label: "Liked", clear: { liked: false } });
     if (filters.downloaded) c.push({ key: "downloaded", label: "Downloaded", clear: { downloaded: false } });
     return c;
-  }, [filters]);
+  }, [filters, typeLabel]);
 
   return { filters, set, reset, options, result, chips, total: items.length, userState };
 }
