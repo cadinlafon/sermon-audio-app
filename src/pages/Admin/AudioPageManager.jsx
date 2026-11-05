@@ -15,6 +15,8 @@ import SearchSection from "./audioPages/sections/SearchSection";
 import CategoriesSection from "./audioPages/sections/CategoriesSection";
 import PlaybackSection from "./audioPages/sections/PlaybackSection";
 import AdvancedSection from "./audioPages/sections/AdvancedSection";
+import OutroSection from "./audioPages/sections/OutroSection";
+import { deleteOutroAudio } from "../../utils/outroUpload";
 
 ////////////////////////////////////////////////////////////////
 // AUDIO PAGE MANAGER
@@ -33,6 +35,7 @@ const TABS = [
   { id: "search", label: "Search & Filters", perPage: true },
   { id: "categories", label: "Categories", perPage: false },
   { id: "playback", label: "Playback", perPage: false },
+  { id: "outro", label: "Outro", perPage: false },
   { id: "advanced", label: "Advanced", perPage: false },
 ];
 
@@ -119,6 +122,9 @@ export default function AudioPageManager() {
         before: JSON.parse(baseline),
         after: clean,
       });
+      // A replaced or removed outro is no longer used by anyone — delete the old file from B2.
+      const oldOutro = JSON.parse(baseline).playback.outroStorageKey;
+      if (oldOutro && oldOutro !== clean.playback.outroStorageKey) deleteOutroAudio(oldOutro).catch((e) => console.warn("Couldn't delete the previous outro file", e));
       setDraft(clone(clean));
       setBaseline(JSON.stringify(clean));
       setMessage("Saved ✓");
@@ -132,6 +138,9 @@ export default function AudioPageManager() {
 
   const discard = () => {
     if (dirty && !window.confirm("Throw away your unsaved changes?")) return;
+    // An outro uploaded in this session but never saved would be left behind in B2.
+    const savedKey = JSON.parse(baseline).playback.outroStorageKey;
+    if (draft.playback.outroStorageKey && draft.playback.outroStorageKey !== savedKey) deleteOutroAudio(draft.playback.outroStorageKey).catch(() => {});
     setDraft(JSON.parse(baseline));
   };
   const resetPage = () => {
@@ -149,6 +158,7 @@ export default function AudioPageManager() {
       case "search": return <SearchSection page={page} up={up} setPage={setPage} canEdit={canEdit} />;
       case "categories": return <CategoriesSection categories={draft.categories} featuredCategory={draft.featuredCategory} setCategories={setCategories} setFeatured={setFeatured} canEdit={canEdit} />;
       case "playback": return <PlaybackSection playback={draft.playback} upPlayback={upPlayback} canEdit={canEdit} />;
+      case "outro": return <OutroSection playback={draft.playback} upPlayback={upPlayback} savedKey={JSON.parse(baseline).playback.outroStorageKey} canEdit={canEdit} />;
       case "advanced": return <AdvancedSection advanced={draft.advanced} upAdvanced={upAdvanced} setAdvanced={setAdvanced} page={page} up={up} canEdit={canEdit} pageLabel={PAGE_META[pageKey].label} />;
       default: return null;
     }

@@ -147,6 +147,9 @@ export function defaultPage(key) {
 export const DEFAULT_PLAYBACK = {
   defaultSpeed: 1, rememberSpeed: true, rememberPosition: true, autoPlayNext: true,
   showProgress: true, backgroundPlayback: true, playerStyle: "standard", skipBack: 30, skipForward: 30,
+  // Automatic Audio Outro: a separate recording (stored once in B2, never
+  // appended to the originals) that plays after each recording finishes.
+  outroEnabled: false, outroAudioUrl: "", outroStorageKey: "", outroFileName: "", outroTitle: "Thank You – PF Audio App",
 };
 
 export const DEFAULT_ADVANCED = {
@@ -330,6 +333,11 @@ export function sanitizePlayback(stored) {
     playerStyle: oneOf(s.playerStyle, PLAYER_STYLES.map((v) => v[0]), d.playerStyle),
     skipBack: SKIP_CHOICES.includes(Number(s.skipBack)) ? Number(s.skipBack) : d.skipBack,
     skipForward: SKIP_CHOICES.includes(Number(s.skipForward)) ? Number(s.skipForward) : d.skipForward,
+    outroEnabled: bool(s.outroEnabled, d.outroEnabled),
+    outroAudioUrl: typeof s.outroAudioUrl === "string" && /^(https?:\/\/|\/)/.test(s.outroAudioUrl) ? s.outroAudioUrl.slice(0, 600) : "",
+    outroStorageKey: typeof s.outroStorageKey === "string" && /^images\/[A-Za-z0-9._/-]{1,500}$/.test(s.outroStorageKey) && !s.outroStorageKey.includes("..") ? s.outroStorageKey : "",
+    outroFileName: str(s.outroFileName, "", 160),
+    outroTitle: str(s.outroTitle, d.outroTitle, 80) || d.outroTitle,
   };
 }
 

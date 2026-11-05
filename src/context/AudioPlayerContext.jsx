@@ -37,6 +37,25 @@ export function AudioPlayerProvider({ children }) {
   // True while a track is being prepared or the audio element is buffering.
   const [isLoading, setIsLoading] = useState(false);
 
+  // Automatic Audio Outro (Audio Page Manager → Outro). When a recording ends
+  // on its own, the SAME audio element is pointed at the outro file (reusing the
+  // element the listener already started is what lets mobile browsers allow the
+  // hand-off without a new tap). Phases:
+  //   null      – normal playback
+  //   "playing" – the outro is playing (UI shows the outro title)
+  //   "done"    – the outro finished (or couldn't play); the element still holds
+  //               the outro, but the player shows the finished recording
+  const [outroPhase, setOutroPhase] = useState(null);
+  const [outroSrc, setOutroSrc] = useState("");
+  const [outroBlocked, setOutroBlocked] = useState(false); // browser refused to auto-start it
+  const [loadNonce, setLoadNonce] = useState(0);
+  const outroPhaseRef = useRef(null);
+  const outroDurationRef = useRef(0); // the finished recording's length, shown again after the outro
+  const outroWatchRef = useRef(null);
+  const lastSeekAtRef = useRef(0);
+  const setPhase = (phase) => { outroPhaseRef.current = phase; setOutroPhase(phase); };
+  const clearOutroTimers = () => { clearTimeout(outroWatchRef.current); outroWatchRef.current = null; };
+
   // Player preferences (skip intervals, speed, volume, repeat, shuffle...) —
   // remembered per device, see utils/playerSettings.js.
   // The visitor's own choices (rawSettings) with the admin's playback defaults
@@ -139,12 +158,12 @@ export function AudioPlayerProvider({ children }) {
     const audio = audioRef.current;
     if (!audio) return;
     // While casting, this element keeps time silently at 1× and the TV plays.
-    const rate = cast.casting ? 1 : settings.speed;
+    const rate = cast.casting || outroPhase === "playing" ? 1 : settings.speed; // the outro always plays at normal speed
     audio.defaultPlaybackRate = rate;
     audio.playbackRate = rate;
     audio.volume = settings.volume;
     audio.muted = settings.muted || cast.casting;
-  }, [settings.speed, settings.volume, settings.muted, audioUrl, cast.casting]);
+  }, [settings.speed, settings.volume, settings.muted, audioUrl, cast.casting, outroPhase]);
 
   // Loading indicator + playback errors from the element itself.
   useEffect(() => {
@@ -154,6 +173,7 @@ export function AudioPlayerProvider({ children }) {
     const ready = () => setIsLoading(false);
     const failed = () => {
       setIsLoading(false);
+      if (outroPhaseRef.current) return; // an outro that can't load is handled quietly elsewhere
       if (!audio.getAttribute("src")) return;
       setPlayError(navigator.onLine ? "This audio couldn't be loaded." : "You're offline and this audio isn't available. Tap to retry once you're back online.");
     };
@@ -238,6 +258,7 @@ export function AudioPlayerProvider({ children }) {
     const sermon = currentRef.current;
     const user = userRef.current;
     if (!audio || !sermon || !user) return;
+    if (outroPhaseRef.current) return; // the element holds the outro, not the recording
     if (!playbackRef.current.rememberPosition) return; // admin turned "remember playback position" off
     const duration = audio.duration || 0;
     const position = completed ? duration : audio.currentTime;
@@ -274,6 +295,7 @@ export function AudioPlayerProvider({ children }) {
       const previousTime = lastTimeRef.current;
       const elapsed = audio.currentTime - previousTime;
       lastTimeRef.current = audio.currentTime;
+      if (outroPhaseRef.current) return; // outro time isn't listening time for the recording
 
       // Ignore seeks and discontinuities; only actual adjacent playback counts.
       if (Number.isFinite(elapsed) && elapsed > 0 && elapsed <= 5) {
@@ -312,8 +334,9 @@ export function AudioPlayerProvider({ children }) {
     const audio = audioRef.current;
     if (!audio) return undefined;
 
-    const onTime = () => setCurrentTime(audio.currentTime);
-    const onMeta = () => setDuration(audio.duration || 0);
+    // After the outro, the bar keeps showing the finished recording (full).
+    const onTime = () => { if (outroPhaseRef.current !== "done") setCurrentTime(audio.currentTime); };
+    const onMeta = () => { if (outroPhaseRef.current !== "done") setDuration(audio.duration || 0); };
 
     audio.addEventListener("timeupdate", onTime);
     audio.addEventListener("loadedmetadata", onMeta);
@@ -363,7 +386,7 @@ export function AudioPlayerProvider({ children }) {
     pendingAutoplayRef.current = true; // reset to the default for next time
     if (cast.isCastingRef.current) cast.castLoad(resumeAt || 0, shouldAutoplay);
     if (shouldAutoplay) audio.play().catch(() => setIsPlaying(false));
-  }, [current, audioUrl]);
+  }, [current, audioUrl, loadNonce]);
 
   // Fires a silent, non-blocking AI summary generation the first time a
   // never-summarized track is played, instead of waiting for someone to
@@ -469,6 +492,11 @@ export function AudioPlayerProvider({ children }) {
 
       pendingResumeRef.current = options.resumeAt || null;
       pendingAutoplayRef.current = options.autoplay !== false;
+      // A new recording never inherits the previous one's outro state.
+      clearOutroTimers();
+      setOutroBlocked(false);
+      setPhase(null);
+      setLoadNonce((n) => n + 1);
       setAudioUrl(url);
       setCurrent(sermon);
       if (!options.fromHistory) {
@@ -590,6 +618,8 @@ export function AudioPlayerProvider({ children }) {
         if (all.length > 1) {
           setQueue(all.slice(1).map(slimTrack));
           playSermonRef.current(all[0]);
+        } else if (outroPhaseRef.current) {
+          playSermonRef.current(cur); // the element holds the outro — reload the recording
         } else if (audio) {
           audio.currentTime = 0;
           audio.play().catch(() => {});
@@ -624,18 +654,22 @@ export function AudioPlayerProvider({ children }) {
     playSermonRef.current(prev, { fromHistory: true });
   };
 
-  // Auto-advance when a track ends — unless the sleep timer is set to stop
-  // at the end of the current track. Repeat-track loops the same recording.
+  // When a track ends: first the optional outro, then — once it has finished (or
+  // couldn't play) — the normal "what happens next": the sleep timer's
+  // end-of-track stop, repeat-track looping, then auto-advance through the queue.
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return undefined;
 
-    const onEnded = () => {
+    // What happens once a recording (and its outro, if any) is completely over.
+    const finishRecording = () => {
       if (sleepModeRef.current === "endOfTrack") {
         setSleepTimerMode(null);
         return;
       }
       if (settingsRef.current.repeat === "track") {
+        // The element may be holding the outro by now — reload the recording instead.
+        if (outroPhaseRef.current) { if (currentRef.current) playSermonRef.current(currentRef.current); return; }
         audio.currentTime = 0;
         audio.play().catch(() => {});
         return;
@@ -645,10 +679,100 @@ export function AudioPlayerProvider({ children }) {
       advance(true);
     };
 
+    // The outro is over (played out, or failed to load): show the finished
+    // recording again, then carry on as normal.
+    const endOutro = () => {
+      clearOutroTimers();
+      if (outroPhaseRef.current !== "playing") return;
+      setOutroBlocked(false);
+      setDuration(outroDurationRef.current);
+      setCurrentTime(outroDurationRef.current);
+      setPhase("done");
+      finishRecording();
+    };
+
+    const shouldPlayOutro = () => {
+      const cfg = playbackRef.current;
+      const cur = currentRef.current;
+      if (!cfg.outroEnabled || !cfg.outroAudioUrl || !cur) return false;
+      if (outroPhaseRef.current) return false; // never twice, never after the outro itself
+      if (!SUMMARIZABLE_TYPES.has(cur.type) || cur.collection === "doctrineWeeks") return false;
+      // Dragging the scrubber to the very end is a seek, not listening all the way through.
+      if (Date.now() - lastSeekAtRef.current < 1500) return false;
+      if (sleepModeRef.current === "endOfTrack" || settingsRef.current.repeat === "track") return false;
+      if (!navigator.onLine || cast.isCastingRef.current) return false;
+      return true;
+    };
+
+    const onEnded = () => {
+      if (outroPhaseRef.current === "playing") { endOutro(); return; }
+      if (outroPhaseRef.current === "done") return; // a stray event after the outro finished
+      if (shouldPlayOutro()) {
+        outroDurationRef.current = audio.duration || 0;
+        setOutroBlocked(false);
+        setOutroSrc(playbackRef.current.outroAudioUrl);
+        setDuration(0);
+        setCurrentTime(0);
+        setPhase("playing");
+        // If it hasn't started after a while (dead link, stalled network), give up quietly.
+        clearOutroTimers();
+        outroWatchRef.current = setTimeout(() => {
+          if (outroPhaseRef.current === "playing" && audio.paused === false && audio.readyState >= 3) return;
+          if (outroPhaseRef.current === "playing" && audio.readyState < 3) endOutro();
+        }, 12000);
+        return;
+      }
+      finishRecording();
+    };
+
+    // A failed outro is invisible to the listener: it just counts as finished.
+    const onOutroError = () => { if (outroPhaseRef.current === "playing") endOutro(); };
+    const onPlaying = () => { if (outroPhaseRef.current === "playing") { clearOutroTimers(); setOutroBlocked(false); } };
+    const onSeeking = () => { lastSeekAtRef.current = Date.now(); };
+    // Pressing Play after the outro finished starts the recording over, exactly
+    // as pressing Play on a finished recording always did — whichever control
+    // asked the element to play.
+    const onPlayAfterOutro = () => {
+      if (outroPhaseRef.current !== "done") return;
+      audio.pause();
+      if (currentRef.current) playSermonRef.current(currentRef.current);
+    };
+
     audio.addEventListener("ended", onEnded);
-    return () => audio.removeEventListener("ended", onEnded);
+    audio.addEventListener("error", onOutroError);
+    audio.addEventListener("playing", onPlaying);
+    audio.addEventListener("seeking", onSeeking);
+    audio.addEventListener("play", onPlayAfterOutro);
+    return () => {
+      clearOutroTimers();
+      audio.removeEventListener("ended", onEnded);
+      audio.removeEventListener("error", onOutroError);
+      audio.removeEventListener("playing", onPlaying);
+      audio.removeEventListener("seeking", onSeeking);
+      audio.removeEventListener("play", onPlayAfterOutro);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Start the outro file once the element has been pointed at it.
+  useEffect(() => {
+    if (outroPhase !== "playing") return;
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.load();
+    audio.play().catch((err) => {
+      if (err?.name === "AbortError") return; // superseded by another load
+      if (err?.name === "NotAllowedError") {
+        // The browser won't start sound without a tap. Leave the outro loaded and
+        // paused: the Play button (and lock-screen play) now plays it.
+        clearOutroTimers();
+        setOutroBlocked(true);
+        setIsPlaying(false);
+      } else if (outroPhaseRef.current === "playing") {
+        audio.dispatchEvent(new Event("error")); // unsupported / unreachable file → finish quietly
+      }
+    });
+  }, [outroPhase]);
 
   //////////////////////////////////////////////////
   // SLEEP TIMER
@@ -769,22 +893,29 @@ export function AudioPlayerProvider({ children }) {
   //////////////////////////////////////////////////
   // MEDIA SESSION — lock-screen / OS media controls
   //////////////////////////////////////////////////
+  // What the player shows: while the outro plays, a "thank you" track instead of
+  // the recording. (Everything internal keeps using the real `current`.)
+  const shownCurrent = useMemo(
+    () => (current && outroPhase === "playing" ? { ...current, title: adminPlayback.outroTitle, speaker: "Palouse Fellowship", isOutro: true } : current),
+    [current, outroPhase, adminPlayback.outroTitle]
+  );
+
   useEffect(() => {
     if (!("mediaSession" in navigator)) return;
-    navigator.mediaSession.metadata = current
+    navigator.mediaSession.metadata = shownCurrent
       ? new MediaMetadata({
-          title: current.title || "Sermon",
-          artist: current.speaker || "Palouse Fellowship",
+          title: shownCurrent.title || "Sermon",
+          artist: shownCurrent.speaker || "Palouse Fellowship",
           // Car displays show the album line under the artist — use the
           // category and date so it's useful at a glance.
-          album: [TYPE_LABELS[current.type] || "Palouse Fellowship", current.date].filter(Boolean).join(" · "),
+          album: shownCurrent.isOutro ? "Palouse Fellowship" : [TYPE_LABELS[shownCurrent.type] || "Palouse Fellowship", shownCurrent.date].filter(Boolean).join(" · "),
           artwork: [
             { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
             { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
           ],
         })
       : null;
-  }, [current]);
+  }, [shownCurrent]);
 
   // Lets the lock screen / car show and scrub the real progress bar.
   useEffect(() => {
@@ -843,7 +974,8 @@ export function AudioPlayerProvider({ children }) {
   return (
     <AudioPlayerContext.Provider
       value={{
-        current,
+        current: shownCurrent,
+        outro: { active: outroPhase === "playing", blocked: outroBlocked },
         playSermon,
         togglePlay,
         isPlaying,
@@ -877,7 +1009,7 @@ export function AudioPlayerProvider({ children }) {
         cast,
       }}
     >
-      <audio ref={audioRef} src={audioUrl || undefined} preload="metadata" />
+      <audio ref={audioRef} src={(outroPhase ? outroSrc : audioUrl) || undefined} preload="metadata" />
       {children}
     </AudioPlayerContext.Provider>
   );

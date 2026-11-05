@@ -5,7 +5,7 @@ import { useAudioPlayer } from "../context/AudioPlayerContext";
 import back30 from "../assets/Player/back30.png";
 
 export default function MiniPlayer() {
-  const { current, isPlaying, togglePlay, audioRef, duration, currentTime, settings, playError, retryPlayback, isLoading, playbackConfig } = useAudioPlayer();
+  const { current, isPlaying, togglePlay, audioRef, duration, currentTime, settings, playError, retryPlayback, isLoading, playbackConfig, outro } = useAudioPlayer();
   const navigate = useNavigate();
 
   // Swipe up on the bar to open the full player (it slides up as a sheet —
@@ -85,7 +85,7 @@ export default function MiniPlayer() {
               {playError ? (
                 <button style={retryLink} onClick={(e) => { e.stopPropagation(); retryPlayback(); }}>⚠ Couldn't play — tap to retry</button>
               ) : (
-                <div style={speaker}>{isLoading ? "Loading…" : current.speaker}</div>
+                <div style={speaker}>{isLoading ? "Loading…" : current.isOutro ? (outro?.blocked ? "App outro · tap play to hear it" : "App outro") : current.speaker}</div>
               )}
             </>
           ) : playError ? (

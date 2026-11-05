@@ -22,6 +22,7 @@ const SLEEP_PRESETS = [5, 15, 30, 45, 60];
 export default function Player() {
   const {
     current,
+    outro,
     isPlaying,
     togglePlay,
     audioRef,
@@ -381,7 +382,7 @@ export default function Player() {
             {isLoading ? <><span className="pf-spinner" aria-hidden="true" />Loading…</> : isPlaying ? "Now Playing" : "Paused"}
           </p>
           <h2 style={title}>{current.title}</h2>
-          <p style={speaker}>{current.speaker}</p>
+          <p style={speaker}>{current.isOutro ? (outro?.blocked ? "App outro · tap play to hear it" : "App outro") : current.speaker}</p>
         </div>
 
         {playError && (

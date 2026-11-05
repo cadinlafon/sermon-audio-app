@@ -9,7 +9,7 @@ import forward30 from "../assets/Player/forward30.png";
 // React tree, so useAudioPlayer() still works normally even though
 // the DOM it's attached to lives in a separate browser window.
 export default function DesktopMiniPlayerContent({ pipWindow }) {
-  const { current, isPlaying, togglePlay, audioRef, duration, currentTime, settings } = useAudioPlayer();
+  const { current, outro, isPlaying, togglePlay, audioRef, duration, currentTime, settings } = useAudioPlayer();
 
   if (!pipWindow) return null;
 
@@ -33,7 +33,7 @@ export default function DesktopMiniPlayerContent({ pipWindow }) {
 
       <div style={textBlock}>
         <div style={title}>{current?.title || "No audio playing"}</div>
-        <div style={speaker}>{current?.speaker || ""}</div>
+        <div style={speaker}>{current?.isOutro ? (outro?.blocked ? "App outro · tap play to hear it" : "App outro") : current?.speaker || ""}</div>
       </div>
 
       <div style={controls}>
