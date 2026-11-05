@@ -207,8 +207,9 @@ export default function AudioListView({ pageKey, items, loading, onPlay, onSumma
         <PageNoticeList notices={noticesAt("pageTop")} preview={preview} />
 
         {banner.url && (
-          <div style={{ marginBottom: "20px" }}>
-            <DoctrineBanner url={banner.url} settings={banner} />
+          <div style={{ marginBottom: "20px", width: `${banner.size}%`, marginLeft: banner.align === "left" ? 0 : "auto", marginRight: banner.align === "right" ? 0 : "auto" }}>
+            {/* Overall size scales the whole banner: width by the %, height by the same factor. */}
+            <DoctrineBanner url={banner.url} settings={{ ...banner, height: Math.round(banner.height * banner.size / 100) }} />
           </div>
         )}
 

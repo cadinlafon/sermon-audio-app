@@ -119,7 +119,7 @@ export function defaultPage(key) {
     },
     appearance: {
       title: "", subtitle: "",
-      banner: { url: "", storageKey: "", focusX: 50, focusY: 50, zoom: 1, height: 200 },
+      banner: { url: "", storageKey: "", focusX: 50, focusY: 50, zoom: 1, height: 200, size: 100, align: "center" },
       headerStyle: "plain", headerAlign: "left",
       showCategoryDescriptions: true,
       defaultCategory: "all", // "all" | "featured" | a category id
@@ -235,6 +235,8 @@ export function sanitizePage(key, stored) {
         focusY: num(B.focusY, 0, 100, 50),
         zoom: num(B.zoom, 1, 3, 1),
         height: Math.round(num(B.height, 120, 360, 200)),
+        size: Math.round(num(B.size, 30, 100, 100)),
+        align: oneOf(B.align, ["left", "center", "right"], "center"),
       },
       headerStyle: oneOf(A.headerStyle, HEADER_STYLES.map((v) => v[0]), d.appearance.headerStyle),
       headerAlign: oneOf(A.headerAlign, ["left", "center"], d.appearance.headerAlign),

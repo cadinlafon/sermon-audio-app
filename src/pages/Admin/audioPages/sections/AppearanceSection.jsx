@@ -24,7 +24,7 @@ export default function AppearanceSection({ page, pageKey, categories, featuredC
     setProgress(null);
     try {
       const { url, storageKey } = await uploadPublicImage(file, setProgress);
-      setBanner({ url, storageKey, focusX: 50, focusY: 50, zoom: 1, height: 200 });
+      setBanner({ url, storageKey, focusX: 50, focusY: 50, zoom: 1, height: 200, size: 100, align: "center" });
     } catch (err) {
       console.error(err);
       setError(err?.message || "The image upload failed.");
@@ -51,8 +51,15 @@ export default function AppearanceSection({ page, pageKey, categories, featuredC
                 <Slider label="Left ↔ right" min={0} max={100} step={1} value={a.banner.focusX} onChange={(v) => setBanner({ focusX: v })} display={`${Math.round(a.banner.focusX)}%`} />
                 <Slider label="Up ↕ down" min={0} max={100} step={1} value={a.banner.focusY} onChange={(v) => setBanner({ focusY: v })} display={`${Math.round(a.banner.focusY)}%`} />
                 <Slider label="Zoom" min={BANNER_LIMITS.zoom[0]} max={BANNER_LIMITS.zoom[1]} step={0.05} value={a.banner.zoom} onChange={(v) => setBanner({ zoom: v })} display={`${Math.round(a.banner.zoom * 100)}%`} />
+                <Slider label="Overall banner size" min={30} max={100} step={5} value={a.banner.size} onChange={(v) => setBanner({ size: v })} display={`${Math.round(a.banner.size)}%`} />
                 <Slider label="Banner height" min={BANNER_LIMITS.height[0]} max={BANNER_LIMITS.height[1]} step={10} value={a.banner.height} onChange={(v) => setBanner({ height: v })} display={`${Math.round(a.banner.height)}px`} />
               </div>
+              <p style={hint}>Overall size shrinks the whole banner — width and height together. Height sets how tall it is at 100%.</p>
+              {a.banner.size < 100 && (
+                <div style={{ marginTop: "10px" }}>
+                  <Field label="Banner position on the page"><Select value={a.banner.align} onChange={(v) => setBanner({ align: v })} options={[["left", "Left"], ["center", "Center"], ["right", "Right"]]} disabled={!canEdit} /></Field>
+                </div>
+              )}
               <div style={{ display: "flex", gap: "8px", marginTop: "10px" }}>
                 <Button onClick={() => fileRef.current?.click()} disabled={!canEdit || uploading}>Replace image</Button>
                 <Button kind="danger" onClick={() => setBanner({ url: "", storageKey: "" })} disabled={!canEdit || uploading}>Remove</Button>
