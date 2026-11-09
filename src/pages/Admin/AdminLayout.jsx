@@ -1,10 +1,7 @@
-import { Link, Outlet, useLocation } from "react-router-dom";
-import { usePermissions } from "../../hooks/usePermissions";
-import { ADMIN_MODULES, NO_ACCESS_MESSAGE } from "../../config/adminModules";
+import { Link, Outlet } from "react-router-dom";
+import AdminSidebarNav from "./AdminSidebarNav";
 import { AdminPinProvider, useAdminPin } from "../../context/AdminPinContext";
 import useAdminIdleTimeout from "../../hooks/useAdminIdleTimeout";
-import { useAnalyticsPages } from "../../utils/analyticsPages";
-import { useUnseenReportCount } from "../../utils/problemReports";
 
 export default function AdminLayout() {
   useAdminIdleTimeout();
@@ -17,18 +14,7 @@ export default function AdminLayout() {
 }
 
 function AdminShell() {
-  const location = useLocation();
-  const { canView } = usePermissions();
   const pin = useAdminPin();
-  const analyticsPages = useAnalyticsPages();
-  // Red dot on the Reports button while any problem report hasn't been opened.
-  const unseenReports = useUnseenReportCount(canView("reports"));
-  const navLinks = ADMIN_MODULES.map((m) => ({
-    to: `/admin/${m.path}`,
-    label: m.label,
-    icon: m.icon,
-    accessible: canView(m.key),
-  }));
 
   return (
     <div style={shell}>
@@ -43,44 +29,7 @@ function AdminShell() {
           </div>
         </div>
 
-        <nav style={nav}>
-          {navLinks.map(({ to, label, icon, accessible }) => {
-            const active = accessible && location.pathname.startsWith(to);
-
-            const isAnalytics = to === "/admin/analytics";
-            // On Analytics the sidebar opens its sub-pages: the built-in App
-            // page plus the external dashboards set up in Admin → Advanced.
-            const showSub = isAnalytics && active;
-
-            return (
-              <div key={to}>
-                <Link
-                  to={to}
-                  title={accessible ? undefined : NO_ACCESS_MESSAGE}
-                  style={!accessible ? { ...link, ...linkDisabled } : active && !showSub ? { ...link, ...linkActive } : showSub ? { ...link, color: "var(--color-fde8b8)" } : link}
-                  aria-expanded={isAnalytics ? showSub : undefined}
-                >
-                  <span style={linkIcon}>{icon}</span>
-                  <span>{label}</span>
-
-                  {isAnalytics ? <span style={chevron} aria-hidden="true">{showSub ? "▾" : "▸"}</span> : to === "/admin/reports" && unseenReports > 0 ? <span style={unseenDot} role="status" aria-label={`${unseenReports} unopened ${unseenReports === 1 ? "report" : "reports"}`} /> : active && <span style={activeDot} />}
-                </Link>
-
-                {showSub && (
-                  <div style={subNav}>
-                    <Link to={to} style={{ ...subLink, ...subLinkActive }}>App</Link>
-                    {analyticsPages.map((p) => (
-                      <a key={p.id} href={p.url} target="_blank" rel="noopener noreferrer" style={subLink}>
-                        {p.label}
-                        <span style={externalMark} aria-hidden="true">↗</span>
-                      </a>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </nav>
+        <AdminSidebarNav />
 
         {pin?.pinEnabled && (
           <button onClick={pin.lockNow} style={lockNowBtn}>
