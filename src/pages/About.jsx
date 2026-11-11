@@ -8,6 +8,20 @@ export default function About() {
           This page is still being set up. Check back soon — there's more on the way.
         </p>
       </div>
+
+      <a
+        href="https://palouse-fellowship-audio.en.uptodown.com/android"
+        title="Download Palouse Fellowship Audio"
+        target="_blank"
+        rel="noopener noreferrer"
+        style={downloadLink}
+      >
+        <img
+          src="https://stc.utdstc.com/img/mediakit/download-aao-big.png"
+          alt="Download Palouse Fellowship Audio"
+          style={downloadImg}
+        />
+      </a>
     </div>
   );
 }
@@ -16,8 +30,10 @@ const page = {
   background: "var(--color-fdf8f3)",
   minHeight: "100vh",
   display: "flex",
+  flexDirection: "column",
   alignItems: "center",
   justifyContent: "center",
+  gap: "28px",
   padding: "40px 20px",
   fontFamily: "'Georgia', serif",
 };
@@ -52,4 +68,15 @@ const body = {
   lineHeight: 1.7,
   fontFamily: "sans-serif",
   margin: 0,
+};
+const downloadLink = {
+  display: "inline-block",
+  lineHeight: 0,
+};
+
+const downloadImg = {
+  display: "block",
+  width: "100%",
+  maxWidth: "240px",
+  height: "auto",
 };
