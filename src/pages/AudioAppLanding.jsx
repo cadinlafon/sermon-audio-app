@@ -67,6 +67,23 @@ export default function AudioAppLanding() {
           <a href="/" style={closingButton}>Start Listening →</a>
         </div>
 
+        {/* Android app download */}
+        <div style={downloadWrap}>
+          <a
+            href="https://palouse-fellowship-audio.en.uptodown.com/android"
+            title="Download Palouse Fellowship Audio"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={downloadLink}
+          >
+            <img
+              src="https://stc.utdstc.com/img/mediakit/download-aao-big.png"
+              alt="Download Palouse Fellowship Audio"
+              style={downloadImg}
+            />
+          </a>
+        </div>
+
       </div>
     </div>
   );
@@ -246,4 +263,22 @@ const closingButton = {
   fontSize: "15px",
   fontFamily: "sans-serif",
   boxShadow: "0 3px 14px rgba(0,0,0,0.3)",
+};
+
+const downloadWrap = {
+  display: "flex",
+  justifyContent: "center",
+  marginTop: "28px",
+};
+
+const downloadLink = {
+  display: "inline-block",
+  lineHeight: 0,
+};
+
+const downloadImg = {
+  display: "block",
+  width: "100%",
+  maxWidth: "240px",
+  height: "auto",
 };
