@@ -1,27 +1,32 @@
 export default function About() {
   return (
     <div style={page}>
-      <div style={card}>
-        <span style={icon}>🏗️</span>
-        <h1 style={title}>Coming Soon</h1>
-        <p style={body}>
-          This page is still being set up. Check back soon — there's more on the way.
-        </p>
+      <div style={main}>
+        <div style={card}>
+          <span style={icon}>🏗️</span>
+          <h1 style={title}>Coming Soon</h1>
+          <p style={body}>
+            This page is still being set up. Check back soon — there's more on the way.
+          </p>
+        </div>
       </div>
 
-      <a
-        href="https://palouse-fellowship-audio.en.uptodown.com/android"
-        title="Download Palouse Fellowship Audio"
-        target="_blank"
-        rel="noopener noreferrer"
-        style={downloadLink}
-      >
-        <img
-          src="https://stc.utdstc.com/img/mediakit/download-aao-big.png"
-          alt="Download Palouse Fellowship Audio"
-          style={downloadImg}
-        />
-      </a>
+      {/* Android app download — pinned to the bottom of the page */}
+      <div style={footer}>
+        <a
+          href="https://palouse-fellowship-audio.en.uptodown.com/android"
+          title="Download Palouse Fellowship Audio"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={downloadLink}
+        >
+          <img
+            src="https://stc.utdstc.com/img/mediakit/download-aao-big.png"
+            alt="Download Palouse Fellowship Audio"
+            style={downloadImg}
+          />
+        </a>
+      </div>
     </div>
   );
 }
@@ -31,11 +36,22 @@ const page = {
   minHeight: "100vh",
   display: "flex",
   flexDirection: "column",
+  boxSizing: "border-box",
+  padding: "40px 20px 24px",
+  fontFamily: "'Georgia', serif",
+};
+
+const main = {
+  flex: 1,
+  display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  gap: "28px",
-  padding: "40px 20px",
-  fontFamily: "'Georgia', serif",
+};
+
+const footer = {
+  display: "flex",
+  justifyContent: "center",
+  paddingTop: "24px",
 };
 
 const card = {
