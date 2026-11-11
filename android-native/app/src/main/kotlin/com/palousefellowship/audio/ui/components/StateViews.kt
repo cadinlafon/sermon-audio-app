@@ -32,12 +32,8 @@ import com.palousefellowship.audio.R
 // uses (@color/ic_launcher_background) — keeps the logo's contrast
 // consistent wherever it appears, regardless of the surrounding light/
 // dark theme background.
-private val LogoBackdrop = Color(0xFF3D2200)
-
-/** Full-bleed centered spinner with the app logo above it (Step 12:
- * never a blank screen while something is loading) — same mark as the
- * launcher icon and splash screen, so a loading state still reads as
- * "this app," not a generic spinner. */
+/** Full-bleed centered logo + spinner (never a blank screen while something loads) — the same mark as the
+ * launcher icon and splash screen, on a white tile so the black linework reads in light and dark themes. */
 @Composable
 fun LoadingView(modifier: Modifier = Modifier) {
     Column(
@@ -46,17 +42,17 @@ fun LoadingView(modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.Center,
     ) {
         Box(
-            modifier = Modifier.size(84.dp).clip(CircleShape).background(LogoBackdrop),
+            modifier = Modifier.size(92.dp).clip(androidx.compose.foundation.shape.RoundedCornerShape(20.dp)).background(Color.White),
             contentAlignment = Alignment.Center,
         ) {
             Image(
-                painter = painterResource(R.mipmap.ic_launcher_foreground),
-                contentDescription = null,
-                modifier = Modifier.size(64.dp),
+                painter = painterResource(R.drawable.pf_logo),
+                contentDescription = "Palouse Fellowship",
+                modifier = Modifier.size(76.dp),
             )
         }
         Spacer(Modifier.height(20.dp))
-        CircularProgressIndicator()
+        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
     }
 }
 
