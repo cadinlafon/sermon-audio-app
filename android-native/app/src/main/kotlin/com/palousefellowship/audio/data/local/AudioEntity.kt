@@ -23,6 +23,9 @@ data class AudioEntity(
     val order: Long,
     val createdAtMillis: Long?,
     val cachedAtMillis: Long,
+    val date: String? = null,
+    val series: String? = null,
+    val aiSummary: String? = null,
 )
 
 fun Audio.toEntity(cachedAtMillis: Long = System.currentTimeMillis()) = AudioEntity(
@@ -36,6 +39,9 @@ fun Audio.toEntity(cachedAtMillis: Long = System.currentTimeMillis()) = AudioEnt
     order = order,
     createdAtMillis = createdAt?.toDate()?.time,
     cachedAtMillis = cachedAtMillis,
+    date = date,
+    series = series,
+    aiSummary = aiSummary,
 )
 
 fun AudioEntity.toModel() = Audio(
@@ -47,5 +53,8 @@ fun AudioEntity.toModel() = Audio(
     audioStorageKey = audioStorageKey,
     transcribeStorageKey = transcribeStorageKey,
     order = order,
-    createdAt = null,
+    createdAt = createdAtMillis?.let { com.google.firebase.Timestamp(java.util.Date(it)) },
+    date = date,
+    series = series,
+    aiSummary = aiSummary,
 )

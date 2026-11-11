@@ -22,4 +22,11 @@ class ResourceRepository(
     } catch (e: Exception) {
         UiState.Error(e.message ?: "Couldn't load resources.")
     }
+
+    /** Categories + curated rows (resourceCategories / resourceSections, by `order`) — what Resources.jsx loads. */
+    suspend fun getCategoriesAndSections(): Pair<List<com.palousefellowship.audio.data.model.ResourceCategory>, List<com.palousefellowship.audio.data.model.ResourceSection>> {
+        val cats = runCatching { firestore.collection("resourceCategories").get().await().documents.sortedBy { it.getLong("order") ?: 0 }.map { com.palousefellowship.audio.data.model.ResourceCategory(it.id, it.getString("name") ?: "") } }.getOrDefault(emptyList())
+        val secs = runCatching { firestore.collection("resourceSections").get().await().documents.sortedBy { it.getLong("order") ?: 0 }.map { com.palousefellowship.audio.data.model.ResourceSection(it.id, it.getString("name") ?: "") } }.getOrDefault(emptyList())
+        return cats to secs
+    }
 }

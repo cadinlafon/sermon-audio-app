@@ -19,12 +19,6 @@ import androidx.compose.ui.unit.dp
 import com.palousefellowship.audio.data.model.Notice
 
 // Same amber tones as the web app's `noticeItem`/`pinnedBadge` (src/pages/Home.jsx).
-private val NoticeItemBg = Color(0xFFFFFBEE)
-private val NoticeItemBorder = Color(0xFFF0D898)
-private val PinnedBg = Color(0xFFF6E4B0)
-private val PinnedText = Color(0xFF7A5A10)
-private val NoticeTitleColor = Color(0xFF3D2600)
-private val NoticeBodyColor = Color(0xFF6B4C20)
 
 /** One notice's own box, nested inside the outer "📌 Notices" card on
  * Home — mirrors the web's `noticeItem` styling exactly (a lighter amber
@@ -36,10 +30,11 @@ fun NoticeCard(
     onSubmitInput: suspend (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val x = com.palousefellowship.audio.ui.theme.PfaTheme.extras
     Card(
         modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = NoticeItemBg),
-        border = BorderStroke(1.dp, NoticeItemBorder),
+        colors = CardDefaults.cardColors(containerColor = x.noticeBg),
+        border = BorderStroke(1.dp, x.noticeBorder),
         shape = RoundedCornerShape(12.dp),
     ) {
         Column(Modifier.padding(14.dp)) {
@@ -47,23 +42,23 @@ fun NoticeCard(
                 Text(
                     "PINNED",
                     style = MaterialTheme.typography.labelSmall,
-                    color = PinnedText,
+                    color = x.pinnedFg,
                     modifier = Modifier
-                        .background(PinnedBg, RoundedCornerShape(999.dp))
+                        .background(x.pinnedBg, RoundedCornerShape(999.dp))
                         .padding(horizontal = 8.dp, vertical = 2.dp),
                 )
             }
             Text(
                 text = notice.title,
                 style = MaterialTheme.typography.titleSmall,
-                color = NoticeTitleColor,
+                color = x.noticeTitle,
                 modifier = Modifier.padding(top = if (notice.pinned) 6.dp else 0.dp),
             )
             if (notice.details.isNotBlank()) {
                 Text(
                     text = notice.details,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = NoticeBodyColor,
+                    color = x.noticeBody,
                     modifier = Modifier.padding(top = 4.dp),
                 )
             }

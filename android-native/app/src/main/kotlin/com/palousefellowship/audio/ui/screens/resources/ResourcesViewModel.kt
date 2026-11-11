@@ -1,5 +1,7 @@
 package com.palousefellowship.audio.ui.screens.resources
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.palousefellowship.audio.data.model.Resource
@@ -18,6 +20,8 @@ class ResourcesViewModel(
     private val repository: ResourceRepository,
     private val typeFilter: String? = null,
 ) : ViewModel() {
+    var categories by androidx.compose.runtime.mutableStateOf<List<com.palousefellowship.audio.data.model.ResourceCategory>>(emptyList()); private set
+    var sections by androidx.compose.runtime.mutableStateOf<List<com.palousefellowship.audio.data.model.ResourceSection>>(emptyList()); private set
     private val _state = MutableStateFlow<UiState<List<Resource>>>(UiState.Loading)
     val state: StateFlow<UiState<List<Resource>>> = _state.asStateFlow()
 
@@ -26,6 +30,8 @@ class ResourcesViewModel(
     fun load() {
         viewModelScope.launch {
             _state.value = UiState.Loading
+            val (c, sec) = repository.getCategoriesAndSections()
+            categories = c; sections = sec
             _state.value = repository.getResources(typeFilter)
         }
     }

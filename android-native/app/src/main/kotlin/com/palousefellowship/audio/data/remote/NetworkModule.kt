@@ -44,4 +44,19 @@ object NetworkModule {
             .build()
             .create(AudioUrlApi::class.java)
     }
+
+    // Summaries transcribe a whole recording server-side, which can take well
+    // over the 15 s the URL exchange needs.
+    private val longClient: OkHttpClient by lazy {
+        client.newBuilder().readTimeout(180, TimeUnit.SECONDS).callTimeout(200, TimeUnit.SECONDS).build()
+    }
+
+    val summaryApi: SummaryApi by lazy {
+        Retrofit.Builder()
+            .baseUrl("${BuildConfig.SUPABASE_URL}/")
+            .client(longClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(SummaryApi::class.java)
+    }
 }

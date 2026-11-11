@@ -38,6 +38,35 @@ See **"Where this intentionally differs from the web app"** below for the
 handful of places this deliberately doesn't mirror the web app 1:1 (and
 why), and **"Not yet implemented"** for what's still out of scope.
 
+## Web-parity update (v2.0.0)
+
+This version brings the native app in line with the current web app (same Firebase/Supabase backend, same
+admin-controlled configuration). What changed:
+
+- **Shell** — the web's top bar (title, search, light/dark/system toggle, account), bottom bar with the web's
+  own icons, and the "More" sheet; all driven live by Admin → Page Manager (`pages` collection: order, labels,
+  badges, locked / maintenance / coming-soon / hidden / disabled, scheduled changes, login/role/user access) and
+  the whole-app maintenance switch (`appConfig/status.shutdown`).
+- **Account panel** — inline login for guests; for signed-in listeners a sidebar with Share App, Suggest,
+  Settings, every account page, My Reports (with an unread-reply dot), Report a Problem, Admin (opens the web
+  admin) and Log out.
+- **Home** — hero, Sermons / Sunday School tiles, Continue Listening (last 3 unfinished) and Notices. (Fixes a bug
+  where notices never loaded because notice docs store their own `id` field.)
+- **Sermons / Sunday School** — rendered from Admin → Audio Page Manager (`appConfig/status.audioPages`): title,
+  subtitle, banner, page notices, search & filters, featured sections, grouping, pagination, list/grid, card
+  layout, which details / buttons each card shows and in what order, AI summaries, Play all / Add to queue.
+- **Player** — same layout as the web: queue ("Playing Next"), recently played, repeat / shuffle, sleep timer,
+  speed, configurable skip, bookmarks & timestamped notes, Related, transcripts, listen tracking (`appUsage`,
+  `userStats`), resume of the last recording, and the **automatic audio outro**.
+- **New pages** — What's New, Feedback, Goals, Year in Review (shareable image), Dev Info, My Reports,
+  Transcripts; Resources now has search, filters, Featured and the admin's curated rows.
+- **Theme** — the web's exact light and dark palettes.
+- **Analytics** — `page_visit`, `user_login`, `logout`, `notice_view/click` and resume events are written to
+  `logs` like the web does.
+
+Still web-only: the admin panel, Chromecast / TV mode, Car mode, the Doctrine/Dev-Info human check (Turnstile),
+and admin transcript corrections.
+
 ## Requirements
 
 - Android Studio Ladybug (2024.2) or newer, with an Android SDK including

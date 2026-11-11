@@ -1,12 +1,11 @@
 package com.palousefellowship.audio.data.model
 
 import com.google.firebase.Timestamp
-import com.google.firebase.firestore.DocumentId
 
 /** Mirrors the `notices` collection (shown inline on Home in the web app —
  * there is no separate Notices page there, so there isn't one here either). */
 data class Notice(
-    @DocumentId val id: String = "",
+    val id: String = "", // set from the doc id by the repository (docs also store their own `id` field)
     val title: String = "",
     val details: String = "",
     val pinned: Boolean = false,

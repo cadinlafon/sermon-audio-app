@@ -17,6 +17,8 @@ data class Resource(
     val featured: Boolean = false,
     val published: Boolean = true,
     val order: Long = 0,
+    val categoryId: String? = null,
+    val sectionIds: List<String> = emptyList(),
     // Only present when type == "audio".
     val audioStorageKey: String? = null,
     val duration: Long? = null,
@@ -28,11 +30,25 @@ data class Resource(
     }
 }
 
+data class ResourceCategory(val id: String, val name: String)
+data class ResourceSection(val id: String, val name: String)
+
+val RESOURCE_TYPE_LABELS = mapOf(
+    "audio" to ("Audio" to "Play Audio"), "youtube" to ("YouTube Video" to "Watch Video"), "spotify" to ("Spotify Podcast" to "Listen on Spotify"),
+    "document" to ("Document" to "Open Document"), "website" to ("Website / Web Link" to "Visit Website"), "podcast" to ("Podcast" to "Listen"),
+    "book" to ("Book" to "View Book"), "article" to ("Article" to "Read Article"), "image" to ("Image / Gallery" to "View Image"),
+    "presentation" to ("Presentation" to "Open Presentation"), "download" to ("Download" to "Download"), "scripture" to ("Scripture / Bible Study" to "Open"),
+    "course" to ("Course / Study" to "Start Course"), "playlist" to ("Playlist" to "Open Playlist"), "app" to ("App" to "Get the App"),
+)
+val EXTERNAL_LINK_TYPES = setOf("website", "book", "article", "presentation", "app")
+fun Resource.typeLabel() = RESOURCE_TYPE_LABELS[type]?.first ?: "Document"
+fun Resource.actionLabel() = RESOURCE_TYPE_LABELS[type]?.second ?: "Open Document"
+
 private val TYPE_ICON = mapOf(
     "audio" to "🎧", "youtube" to "▶️", "spotify" to "🎵", "document" to "📄",
     "website" to "🌐", "podcast" to "🎙️", "book" to "📖", "article" to "📰",
     "image" to "🖼️", "presentation" to "📊", "download" to "⬇️",
-    "scripture" to "📖", "course" to "🎓", "playlist" to "📋",
+    "scripture" to "📖", "course" to "🎓", "playlist" to "📋", "app" to "📱",
 )
 
 fun Resource.typeIcon(): String = TYPE_ICON[type] ?: "📄"

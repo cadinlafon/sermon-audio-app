@@ -26,11 +26,6 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.palousefellowship.audio.ui.theme.AccentBrownDark
-import com.palousefellowship.audio.ui.theme.BorderTan
-import com.palousefellowship.audio.ui.theme.CardBackground
-import com.palousefellowship.audio.ui.theme.CreamBackground
-import com.palousefellowship.audio.ui.theme.DarkBrown
-import com.palousefellowship.audio.ui.theme.MutedBrown
 
 // Web's `captchaCard` amber tones (src/pages/Contact.jsx) — same palette as
 // NoticeCard's `noticeItem`.
@@ -62,17 +57,17 @@ fun ContactScreen() {
     val uriHandler = LocalUriHandler.current
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize().background(CreamBackground),
+        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 20.dp, vertical = 32.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
         item {
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-                Text("Get in Touch", style = MaterialTheme.typography.headlineMedium, color = DarkBrown, textAlign = TextAlign.Center)
+                Text("Get in Touch", style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.onBackground, textAlign = TextAlign.Center)
                 Text(
                     "We'd love to hear from you.",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MutedBrown,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(top = 6.dp),
                 )
@@ -94,13 +89,13 @@ fun ContactScreen() {
                     Text(
                         "Verify to see contact info",
                         style = MaterialTheme.typography.titleMedium,
-                        color = DarkBrown,
+                        color = MaterialTheme.colorScheme.onBackground,
                         modifier = Modifier.padding(top = 10.dp),
                     )
                     Text(
                         "Complete a quick check in your browser to reveal our email addresses and phone numbers.",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MutedBrown,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.padding(top = 6.dp),
                     )
@@ -120,7 +115,7 @@ fun ContactScreen() {
                 icon = "⛪",
                 title = "Church",
                 rows = listOf(
-                    ContactRow("Name", "Jonathan Mcintosh"),
+                    ContactRow("Name", "Jonathan McIntosh"),
                     ContactRow("Email", "Verify above to view"),
                     ContactRow("Phone", "Verify above to view"),
                     ContactRow("For", "Sermons, events, and church activities"),
@@ -157,8 +152,8 @@ fun ContactScreen() {
 private fun ContactCard(icon: String, title: String, rows: List<ContactRow>) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = CardBackground),
-        border = BorderStroke(1.dp, BorderTan),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
         shape = RoundedCornerShape(18.dp),
     ) {
         Column(Modifier.padding(horizontal = 24.dp, vertical = 20.dp)) {
@@ -166,7 +161,7 @@ private fun ContactCard(icon: String, title: String, rows: List<ContactRow>) {
                 Text(icon, style = MaterialTheme.typography.titleLarge)
                 Text(title, style = MaterialTheme.typography.titleMedium, color = CardTitleColor, modifier = Modifier.padding(start = 10.dp))
             }
-            HorizontalDivider(Modifier.padding(top = 14.dp, bottom = 4.dp), color = BorderTan)
+            HorizontalDivider(Modifier.padding(top = 14.dp, bottom = 4.dp), color = MaterialTheme.colorScheme.outline)
             rows.forEachIndexed { index, row ->
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
@@ -180,7 +175,7 @@ private fun ContactCard(icon: String, title: String, rows: List<ContactRow>) {
                     Text(
                         row.value,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = DarkBrown,
+                        color = MaterialTheme.colorScheme.onBackground,
                         textAlign = TextAlign.End,
                         modifier = Modifier.padding(start = 12.dp),
                     )

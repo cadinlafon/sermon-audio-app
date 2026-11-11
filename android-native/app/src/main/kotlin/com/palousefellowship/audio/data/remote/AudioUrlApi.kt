@@ -39,3 +39,23 @@ data class AudioUrlResponse(
     val expiresIn: Int? = null,
     val error: String? = null,
 )
+
+/** summarize-audio (same Edge Function the web's AiSummary.jsx calls). */
+interface SummaryApi {
+    @POST("functions/v1/summarize-audio")
+    suspend fun summarize(
+        @Body body: SummarizeRequest,
+        @Header("Authorization") authorization: String,
+    ): SummarizeResponse
+}
+
+data class SummarizeRequest(
+    val audioId: String,
+    val audioUrl: String?,
+    val audioType: String,
+    val title: String,
+    val force: Boolean = false,
+    val mode: String? = null,
+)
+
+data class SummarizeResponse(val summary: String? = null, val error: String? = null, val pending: Boolean? = null)

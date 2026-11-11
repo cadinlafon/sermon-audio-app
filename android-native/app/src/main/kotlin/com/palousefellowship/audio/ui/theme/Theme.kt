@@ -19,6 +19,8 @@ private val LightColors = lightColorScheme(
     primary = AccentBrownDark,
     onPrimary = CreamBackground,
     secondary = AccentOrange,
+    secondaryContainer = BorderTan,
+    onSecondaryContainer = DarkBrown,
     background = CreamBackground,
     surface = CardBackground,
     surfaceVariant = BorderTan,
@@ -28,20 +30,41 @@ private val LightColors = lightColorScheme(
     error = ErrorRed,
     errorContainer = ErrorRedBg,
     outline = BorderTan,
+    outlineVariant = BorderTan,
+    primaryContainer = Color(0xFFFDE8B8),
+    onPrimaryContainer = Color(0xFF7A4F10),
+    tertiaryContainer = Color(0xFFF4E7D4),
+    surfaceTint = Color.Transparent,
+    surfaceContainerLowest = CardBackground,
+    surfaceContainerLow = CardBackground,
+    surfaceContainer = CardBackground,
+    surfaceContainerHigh = Color(0xFFF4E7D4),
+    surfaceContainerHighest = Color(0xFFF0E4D0),
 )
 
 private val DarkColors = darkColorScheme(
-    primary = AccentOrange,
+    primary = DarkAccent,
     onPrimary = DarkSurface,
-    secondary = AccentBrownDark,
+    secondary = DarkAccentSoft,
     background = DarkSurface,
-    surface = DarkSurfaceVariant,
-    surfaceVariant = DarkSurfaceVariant,
+    surface = DarkCard,
+    surfaceVariant = DarkBorder,
     onBackground = DarkOnSurface,
     onSurface = DarkOnSurface,
     onSurfaceVariant = DarkOnSurfaceMuted,
-    error = Color(0xFFFFB4A9),
-    outline = DarkSurfaceVariant,
+    error = Color(0xFFD37766),
+    errorContainer = Color(0xFF3A1F18),
+    outline = DarkBorder,
+    outlineVariant = DarkBorder,
+    primaryContainer = Color(0xFF4A3C1C),
+    onPrimaryContainer = Color(0xFFE7C28D),
+    tertiaryContainer = Color(0xFF2C2316),
+    surfaceTint = Color.Transparent,
+    surfaceContainerLowest = DarkCard,
+    surfaceContainerLow = DarkCard,
+    surfaceContainer = DarkCard,
+    surfaceContainerHigh = Color(0xFF2C2316),
+    surfaceContainerHighest = Color(0xFF433723),
 )
 
 /**
@@ -75,9 +98,11 @@ fun PalouseFellowshipAudioTheme(
         }
     }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = PfaTypography,
-        content = content,
-    )
+    androidx.compose.runtime.CompositionLocalProvider(LocalPfaExtras provides if (darkTheme) DarkExtras else LightExtras) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = PfaTypography,
+            content = content,
+        )
+    }
 }

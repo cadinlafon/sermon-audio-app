@@ -44,6 +44,30 @@ class NotesRepository(
         patch(uid, audioId, mapOf("bookmarks" to next), null)
     }
 
+    suspend fun relabelBookmark(audioId: String, bookmarkId: String, label: String) {
+        val uid = auth.currentUser?.uid ?: return
+        val note = getNote(audioId)
+        val next = note.bookmarks.map { if (it.id == bookmarkId) it.copy(label = label.take(80)) else it }.map { it.toMap() }
+        patch(uid, audioId, mapOf("bookmarks" to next), null)
+    }
+
+    /** A timestamped note entry (the web's NotesSheet "Add note at 12:34"). */
+    suspend fun addEntry(audioId: String, atSeconds: Double, text: String, category: String, audio: Audio?) {
+        val uid = auth.currentUser?.uid ?: error("Sign in to take notes.")
+        val note = getNote(audioId)
+        val entry = mapOf("id" to newId(), "t" to atSeconds, "text" to text.trim(), "category" to category, "createdAt" to System.currentTimeMillis())
+        val next = (note.entries.map { mapOf("id" to it.id, "t" to it.t, "text" to it.text, "category" to it.category, "createdAt" to it.createdAt) } + entry)
+            .sortedBy { (it["t"] as Number).toDouble() }
+        patch(uid, audioId, mapOf("entries" to next), audio)
+    }
+
+    suspend fun removeEntry(audioId: String, entryId: String) {
+        val uid = auth.currentUser?.uid ?: return
+        val note = getNote(audioId)
+        val next = note.entries.filterNot { it.id == entryId }.map { mapOf("id" to it.id, "t" to it.t, "text" to it.text, "category" to it.category, "createdAt" to it.createdAt) }
+        patch(uid, audioId, mapOf("entries" to next), null)
+    }
+
     private suspend fun patch(uid: String, audioId: String, data: Map<String, Any?>, audio: Audio?) {
         val meta = if (audio != null) mapOf("title" to audio.title, "speaker" to audio.speaker) else emptyMap()
         ref(uid, audioId).set(

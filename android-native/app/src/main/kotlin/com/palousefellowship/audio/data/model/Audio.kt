@@ -23,6 +23,9 @@ data class Audio(
     val order: Long = 0,
     val createdAt: Timestamp? = null,
     val aiSummary: String? = null,
+    /** "YYYY-MM-DD" recording date set at upload (optional; falls back to createdAt). */
+    val date: String? = null,
+    val series: String? = null,
 ) {
     companion object {
         const val TYPE_SERMON = "sermon"

@@ -51,6 +51,29 @@ class ListenProgressRepository(
         }.getOrDefault(emptyMap())
     }
 
+    /** Home's "Continue Listening": the last [limit] recordings this listener
+     * started but hasn't finished (Home.jsx — status + ordering are applied
+     * client-side so no composite Firestore index is needed). */
+    data class ContinueItem(val audio: Audio, val positionSeconds: Long, val durationSeconds: Long)
+
+    suspend fun getContinueListening(limit: Int = 3): List<ContinueItem> = coroutineScope {
+        val uid = auth.currentUser?.uid ?: return@coroutineScope emptyList()
+        val snap = runCatching { firestore.collection("listenProgress").whereEqualTo("userId", uid).get().await() }.getOrNull()
+            ?: return@coroutineScope emptyList()
+        snap.documents
+            .filter { it.getString("status") == "in-progress" && !it.getString("audioId").isNullOrEmpty() }
+            .sortedByDescending { it.getTimestamp("updatedAt")?.seconds ?: 0L }
+            .take(limit)
+            .map { d ->
+                async {
+                    val audioId = d.getString("audioId") ?: return@async null
+                    val audio = runCatching { firestore.collection("audio").document(audioId).get().await().toObject(Audio::class.java) }.getOrNull()
+                        ?: return@async null
+                    ContinueItem(audio, d.getLong("position") ?: 0, d.getLong("duration") ?: 0)
+                }
+            }.mapNotNull { it.await() }
+    }
+
     /** The "Change status" menu's explicit manual override — mirrors
      * src/utils/listenProgress.js's setListenStatus. */
     suspend fun setStatus(audioId: String, status: String) {
@@ -60,26 +83,38 @@ class ListenProgressRepository(
         docRef(uid, audioId).set(data, SetOptions.merge()).await()
     }
 
+    /** Saves position + status, and keeps users/{uid}.lastPlayed pointed at whatever is
+     * resumable (cleared once finished) so the app can pick back up next launch —
+     * saveListenProgress in src/utils/listenProgress.js. */
     suspend fun saveProgress(audioId: String, positionSeconds: Long, durationSeconds: Long) {
         val uid = auth.currentUser?.uid ?: return
-        if (positionSeconds <= RESUME_THRESHOLD_SECONDS) return
-        val status = when {
-            durationSeconds > 0 && positionSeconds.toDouble() / durationSeconds >= COMPLETE_RATIO -> "completed"
-            else -> "in-progress"
-        }
+        if (durationSeconds <= 0 || positionSeconds <= RESUME_THRESHOLD_SECONDS) return
+        val status = if (positionSeconds.toDouble() / durationSeconds >= COMPLETE_RATIO) "completed" else "in-progress"
         runCatching {
             docRef(uid, audioId).set(
                 mapOf(
-                    "userId" to uid,
-                    "audioId" to audioId,
-                    "position" to positionSeconds,
-                    "duration" to durationSeconds,
-                    "status" to status,
-                    "updatedAt" to FieldValue.serverTimestamp(),
+                    "userId" to uid, "audioId" to audioId, "position" to positionSeconds, "duration" to durationSeconds,
+                    "status" to status, "updatedAt" to FieldValue.serverTimestamp(),
                 ),
                 SetOptions.merge(),
             ).await()
+            firestore.collection("users").document(uid).set(
+                mapOf("lastPlayed" to if (status == "in-progress") mapOf("audioId" to audioId, "position" to positionSeconds, "duration" to durationSeconds, "updatedAt" to FieldValue.serverTimestamp()) else null),
+                SetOptions.merge(),
+            ).await()
         }
+    }
+
+    /** users/{uid}.lastPlayed → (audio, position) for the launch-time resume. */
+    suspend fun getLastPlayed(): Pair<Audio, Long>? {
+        val uid = auth.currentUser?.uid ?: return null
+        return runCatching {
+            val last = firestore.collection("users").document(uid).get().await().get("lastPlayed") as? Map<*, *> ?: return null
+            val audioId = last["audioId"] as? String ?: return null
+            val pos = (last["position"] as? Number)?.toLong() ?: 0L
+            val audio = firestore.collection("audio").document(audioId).get().await().toObject(Audio::class.java)?.copy(id = audioId) ?: return null
+            audio to pos
+        }.getOrNull()
     }
 
     /** Resolves each history row's title/speaker against the `audio`

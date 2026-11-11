@@ -19,7 +19,7 @@ class NoticeRepository(
             .orderBy("createdAt", Query.Direction.DESCENDING)
             .get()
             .await()
-        val items = snapshot.documents.mapNotNull { it.toObject(Notice::class.java) }
+        val items = snapshot.documents.mapNotNull { d -> d.toObject(Notice::class.java)?.copy(id = d.id) }
             .filter { it.isVisible(signedIn) }
             .sortedByDescending { it.pinned }
         UiState.Success(items)

@@ -1,12 +1,5 @@
 package com.palousefellowship.audio.ui.navigation
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.MenuBook
-import androidx.compose.material.icons.filled.MoreHoriz
-import androidx.compose.material.icons.filled.RecordVoiceOver
-import androidx.compose.material.icons.filled.School
-import androidx.compose.ui.graphics.vector.ImageVector
 
 /** Route constants used by NavGraph.kt. Screens reached only by tapping
  * into something (Player, Login, Sign Up, Resource) aren't listed here —
@@ -36,20 +29,25 @@ object Routes {
     const val NOTE_DETAIL = "notes/{audioId}"
     const val BOOKMARKS = "bookmarks"
     const val DOWNLOADS = "downloads"
+    const val FEEDBACK = "feedback"
+    const val WHATS_NEW = "whats_new"
+    const val GOALS = "goals"
+    const val YEAR_IN_REVIEW = "year_in_review"
+    const val NOTIFICATIONS = "notifications"
+    const val DEV_INFO = "dev_info"
+    const val MY_REPORTS = "my_reports"
+    const val TRANSCRIPT = "transcript/{audioId}"
 
     fun playlistDetail(id: String) = "playlists/$id"
     fun noteDetail(audioId: String) = "notes/$audioId"
+    fun transcript(audioId: String) = "transcript/$audioId"
 }
 
-data class BottomNavItem(val route: String, val label: String, val icon: ImageVector)
-
-// Same order as the web app's PAGE_REGISTRY primary-slot defaultOrder
-// (home, doctrine, sermons, sundayschool), with a fifth "More" tab for
-// everything the web keeps in its top-bar "more" menu / account dropdown.
-val BottomNavItems = listOf(
-    BottomNavItem(Routes.HOME, "Home", Icons.Filled.Home),
-    BottomNavItem(Routes.DOCTRINE, "Doctrine", Icons.Filled.MenuBook),
-    BottomNavItem(Routes.SERMONS, "Sermons", Icons.Filled.RecordVoiceOver),
-    BottomNavItem(Routes.SUNDAY_SCHOOL, "Sunday School", Icons.Filled.School),
-    BottomNavItem(Routes.MORE, "More", Icons.Filled.MoreHoriz),
+/** Routes that have a native screen. Page Manager entries pointing anywhere
+ * else are left out of the menus. */
+val AVAILABLE_ROUTES = setOf(
+    Routes.HOME, Routes.DOCTRINE, Routes.SERMONS, Routes.SUNDAY_SCHOOL, Routes.ABOUT, Routes.CONTACT,
+    Routes.RESOURCES, Routes.YOUR_LISTENS, Routes.SAVED, Routes.NOTES, Routes.BOOKMARKS, Routes.PLAYLISTS,
+    Routes.DOWNLOADS, Routes.STATS, Routes.SUGGEST, Routes.SETTINGS,
+    Routes.FEEDBACK, Routes.WHATS_NEW, Routes.GOALS, Routes.YEAR_IN_REVIEW,
 )

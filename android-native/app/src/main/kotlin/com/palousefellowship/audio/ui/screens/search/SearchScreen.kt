@@ -71,7 +71,7 @@ fun SearchScreen(
                     if (results.resources.isNotEmpty()) {
                         item { Text("📚 Resources", style = MaterialTheme.typography.titleMedium) }
                         items(results.resources, key = { "r_${it.id}" }) { resource ->
-                            ResourceCard(resource = resource, onClick = { onOpenResource(resource) })
+                            ResourceCard(resource = resource, categoryName = null, onClick = { onOpenResource(resource) })
                         }
                     }
                 }

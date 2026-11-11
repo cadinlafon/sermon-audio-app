@@ -7,7 +7,11 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.composable
+import com.palousefellowship.audio.data.config.PageConfig
+import com.palousefellowship.audio.data.config.Session
+import com.palousefellowship.audio.ui.shell.PageGate
 import androidx.navigation.navArgument
 import com.palousefellowship.audio.PfaApplication
 import com.palousefellowship.audio.data.model.Audio
@@ -30,6 +34,12 @@ import com.palousefellowship.audio.ui.screens.notes.NotesScreen
 import com.palousefellowship.audio.ui.screens.player.PlayerScreen
 import com.palousefellowship.audio.ui.screens.playlists.PlaylistDetailScreen
 import com.palousefellowship.audio.ui.screens.playlists.PlaylistsScreen
+import com.palousefellowship.audio.ui.screens.extras.DevInfoScreen
+import com.palousefellowship.audio.ui.screens.extras.FeedbackScreen
+import com.palousefellowship.audio.ui.screens.extras.GoalsScreen
+import com.palousefellowship.audio.ui.screens.extras.WhatsNewScreen
+import com.palousefellowship.audio.ui.screens.extras.YearInReviewScreen
+import com.palousefellowship.audio.ui.screens.reports.MyReportsScreen
 import com.palousefellowship.audio.ui.screens.resources.ResourcesScreen
 import com.palousefellowship.audio.ui.screens.saved.SavedScreen
 import com.palousefellowship.audio.ui.screens.search.SearchScreen
@@ -37,6 +47,7 @@ import com.palousefellowship.audio.ui.screens.settings.SettingsScreen
 import com.palousefellowship.audio.ui.screens.spotify.SpotifyScreen
 import com.palousefellowship.audio.ui.screens.stats.StatsScreen
 import com.palousefellowship.audio.ui.screens.suggest.SuggestScreen
+import com.palousefellowship.audio.ui.screens.transcript.TranscriptScreen
 import com.palousefellowship.audio.ui.screens.yourlistens.YourListensScreen
 import com.palousefellowship.audio.util.openInSpotify
 
@@ -84,7 +95,37 @@ private val WEB_ROUTE_TO_NATIVE = mapOf(
     "/notes" to Routes.NOTES,
     "/bookmarks" to Routes.BOOKMARKS,
     "/downloads" to Routes.DOWNLOADS,
+    "/feedback" to Routes.FEEDBACK,
+    "/whats-new" to Routes.WHATS_NEW,
+    "/goals" to Routes.GOALS,
+    "/year-in-review" to Routes.YEAR_IN_REVIEW,
+    "/dev-info" to Routes.DEV_INFO,
 )
+
+@Composable
+private fun AudioListRoute(
+    pageKey: String,
+    types: List<String>,
+    playerState: PlayerUiState,
+    onPlay: (Audio, List<Audio>, Long) -> Unit,
+    navController: NavHostController,
+) {
+    val container = (LocalContext.current.applicationContext as PfaApplication).container
+    val player = container.playerRepository
+    AudioListScreen(
+        pageKey = pageKey,
+        fetchTypes = types,
+        playerState = playerState,
+        onPlay = onPlay,
+        onPlayNext = { player.playNext(it) },
+        onPlayAll = { list -> player.playAll(list); list.size },
+        onAddAll = { list -> player.addAllToQueue(list) },
+        onAddRemaining = { list -> player.addRemainingToQueue(list) },
+        onTogglePlayPause = { player.togglePlayPause() },
+        onTranscript = { navController.navigate(Routes.transcript(it.id)) },
+        onOpenRoute = { route -> WEB_ROUTE_TO_NATIVE[route]?.let { navController.navigate(it) } },
+    )
+}
 
 @Composable
 fun PfaNavHost(
@@ -92,18 +133,33 @@ fun PfaNavHost(
     modifier: Modifier = Modifier,
     playerState: PlayerUiState,
     onPlay: (Audio, List<Audio>, Long) -> Unit,
+    pages: List<PageConfig>,
+    session: Session,
+    pagesReady: Boolean,
 ) {
     fun play(audio: Audio, list: List<Audio> = emptyList()) = onPlay(audio, list, 0)
 
+    // Page Manager route guard (the web's <PageGate id="...">).
+    val gate: @Composable (String, @Composable () -> Unit) -> Unit = { id, content ->
+        PageGate(
+            config = pages.firstOrNull { it.id == id },
+            session = session,
+            ready = pagesReady,
+            onLogin = { navController.navigate(Routes.LOGIN) },
+            onHome = { navController.navigate(Routes.HOME) { popUpTo(navController.graph.findStartDestination().id) } },
+            content = content,
+        )
+    }
+
     NavHost(navController = navController, startDestination = Routes.HOME, modifier = modifier) {
-        composable(Routes.HOME) {
+        composable(Routes.HOME) { gate("home") {
             HomeScreen(
-                onPlayLatest = { play(it) },
+                onResume = { audio, pos -> onPlay(audio, listOf(audio), pos) },
                 onNavigate = { navController.navigate(it) },
                 onNavigateRoute = { route -> WEB_ROUTE_TO_NATIVE[route]?.let(navController::navigate) },
             )
-        }
-        composable(Routes.DOCTRINE) {
+        }}
+        composable(Routes.DOCTRINE) { gate("doctrine") {
             val context = LocalContext.current
             val container = (context.applicationContext as PfaApplication).container
             DoctrineScreen(
@@ -112,40 +168,13 @@ fun PfaNavHost(
                 onPlayNextDoctrineAudio = { file, content -> container.playerRepository.playNext(file.asAudio(content)) },
                 onTogglePlayPause = { container.playerRepository.togglePlayPause() },
             )
-        }
-        composable(Routes.SERMONS) {
-            val context = LocalContext.current
-            val container = (context.applicationContext as PfaApplication).container
-            AudioListScreen(
-                title = "Sermons",
-                emptyIcon = "🎙️",
-                emptyMessage = "No sermons have been posted yet.",
-                types = listOf(Audio.TYPE_SERMON, Audio.TYPE_HOMILY),
-                typeChips = listOf(Audio.TYPE_SERMON to "Sermons", Audio.TYPE_HOMILY to "Homilies"),
-                playerState = playerState,
-                onPlay = { audio, list -> play(audio, list) },
-                onPlayNext = { audio -> container.playerRepository.playNext(audio) },
-                onTogglePlayPause = { container.playerRepository.togglePlayPause() },
-            )
-        }
-        composable(Routes.SUNDAY_SCHOOL) {
-            val context = LocalContext.current
-            val container = (context.applicationContext as PfaApplication).container
-            AudioListScreen(
-                title = "Sunday School",
-                emptyIcon = "🏫",
-                emptyMessage = "No Sunday School recordings have been posted yet.",
-                types = listOf(Audio.TYPE_SUNDAY_SCHOOL),
-                playerState = playerState,
-                onPlay = { audio, list -> play(audio, list) },
-                onPlayNext = { audio -> container.playerRepository.playNext(audio) },
-                onTogglePlayPause = { container.playerRepository.togglePlayPause() },
-            )
-        }
+        }}
+        composable(Routes.SERMONS) { gate("sermons") { AudioListRoute("sermons", listOf(Audio.TYPE_SERMON, Audio.TYPE_HOMILY), playerState, onPlay, navController) } }
+        composable(Routes.SUNDAY_SCHOOL) { gate("sundayschool") { AudioListRoute("sundayschool", listOf(Audio.TYPE_SUNDAY_SCHOOL), playerState, onPlay, navController) } }
         composable(Routes.MORE) {
             MoreScreen(onNavigate = { navController.navigate(it) })
         }
-        composable(Routes.RESOURCES) {
+        composable(Routes.RESOURCES) { gate("resources") {
             ResourcesScreen(
                 title = "Resources",
                 typeFilter = null,
@@ -153,26 +182,26 @@ fun PfaNavHost(
                 emptyMessage = "No resources have been added yet.",
                 onPlayAudioResource = { play(it.asAudio()) },
             )
-        }
+        }}
         composable(Routes.SPOTIFY) {
             SpotifyScreen(onPlayAudioResource = { play(it.asAudio()) })
         }
-        composable(Routes.SETTINGS) {
+        composable(Routes.SETTINGS) { gate("settings") {
             SettingsScreen(onSignInRequired = { navController.navigate(Routes.LOGIN) })
-        }
-        composable(Routes.ABOUT) { AboutScreen() }
-        composable(Routes.CONTACT) { ContactScreen() }
-        composable(Routes.SAVED) {
+        }}
+        composable(Routes.ABOUT) { gate("about") { AboutScreen() }}
+        composable(Routes.CONTACT) { gate("contact") { ContactScreen() }}
+        composable(Routes.SAVED) { gate("saved") {
             SavedScreen(playerState = playerState, onPlay = { audio, list -> play(audio, list) })
-        }
-        composable(Routes.YOUR_LISTENS) {
+        }}
+        composable(Routes.YOUR_LISTENS) { gate("your-listens") {
             YourListensScreen(onPlay = { play(it) })
-        }
-        composable(Routes.STATS) { StatsScreen() }
-        composable(Routes.SUGGEST) { SuggestScreen() }
-        composable(Routes.PLAYLISTS) {
+        }}
+        composable(Routes.STATS) { gate("stats") { StatsScreen() }}
+        composable(Routes.SUGGEST) { gate("suggest") { SuggestScreen() }}
+        composable(Routes.PLAYLISTS) { gate("playlists") {
             PlaylistsScreen(onOpenPlaylist = { id -> navController.navigate(Routes.playlistDetail(id)) })
-        }
+        }}
         composable(
             Routes.PLAYLIST_DETAIL,
             arguments = listOf(navArgument("id") { type = NavType.StringType }),
@@ -180,9 +209,9 @@ fun PfaNavHost(
             val id = backStackEntry.arguments?.getString("id").orEmpty()
             PlaylistDetailScreen(playlistId = id, onBack = { navController.popBackStack() }, onPlay = { audio, list -> play(audio, list) })
         }
-        composable(Routes.NOTES) {
+        composable(Routes.NOTES) { gate("notes") {
             NotesScreen(onOpenNote = { audioId -> navController.navigate(Routes.noteDetail(audioId)) })
-        }
+        }}
         composable(
             Routes.NOTE_DETAIL,
             arguments = listOf(navArgument("audioId") { type = NavType.StringType }),
@@ -190,14 +219,14 @@ fun PfaNavHost(
             val audioId = backStackEntry.arguments?.getString("audioId").orEmpty()
             NoteDetailScreen(audioId = audioId, onBack = { navController.popBackStack() })
         }
-        composable(Routes.BOOKMARKS) {
+        composable(Routes.BOOKMARKS) { gate("bookmarks") {
             BookmarksScreen(onJumpTo = { audioId, title, speaker, seconds ->
                 onPlay(Audio(id = audioId, title = title, speaker = speaker), emptyList(), seconds)
             })
-        }
-        composable(Routes.DOWNLOADS) {
+        }}
+        composable(Routes.DOWNLOADS) { gate("downloads") {
             DownloadsScreen(onPlay = { play(it) })
-        }
+        }}
         composable(Routes.SEARCH) {
             val context = LocalContext.current
             val uriHandler = LocalUriHandler.current
@@ -212,8 +241,17 @@ fun PfaNavHost(
                 },
             )
         }
+        composable(Routes.WHATS_NEW) { gate("whats-new") { WhatsNewScreen() } }
+        composable(Routes.FEEDBACK) { gate("feedback") { FeedbackScreen(onSuggest = { navController.navigate(Routes.SUGGEST) }) } }
+        composable(Routes.GOALS) { gate("goals") { GoalsScreen(onSignIn = { navController.navigate(Routes.LOGIN) }, onYearInReview = { navController.navigate(Routes.YEAR_IN_REVIEW) }) } }
+        composable(Routes.YEAR_IN_REVIEW) { gate("year-in-review") { YearInReviewScreen(onSignIn = { navController.navigate(Routes.LOGIN) }) } }
+        composable(Routes.DEV_INFO) { DevInfoScreen() }
+        composable(Routes.MY_REPORTS) { MyReportsScreen(onBack = { navController.popBackStack() }) }
+        composable(Routes.TRANSCRIPT, arguments = listOf(navArgument("audioId") { type = NavType.StringType })) { entry ->
+            TranscriptScreen(audioId = entry.arguments?.getString("audioId").orEmpty(), onBack = { navController.popBackStack() })
+        }
         composable(Routes.PLAYER) {
-            PlayerScreen(onBack = { navController.popBackStack() })
+            PlayerScreen(onBack = { navController.popBackStack() }, onTranscript = { navController.navigate(Routes.transcript(it)) })
         }
         composable(Routes.LOGIN) {
             LoginScreen(

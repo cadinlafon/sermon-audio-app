@@ -18,11 +18,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.palousefellowship.audio.ui.theme.BorderTan
-import com.palousefellowship.audio.ui.theme.CardBackground
-import com.palousefellowship.audio.ui.theme.CreamBackground
-import com.palousefellowship.audio.ui.theme.DarkBrown
-import com.palousefellowship.audio.ui.theme.MutedBrown
 
 /** The web app's /about route (src/pages/About.jsx) is, today, literally
  * just a "Coming Soon" placeholder — not a simplification on this side,
@@ -31,14 +26,14 @@ import com.palousefellowship.audio.ui.theme.MutedBrown
 @Composable
 fun AboutScreen() {
     Box(
-        modifier = Modifier.fillMaxSize().background(CreamBackground).padding(32.dp),
+        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(32.dp),
         contentAlignment = Alignment.Center,
     ) {
         Card(
             modifier = Modifier.widthIn(max = 420.dp).fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = CardBackground),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             shape = RoundedCornerShape(20.dp),
-            border = BorderStroke(1.dp, BorderTan),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
         ) {
             Column(
                 modifier = Modifier.padding(horizontal = 28.dp, vertical = 40.dp),
@@ -48,13 +43,13 @@ fun AboutScreen() {
                 Text(
                     "Coming Soon",
                     style = MaterialTheme.typography.headlineMedium,
-                    color = DarkBrown,
+                    color = MaterialTheme.colorScheme.onBackground,
                     modifier = Modifier.padding(top = 14.dp),
                 )
                 Text(
                     "This page is still being set up. Check back soon — there's more on the way.",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MutedBrown,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(top = 14.dp),
                 )
