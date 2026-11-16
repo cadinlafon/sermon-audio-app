@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import UptodownBadge from "../components/UptodownBadge";
 
 export default function AudioAppLanding() {
   useEffect(() => {
@@ -69,19 +70,7 @@ export default function AudioAppLanding() {
 
         {/* Android app download */}
         <div style={downloadWrap}>
-          <a
-            href="https://palouse-fellowship-audio.en.uptodown.com/android"
-            title="Download Palouse Fellowship Audio"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={downloadLink}
-          >
-            <img
-              src="https://stc.utdstc.com/img/mediakit/download-aao-big.png"
-              alt="Download Palouse Fellowship Audio"
-              style={downloadImg}
-            />
-          </a>
+          <UptodownBadge size="lg" />
         </div>
 
       </div>
@@ -269,16 +258,4 @@ const downloadWrap = {
   display: "flex",
   justifyContent: "center",
   marginTop: "28px",
-};
-
-const downloadLink = {
-  display: "inline-block",
-  lineHeight: 0,
-};
-
-const downloadImg = {
-  display: "block",
-  width: "100%",
-  maxWidth: "240px",
-  height: "auto",
 };
