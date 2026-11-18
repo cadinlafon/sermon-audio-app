@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { db } from "../firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import HumanCheck from "./HumanCheck";
+import { normalizeHex, readableOn } from "../lib/colors";
 import {
   fieldsOf,
   fieldChoices,
@@ -14,16 +16,25 @@ import {
 
 const SUMMARY_MAX = 900;
 
-export default function NoticeInputForm({ notice, user }) {
+// `target` lets other things reuse this form (popups write to popupSubmissions).
+//   requireHuman  ask for the Cloudflare security check before submitting
+//   preview       the admin visualizer — shows the form but never saves
+//   successText   what people see after submitting
+//   accent        hex color for the submit button
+export default function NoticeInputForm({ notice, user, target, requireHuman = false, preview = false, successText, onSubmitted, accent }) {
+  const cfg = { collection: "noticeSubmissions", idField: "noticeId", storage: "noticeSubmitted", ...target };
   const fields = useMemo(() => fieldsOf(notice), [notice]);
   const single = fields.length === 1;
-  const storageKey = `noticeSubmitted:${notice.id}`;
+  const storageKey = `${cfg.storage}:${notice.id}`;
+  const [human, setHuman] = useState(!requireHuman);
+  const accentHex = normalizeHex(accent);
 
   // field id -> string (text-like, rating, scale) or string[] (choices)
   const [answers, setAnswers] = useState({});
   const [fieldErrors, setFieldErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(() => {
+    if (preview) return false;
     try {
       return localStorage.getItem(storageKey) === "1";
     } catch {
@@ -40,10 +51,11 @@ export default function NoticeInputForm({ notice, user }) {
 
   const save = async (checked) => {
     if (submitting || submitted) return;
+    if (preview) { setError("This is a preview — nothing is sent."); return; }
     setError("");
     setSubmitting(true);
     try {
-      const payload = { noticeId: notice.id, createdAt: serverTimestamp(), userId: user?.uid || null, userEmail: user?.email || null };
+      const payload = { [cfg.idField]: notice.id, createdAt: serverTimestamp(), userId: user?.uid || null, userEmail: user?.email || null };
       const list = checked.map(({ field, result }) => ({
         id: field.id,
         label: field.label || "",
@@ -62,8 +74,9 @@ export default function NoticeInputForm({ notice, user }) {
         payload.inputType = "form";
         payload.value = list.map((a) => `${a.label || "Answer"}: ${a.value}`).join(" | ").slice(0, SUMMARY_MAX);
       }
-      await addDoc(collection(db, "noticeSubmissions"), payload);
+      await addDoc(collection(db, cfg.collection), payload);
       setSubmitted(true);
+      onSubmitted?.();
       try {
         localStorage.setItem(storageKey, "1");
       } catch {
@@ -80,6 +93,7 @@ export default function NoticeInputForm({ notice, user }) {
   // Validate every field; save when all are fine. `override` lets a
   // one-tap answer count before React has stored it.
   const submit = (override = {}) => {
+    if (!human) { setError("Please complete the security check first."); return; }
     const merged = { ...answers, ...override };
     const errors = {};
     const checked = [];
@@ -101,7 +115,7 @@ export default function NoticeInputForm({ notice, user }) {
     const voted = fields.some((f) => ["poll", "multi", "prefer"].includes(f.type));
     return (
       <div style={successBox}>
-        <span>✓</span> {voted && single ? "Thanks — your vote was recorded!" : "Submitted!"}
+        <span>✓</span> {successText || (voted && single ? "Thanks — your vote was recorded!" : "Submitted!")}
       </div>
     );
   }
@@ -112,6 +126,8 @@ export default function NoticeInputForm({ notice, user }) {
   return (
     <div style={wrap}>
       {notice.inputMessage && <p style={message}>{notice.inputMessage}</p>}
+      {requireHuman && !human && !preview && <HumanCheck compact title="Quick security check" onVerified={() => setHuman(true)} />}
+      {requireHuman && !human && preview && <div style={{ fontSize: "12px", color: "var(--color-7a5530)", border: "1px dashed var(--color-c8922a)", borderRadius: "10px", padding: "10px", textAlign: "center" }}>🔒 A quick security check appears here</div>}
 
       {fields.map((field) => (
         <div key={field.id} style={fieldBlock}>
@@ -130,7 +146,7 @@ export default function NoticeInputForm({ notice, user }) {
             disabled={submitting}
             inline={single && ["text", "phone", "email"].includes(field.type)}
             submitButton={single && !tapOnly ? (
-              <button style={submitBtn} onClick={() => submit()} disabled={submitting}>{submitting ? "…" : buttonText}</button>
+              <button style={accentHex ? { ...submitBtn, background: accentHex, color: readableOn(accentHex) } : submitBtn} onClick={() => submit()} disabled={submitting}>{submitting ? "…" : buttonText}</button>
             ) : null}
           />
           {fieldErrors[field.id] && <p style={errorText} role="alert">{fieldErrors[field.id]}</p>}
@@ -138,7 +154,7 @@ export default function NoticeInputForm({ notice, user }) {
       ))}
 
       {!single && (
-        <button style={{ ...submitBtn, marginTop: "4px" }} onClick={() => submit()} disabled={submitting}>
+        <button style={{ ...submitBtn, ...(accentHex ? { background: accentHex, color: readableOn(accentHex) } : null), marginTop: "4px" }} onClick={() => submit()} disabled={submitting}>
           {submitting ? "…" : buttonText}
         </button>
       )}

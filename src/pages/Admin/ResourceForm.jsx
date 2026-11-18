@@ -1,3 +1,4 @@
+import RichTextField from "../../components/Admin/RichTextField";
 import { useRef, useState } from "react";
 import { uploadPrivateAudio } from "../../utils/privateAudioUpload";
 import { uploadPublicImage } from "../../utils/imageUpload";
@@ -206,7 +207,7 @@ export default function ResourceForm({ resource, categories, sections, allResour
           </Field>
 
           <Field label="Description">
-            <textarea value={form.description} onChange={set("description")} style={{ ...input, height: "70px", resize: "vertical" }} placeholder="Short description…" />
+            <RichTextField value={form.description} onChange={(v) => set("description")({ target: { value: v } })} rows={3} minimal placeholder="Short description…" />
           </Field>
 
           <div style={row2}>

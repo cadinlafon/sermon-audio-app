@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import * as s from "./stateScreenStyles";
+import RichText from "../../components/RichText";
 
 export default function LockedScreen({ config }) {
   const navigate = useNavigate();
@@ -13,9 +14,7 @@ export default function LockedScreen({ config }) {
 
       <h1 style={s.title}>{name} is locked</h1>
 
-      <p style={s.subtitle}>
-        {config?.description || "This page isn't available to you right now. Check back later."}
-      </p>
+      <RichText text={config?.description || "This page isn't available to you right now. Check back later."} style={s.subtitle} />
 
       <button style={s.homeButton} onClick={() => navigate("/")}>
         ← Back to Home

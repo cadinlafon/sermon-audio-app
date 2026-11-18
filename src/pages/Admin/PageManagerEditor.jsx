@@ -1,3 +1,4 @@
+import RichTextField from "../../components/Admin/RichTextField";
 import { useEffect, useMemo, useState } from "react";
 import {
   PAGE_STATUSES,
@@ -389,7 +390,7 @@ function GeneralTab({ form, set }) {
       </Field>
 
       <Field label="Description" hint="Used in Page Manager, tooltips, and Coming Soon / Maintenance screens.">
-        <textarea value={form.description || ""} onChange={set("description")} style={{ ...input, height: "80px", resize: "vertical" }} />
+        <RichTextField value={form.description || ""} onChange={(v) => set("description")({ target: { value: v } })} rows={3} minimal />
       </Field>
 
       <Field label="Route">
@@ -642,7 +643,7 @@ function MaintenanceTab({ form, set }) {
         <input value={form.maintenanceTitle || ""} onChange={set("maintenanceTitle")} style={input} placeholder={`${form.name} is under maintenance`} />
       </Field>
       <Field label="Message">
-        <textarea value={form.maintenanceMessage || ""} onChange={set("maintenanceMessage")} style={{ ...input, height: "80px", resize: "vertical" }} placeholder="We're making improvements. Please check back soon." />
+        <RichTextField value={form.maintenanceMessage || ""} onChange={(v) => set("maintenanceMessage")({ target: { value: v } })} rows={3} minimal placeholder="We're making improvements. Please check back soon." />
       </Field>
       <Field label="Estimated Return" hint="Optional.">
         <input
@@ -663,7 +664,7 @@ function ComingSoonTab({ form, set }) {
         <input value={form.comingSoonTitle || ""} onChange={set("comingSoonTitle")} style={input} placeholder={`${form.name} is coming soon`} />
       </Field>
       <Field label="Message">
-        <textarea value={form.comingSoonMessage || ""} onChange={set("comingSoonMessage")} style={{ ...input, height: "80px", resize: "vertical" }} placeholder={`${form.name} isn't available quite yet.`} />
+        <RichTextField value={form.comingSoonMessage || ""} onChange={(v) => set("comingSoonMessage")({ target: { value: v } })} rows={3} minimal placeholder={`${form.name} isn't available quite yet.`} />
       </Field>
       <Field label="Planned Release Date" hint="Optional.">
         <input

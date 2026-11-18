@@ -9,7 +9,8 @@
    (new colors added to pages/components), regenerate rather than
    hand-editing stray entries in the middle. */
 
-:root {
+:root,
+.pf-theme-light {
   --color-062362: #062362;
   --color-075985: #075985;
   --color-0891b2: #0891b2;
@@ -192,7 +193,8 @@
   --color-ff0000: #ff0000;
 }
 
-:root[data-theme="dark"] {
+:root[data-theme="dark"],
+.pf-theme-dark {
   --color-062362: #c6cddd;
   --color-075985: #88c8ea;
   --color-0891b2: #61cae3;

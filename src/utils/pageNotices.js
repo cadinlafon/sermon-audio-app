@@ -1,4 +1,5 @@
 import { NOTICE_TYPES } from "../data/audioPageDefaults";
+import { blankButton, buttonsOf as listButtons } from "../lib/actionButtons";
 
 ////////////////////////////////////////////////////////////////
 // PAGE NOTICES — messages shown on the audio pages. Managed in Admin → Audio
@@ -73,4 +74,11 @@ export function dismissNotice(n) {
     set.add(fingerprint(n));
     localStorage.setItem(DISMISS_KEY, JSON.stringify([...set].slice(-200)));
   } catch { /* private mode — it just comes back next visit */ }
+}
+
+// Every button on a page notice: the new list, or the older single link read as one button.
+export function noticeButtons(n) {
+  if (Array.isArray(n.buttons)) return listButtons(n);
+  const link = noticeLink(n);
+  return link ? [blankButton({ id: "legacy", text: link.text, action: link.external ? "url" : "page", value: link.href, variant: "outline" })] : [];
 }

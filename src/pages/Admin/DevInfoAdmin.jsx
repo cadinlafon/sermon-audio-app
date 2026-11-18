@@ -1,3 +1,4 @@
+import RichTextField from "../../components/Admin/RichTextField";
 import { useEffect, useMemo, useState } from "react";
 import { doc, getDoc, setDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "../../firebase";
@@ -211,7 +212,7 @@ export default function DevInfoAdmin() {
       {/* SUPPORT */}
       <Section icon="📞" title="Support">
         <Field label="Support text">
-          <textarea style={{ ...input, height: "80px", resize: "vertical" }} value={form.supportText} onChange={set("supportText")} disabled={!canEdit} />
+          <RichTextField value={form.supportText} onChange={(v) => set("supportText")({ target: { value: v } })} rows={3} minimal />
         </Field>
         <p style={hint}>A "View on GitHub" link is added after this text automatically.</p>
       </Section>

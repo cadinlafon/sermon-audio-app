@@ -2,15 +2,16 @@ import { useEffect, useState } from "react";
 import { db } from "../../firebase";
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, where } from "firebase/firestore";
 import { useModulePermissions } from "../../hooks/usePermissions";
+import RichTextField from "../../components/Admin/RichTextField";
+import ButtonsEditor from "../../components/Admin/ButtonsEditor";
+import StyleEditor from "../../components/Admin/StyleEditor";
+import InputFieldsEditor from "../../components/Admin/InputFieldsEditor";
+import NoticePreview from "../../components/Admin/NoticePreview";
+import { buttonsForForm, sanitizeButtons, validateButtons } from "../../lib/actionButtons";
+import { sanitizeStyle } from "../../lib/colors";
+import { stripRichText } from "../../lib/richText";
 import {
-  INPUT_TYPES,
-  INPUT_TYPE_BY_VALUE,
   OPTION_TYPES,
-  MIN_OPTIONS,
-  MAX_OPTIONS,
-  MAX_OPTION_LENGTH,
-  MAX_FIELDS,
-  MAX_LABEL_LENGTH,
   blankField,
   fieldsOf,
   formFromNotice,
@@ -19,10 +20,9 @@ import {
   answerFor,
   summarizeField,
   validateInputConfig,
-  withFieldType,
 } from "../../utils/noticeInputs";
 
-const blankForm = { title: "", details: "", buttonEnabled: false, buttonText: "", buttonType: "url", buttonValue: "", active: true, pinned: false, audience: "all", inputEnabled: false, inputFields: [blankField("text")], inputMessage: "", inputButtonText: "" };
+const blankForm = { title: "", details: "", buttons: [], style: { preset: "default" }, active: true, pinned: false, audience: "all", inputEnabled: false, inputFields: [blankField("text")], inputMessage: "", inputButtonText: "" };
 
 export default function AdminNotices() {
   const perms = useModulePermissions("notices");
@@ -66,7 +66,7 @@ export default function AdminNotices() {
   }, []);
 
   const openCreate = () => { setEditing(null); setForm(blankForm); setShowForm(true); };
-  const openEdit = (n) => { setEditing(n); setForm({ ...blankForm, ...n, ...formFromNotice(n) }); setShowForm(true); };
+  const openEdit = (n) => { setEditing(n); setForm({ ...blankForm, ...n, buttons: buttonsForForm(n), style: sanitizeStyle(n.style), ...formFromNotice(n) }); setShowForm(true); };
   const closeForm = () => { setShowForm(false); setEditing(null); };
 
   const handleSave = async () => {
@@ -74,7 +74,23 @@ export default function AdminNotices() {
     if (!form.title || !form.details) return alert("Title and details are required.");
     const inputError = validateInputConfig(form);
     if (inputError) return alert(inputError);
-    const payload = { ...form, ...inputFieldsForSave(form) };
+    const buttonError = validateButtons(form.buttons);
+    if (buttonError) return alert(buttonError);
+    const buttons = sanitizeButtons(form.buttons);
+    // The first website / page button is also written in the older single-button
+    // fields so the Android app (which reads those) keeps showing a button.
+    const first = buttons.find((b) => b.action === "url" || b.action === "page");
+    const { buttonEnabled, buttonText, buttonType, buttonValue, ...rest } = form; // eslint-disable-line no-unused-vars
+    const payload = {
+      ...rest,
+      ...inputFieldsForSave(form),
+      buttons,
+      style: sanitizeStyle(form.style),
+      buttonEnabled: !!first,
+      buttonText: first ? first.text : "",
+      buttonType: first ? first.action : "url",
+      buttonValue: first ? first.value : "",
+    };
     if (editing) await updateDoc(doc(db, "notices", editing.id), payload);
     else await addDoc(collection(db, "notices"), { ...payload, createdAt: serverTimestamp() });
     closeForm(); loadNotices();
@@ -125,22 +141,6 @@ export default function AdminNotices() {
   };
   const closeStats = () => { setViewingStats(null); setStatsLogs([]); };
 
-  const updateField = (id, patch) => setForm((cur) => ({ ...cur, inputFields: cur.inputFields.map((fl) => (fl.id === id ? { ...fl, ...patch } : fl)) }));
-  const changeFieldType = (id, type) => setForm((cur) => ({ ...cur, inputFields: cur.inputFields.map((fl) => (fl.id === id ? withFieldType(fl, type) : fl)) }));
-  const addField = () => setForm((cur) => (cur.inputFields.length >= MAX_FIELDS ? cur : { ...cur, inputFields: [...cur.inputFields, blankField("text")] }));
-  const removeField = (id) => setForm((cur) => (cur.inputFields.length <= 1 ? cur : { ...cur, inputFields: cur.inputFields.filter((fl) => fl.id !== id) }));
-  const moveField = (id, dir) => setForm((cur) => {
-    const i = cur.inputFields.findIndex((fl) => fl.id === id);
-    const j = i + dir;
-    if (i < 0 || j < 0 || j >= cur.inputFields.length) return cur;
-    const next = [...cur.inputFields];
-    [next[i], next[j]] = [next[j], next[i]];
-    return { ...cur, inputFields: next };
-  });
-  const setFieldOption = (id, i, value) => setForm((cur) => ({ ...cur, inputFields: cur.inputFields.map((fl) => (fl.id === id ? { ...fl, options: fl.options.map((o, j) => (j === i ? value : o)) } : fl)) }));
-  const addFieldOption = (id) => setForm((cur) => ({ ...cur, inputFields: cur.inputFields.map((fl) => (fl.id === id && fl.options.length < MAX_OPTIONS ? { ...fl, options: [...fl.options, ""] } : fl)) }));
-  const removeFieldOption = (id, i) => setForm((cur) => ({ ...cur, inputFields: cur.inputFields.map((fl) => (fl.id === id && fl.options.length > MIN_OPTIONS ? { ...fl, options: fl.options.filter((_, j) => j !== i) } : fl)) }));
-
   const f = (k) => (e) => setForm({ ...form, [k]: e.target.type === "checkbox" ? e.target.checked : e.target.value });
 
   const whoLabel = (entry) => {
@@ -159,134 +159,54 @@ export default function AdminNotices() {
         {perms.canEdit && <button style={addBtn} onClick={openCreate}>+ New Notice</button>}
       </div>
 
-      {/* MODAL FORM */}
+      {/* MODAL FORM — editor on the left, live visualizer on the right */}
       {showForm && (
         <div style={modalBg}>
-          <div style={modal}>
-            <h2 style={modalTitle}>{editing ? "Edit Notice" : "Create Notice"}</h2>
-
-            <Field label="Title"><input value={form.title} onChange={f("title")} style={input} placeholder="Notice title" /></Field>
-            <Field label="Details"><textarea value={form.details} onChange={f("details")} style={{ ...input, height: "90px", resize: "vertical" }} placeholder="Details…" /></Field>
-
-            <Field label="Audience">
-              <select value={form.audience} onChange={f("audience")} style={input}>
-                <option value="all">All</option>
-                <option value="users">Signed-in users</option>
-                <option value="admins">Admins only</option>
-                <option value="guests">Guests only</option>
-              </select>
-            </Field>
-
-            <div style={checkRow}>
-              <label style={checkLabel}><input type="checkbox" checked={form.buttonEnabled} onChange={f("buttonEnabled")} /> Enable action button</label>
-              <label style={checkLabel}><input type="checkbox" checked={form.active} onChange={f("active")} /> Active</label>
-              <label style={checkLabel}><input type="checkbox" checked={form.pinned} onChange={f("pinned")} /> Pin to top</label>
+          <div style={wideModal}>
+            <div style={wideHead}>
+              <h2 style={modalTitle}>{editing ? "Edit Notice" : "Create Notice"}</h2>
+              <div style={{ display: "flex", gap: "10px" }}>
+                <button style={{ ...cancelBtn, flex: "none", padding: "9px 18px" }} onClick={closeForm}>Cancel</button>
+                <button style={{ ...saveBtn, flex: "none", padding: "9px 22px" }} onClick={handleSave}>Save</button>
+              </div>
             </div>
 
-            {form.buttonEnabled && (
-              <>
-                <Field label="Button Text"><input value={form.buttonText} onChange={f("buttonText")} style={input} placeholder="e.g. Learn More" /></Field>
-                <Field label="Button Type">
-                  <select value={form.buttonType} onChange={f("buttonType")} style={input}>
-                    <option value="url">External URL</option>
-                    <option value="page">Internal Page</option>
+            <style>{`@media (max-width: 1000px){ .pf-editor-grid{ grid-template-columns: minmax(0,1fr) !important; } .pf-editor-preview{ position: static !important; } }`}</style>
+            <div className="pf-editor-grid" style={editorGrid}>
+              <div style={editorCol}>
+                <Field label="Title"><input value={form.title} onChange={f("title")} style={input} placeholder="Notice title (**bold** and links work here too)" /></Field>
+                <Field label="Details"><RichTextField value={form.details} onChange={(v) => setForm((cur) => ({ ...cur, details: v }))} rows={5} placeholder="Details… use the toolbar for bold, italics, lists and links" preview={false} /></Field>
+
+                <Field label="Audience">
+                  <select value={form.audience} onChange={f("audience")} style={input}>
+                    <option value="all">All</option>
+                    <option value="users">Signed-in users</option>
+                    <option value="admins">Admins only</option>
+                    <option value="guests">Guests only</option>
                   </select>
                 </Field>
-                <Field label="URL or Path"><input value={form.buttonValue} onChange={f("buttonValue")} style={input} placeholder="https://… or /page" /></Field>
-              </>
-            )}
-
-            <div style={checkRow}>
-              <label style={checkLabel}><input type="checkbox" checked={form.inputEnabled} onChange={f("inputEnabled")} /> Input (collect submissions)</label>
-            </div>
-
-            {form.inputEnabled && (
-              <>
-                <Field label="Intro Message (optional)">
-                  <textarea value={form.inputMessage} onChange={f("inputMessage")} style={{ ...input, height: "70px", resize: "vertical" }} placeholder="e.g. Tell us a little about yourself so we can follow up." />
-                </Field>
-
-                <div style={fieldEditorList}>
-                  {form.inputFields.map((fl, idx) => (
-                    <div key={fl.id} style={fieldEditorCard}>
-                      <div style={fieldEditorHead}>
-                        <strong style={fieldEditorTitle}>Field {idx + 1}</strong>
-                        <div style={fieldEditorTools}>
-                          <button type="button" style={toolBtn} onClick={() => moveField(fl.id, -1)} disabled={idx === 0} aria-label={`Move field ${idx + 1} up`}>▲</button>
-                          <button type="button" style={toolBtn} onClick={() => moveField(fl.id, 1)} disabled={idx === form.inputFields.length - 1} aria-label={`Move field ${idx + 1} down`}>▼</button>
-                          {form.inputFields.length > 1 && (
-                            <button type="button" style={{ ...toolBtn, color: "var(--color-dc2626)", borderColor: "var(--color-fca5a5)" }} onClick={() => removeField(fl.id)} aria-label={`Remove field ${idx + 1}`}>✕</button>
-                          )}
-                        </div>
-                      </div>
-
-                      <Field label="Label">
-                        <input value={fl.label} onChange={(e) => updateField(fl.id, { label: e.target.value })} maxLength={MAX_LABEL_LENGTH} style={input} placeholder={fieldLabelPlaceholder(fl.type)} />
-                      </Field>
-
-                      <div style={twoCol}>
-                        <Field label="Type">
-                          <select value={fl.type} onChange={(e) => changeFieldType(fl.id, e.target.value)} style={input}>
-                            {INPUT_TYPES.map((t) => <option key={t.value} value={t.value}>{t.icon} {t.label}</option>)}
-                          </select>
-                        </Field>
-                        <Field label="Required?">
-                          <label style={{ ...checkLabel, padding: "9px 0" }}>
-                            <input type="checkbox" checked={fl.required !== false} onChange={(e) => updateField(fl.id, { required: e.target.checked })} /> Must be answered
-                          </label>
-                        </Field>
-                      </div>
-                      <span style={typeHint}>{INPUT_TYPE_BY_VALUE[fl.type]?.hint}</span>
-
-                      {OPTION_TYPES.has(fl.type) && (
-                        <Field label={fl.type === "prefer" ? "The two options" : `Options (${MIN_OPTIONS}–${MAX_OPTIONS})`}>
-                          <div style={optionList}>
-                            {fl.options.map((opt, i) => (
-                              <div key={i} style={optionRow}>
-                                <input
-                                  value={opt}
-                                  onChange={(e) => setFieldOption(fl.id, i, e.target.value)}
-                                  maxLength={MAX_OPTION_LENGTH}
-                                  style={input}
-                                  placeholder={fl.type === "prefer" ? (i === 0 ? "Option A, e.g. Hymns" : "Option B, e.g. Modern songs") : `Option ${i + 1}`}
-                                  aria-label={`Field ${idx + 1} option ${i + 1}`}
-                                />
-                                {fl.type !== "prefer" && fl.options.length > MIN_OPTIONS && (
-                                  <button type="button" style={removeOptBtn} onClick={() => removeFieldOption(fl.id, i)} aria-label={`Remove option ${i + 1}`}>✕</button>
-                                )}
-                              </div>
-                            ))}
-                            {fl.type !== "prefer" && fl.options.length < MAX_OPTIONS && (
-                              <button type="button" style={addOptBtn} onClick={() => addFieldOption(fl.id)}>+ Add option</button>
-                            )}
-                          </div>
-                        </Field>
-                      )}
-
-                      {fl.type === "scale" && (
-                        <div style={twoCol}>
-                          <Field label="Low end label"><input value={fl.scaleLow} onChange={(e) => updateField(fl.id, { scaleLow: e.target.value })} style={input} placeholder="e.g. Not likely" /></Field>
-                          <Field label="High end label"><input value={fl.scaleHigh} onChange={(e) => updateField(fl.id, { scaleHigh: e.target.value })} style={input} placeholder="e.g. Very likely" /></Field>
-                        </div>
-                      )}
-
-                      {["text", "longtext", "phone", "email"].includes(fl.type) && (
-                        <Field label="Placeholder (optional)"><input value={fl.placeholder} onChange={(e) => updateField(fl.id, { placeholder: e.target.value })} style={input} placeholder={fl.type === "phone" ? "e.g. (555) 123-4567" : fl.type === "email" ? "e.g. you@email.com" : "e.g. Type here"} /></Field>
-                      )}
-                    </div>
-                  ))}
-                  {form.inputFields.length < MAX_FIELDS && (
-                    <button type="button" style={addFieldBtn} onClick={addField}>+ Add another field</button>
-                  )}
+                <div style={checkRow}>
+                  <label style={checkLabel}><input type="checkbox" checked={form.active} onChange={f("active")} /> Active</label>
+                  <label style={checkLabel}><input type="checkbox" checked={form.pinned} onChange={f("pinned")} /> Pin to top</label>
                 </div>
 
-                <Field label="Submit Button Text"><input value={form.inputButtonText} onChange={f("inputButtonText")} style={input} placeholder="e.g. Submit" /></Field>
-              </>
-            )}
+                <div style={sectionBox}>
+                  <h3 style={sectionTitle}>Buttons</h3>
+                  <p style={sectionHint}>Add as many as you like. A button can open a website, a page in the app, or a popup you made in Admin → Popups.</p>
+                  <ButtonsEditor buttons={form.buttons} onChange={(buttons) => setForm((cur) => ({ ...cur, buttons }))} accent={form.style?.accent} />
+                </div>
 
-            <div style={modalActions}>
-              <button style={saveBtn} onClick={handleSave}>Save</button>
-              <button style={cancelBtn} onClick={closeForm}>Cancel</button>
+                <div style={sectionBox}>
+                  <h3 style={sectionTitle}>Colors</h3>
+                  <StyleEditor value={form.style} onChange={(style) => setForm((cur) => ({ ...cur, style }))} />
+                </div>
+
+                <InputFieldsEditor form={form} setForm={setForm} />
+              </div>
+
+              <div className="pf-editor-preview" style={previewCol}>
+                <NoticePreview notice={form} />
+              </div>
             </div>
           </div>
         </div>
@@ -297,14 +217,17 @@ export default function AdminNotices() {
         <div key={n.id} style={card}>
           <div style={cardBody}>
             <div style={cardTitleRow}>
-              <span style={cardTitle}>{n.title}</span>
+              <span style={cardTitle}>{stripRichText(n.title)}</span>
               <div style={badgeRow}>
                 {n.pinned && <Badge color="var(--color-e8f0fe)" text="var(--color-2a5ab5)" label="Pinned" />}
                 {n.active ? <Badge color="var(--color-dcfce7)" text="var(--color-166534)" label="Active" /> : <Badge color="var(--color-fee2e2)" text="var(--color-991b1b)" label="Disabled" />}
                 <Badge color="var(--color-f6e4b0)" text="var(--color-7a5a10)" label={n.audience === "all" ? "Everyone" : n.audience === "users" ? "Users" : n.audience === "admins" ? "Admins" : "Guests"} />
               </div>
             </div>
-            <p style={cardDetails}>{n.details}</p>
+            <p style={cardDetails}>{stripRichText(n.details)}</p>
+            {(n.buttons?.length > 1 || n.style?.preset && n.style.preset !== "default") && (
+              <p style={cardMeta}>{n.buttons?.length > 1 ? `${n.buttons.length} buttons` : ""}{n.buttons?.length > 1 && n.style?.preset && n.style.preset !== "default" ? " · " : ""}{n.style?.preset && n.style.preset !== "default" ? `${n.style.preset} colors` : ""}</p>
+            )}
           </div>
           <div style={cardActions}>
             {perms.canEdit && (
@@ -513,6 +436,15 @@ const badgeRow = { display: "flex", gap: "6px", flexWrap: "wrap" };
 const cardDetails = { fontSize: "13px", color: "var(--color-7a5530)", fontFamily: "sans-serif", lineHeight: 1.6, margin: 0 };
 const cardActions = { display: "flex", gap: "8px", flexWrap: "wrap", borderTop: "1px solid var(--color-f0e4d0)", paddingTop: "12px" };
 const actionBtn = { padding: "6px 12px", borderRadius: "8px", border: "1px solid var(--color-eddfc8)", background: "transparent", color: "var(--color-5c3a1e)", fontSize: "12px", fontFamily: "sans-serif", cursor: "pointer" };
+const wideModal = { background: "var(--color-fffdf9)", border: "1px solid var(--color-eddfc8)", borderRadius: "20px", padding: "22px 24px", width: "100%", maxWidth: "1180px", maxHeight: "92vh", overflowY: "auto", display: "flex", flexDirection: "column", gap: "16px" };
+const wideHead = { display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" };
+const editorGrid = { display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: "22px", alignItems: "start" };
+const editorCol = { display: "flex", flexDirection: "column", gap: "14px", minWidth: 0 };
+const previewCol = { position: "sticky", top: "0", minWidth: 0 };
+const sectionBox = { display: "flex", flexDirection: "column", gap: "10px", padding: "14px", borderRadius: "14px", border: "1px solid var(--color-eddfc8)", background: "var(--color-fdf8f3)" };
+const sectionTitle = { margin: 0, fontSize: "15px", fontWeight: "normal", color: "var(--color-3d2200)", fontFamily: "'Georgia', serif" };
+const sectionHint = { margin: 0, fontSize: "12px", color: "var(--color-9b7040)", fontFamily: "sans-serif", lineHeight: 1.5 };
+const cardMeta = { margin: "6px 0 0", fontSize: "11.5px", color: "var(--color-9b7040)", fontFamily: "sans-serif" };
 const empty = { textAlign: "center", color: "var(--color-b08050)", fontFamily: "sans-serif", fontStyle: "italic", padding: "40px 0" };
 const submissionRow = { display: "flex", flexDirection: "column", gap: "3px", padding: "10px 0", borderBottom: "1px solid var(--color-f0e4d0)" };
 const submissionValue = { fontSize: "14px", color: "var(--color-3d2200)", fontFamily: "sans-serif", wordBreak: "break-word" };

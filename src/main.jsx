@@ -11,6 +11,7 @@ import UpdatePrompt from "./components/UpdatePrompt";
 import { ToastProvider } from "./context/ToastContext";
 import { PlaylistProvider } from "./context/PlaylistContext";
 import { ThemeProvider } from "./context/ThemeContext";
+import { PopupProvider } from "./context/PopupContext";
 import "./theme-tokens.css";
 import "./liquid-glass.css";
 
@@ -37,7 +38,9 @@ ReactDOM.createRoot(document.getElementById("root")).render(
               <AudioPlayerProvider>
                 <ToastProvider>
                   <PlaylistProvider>
-                    <App />
+                    <PopupProvider>
+                      <App />
+                    </PopupProvider>
                   </PlaylistProvider>
                 </ToastProvider>
               </AudioPlayerProvider>

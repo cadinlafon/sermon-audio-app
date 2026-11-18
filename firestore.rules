@@ -192,6 +192,21 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Popups / banners / corner alerts built in Admin → Popups.
+    match /popups/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Replies to a popup's form — anyone can answer (guests included); only
+    // admins can read or clear them.
+    match /popupSubmissions/{id} {
+      allow create: if request.resource.data.popupId is string
+        && (request.resource.data.get('userId', null) == null || isSelf(request.resource.data.userId));
+      allow read, delete: if isAdmin();
+      allow update: if false;
+    }
+
     match /pages/{pageId} {
       allow read: if true;
       allow write: if isAdmin();

@@ -5,6 +5,9 @@ import { db } from "../firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { useAudioPlayer } from "../context/AudioPlayerContext";
 import { DOCTRINE_SCHEDULE } from "../data/doctrineSchedule";
+import RichText from "../components/RichText";
+import ActionButtons from "../components/ActionButtons";
+import { buttonsOf } from "../lib/actionButtons";
 
 export default function Doctrine() {
   const navigate = useNavigate();
@@ -118,7 +121,7 @@ export default function Doctrine() {
 
         {content.speaker && <p style={speaker}>Speaker: {content.speaker}</p>}
 
-        {content.details && <p style={details}>{content.details}</p>}
+        {content.details && <RichText text={content.details} style={details} />}
 
         {hasWeeks && (
           <Dropdown
@@ -174,7 +177,7 @@ export default function Doctrine() {
           {content.questions && content.questions.length > 0 ? (
             <ol style={questionsList}>
               {content.questions.map((q, i) => (
-                <li key={i} style={questionItem}>{q}</li>
+                <li key={i} style={questionItem}><RichText inline text={q} /></li>
               ))}
             </ol>
           ) : (
@@ -216,15 +219,8 @@ export default function Doctrine() {
           open={openSections.docs}
           onToggle={() => toggle("docs")}
         >
-          {content.docsLink ? (
-            <a
-              href={content.docsLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={link}
-            >
-              Open Docs →
-            </a>
+          {buttonsOf(content).length > 0 ? (
+            <ActionButtons buttons={buttonsOf(content)} />
           ) : (
             <p style={emptySection}>No docs linked yet.</p>
           )}
@@ -237,7 +233,7 @@ export default function Doctrine() {
           onToggle={() => toggle("memorization")}
         >
           {content.memorization ? (
-            <p style={sectionText}>{content.memorization}</p>
+            <RichText text={content.memorization} style={sectionText} />
           ) : (
             <p style={emptySection}>No memorization added yet.</p>
           )}
@@ -250,7 +246,7 @@ export default function Doctrine() {
           onToggle={() => toggle("notes")}
         >
           {content.notes ? (
-            <p style={sectionText}>{content.notes}</p>
+            <RichText text={content.notes} style={sectionText} />
           ) : (
             <p style={emptySection}>No notes added yet.</p>
           )}
@@ -318,7 +314,7 @@ function WeeklyTopic({ weeks, defaultWeekId }) {
               <span style={memoryValue}>{week.memoryText}</span>
             </div>
           )}
-          {week.details && <p style={sectionText}>{week.details}</p>}
+          {week.details && <RichText text={week.details} style={sectionText} />}
         </div>
       ) : (
         <p style={emptySection}>Nothing added for this week yet.</p>

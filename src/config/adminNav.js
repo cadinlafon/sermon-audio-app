@@ -6,7 +6,7 @@ export const NAV_SECTIONS = [
   { id: "audio", title: "Audio Management", items: ["upload", "content"] },
   // "@analyticsPages" expands to the external dashboards set up in Admin → Advanced.
   { id: "analytics", title: "Analytics", items: ["analytics", "@analyticsPages", "audioStats", "referrals", "logs"] },
-  { id: "notifications", title: "Notifications", items: ["notifications", "sendNotifications", "notices"] },
+  { id: "notifications", title: "Notifications", items: ["notifications", "sendNotifications", "notices", "popups"] },
   { id: "info", title: "Info", items: ["doctrine", "devInfo", "resources"] },
   { id: "pages", title: "Page Management", items: ["pageManager", "audioPages"] },
   { id: "feedback", title: "User Feedback", items: ["reports", "suggestions"] },

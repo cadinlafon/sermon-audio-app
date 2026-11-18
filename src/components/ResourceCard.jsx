@@ -1,3 +1,4 @@
+import { stripRichText } from "../lib/richText";
 import { useNavigate } from "react-router-dom";
 import ResourceTypeIcon from "./ResourceTypeIcon";
 import { getTypeMeta, formatResourceDate, EXTERNAL_LINK_TYPES } from "../lib/resourceTypes";
@@ -27,7 +28,7 @@ export default function ResourceCard({ resource, category }) {
 
       <div style={body}>
         <h3 style={title}>{resource.title}</h3>
-        {resource.description && <p style={description}>{resource.description}</p>}
+        {resource.description && <p style={description}>{stripRichText(resource.description)}</p>}
 
         <div style={metaRow}>
           {resource.author && <span style={metaItem}>{resource.author}</span>}

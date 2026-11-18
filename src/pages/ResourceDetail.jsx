@@ -1,3 +1,4 @@
+import RichText from "../components/RichText";
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { db } from "../firebase";
@@ -133,7 +134,7 @@ export default function ResourceDetail() {
             {category && <span style={categoryTag}>{category.name}</span>}
           </div>
 
-          {resource.description && <p style={description}>{resource.description}</p>}
+          {resource.description && <RichText text={resource.description} style={description} />}
 
           <div style={contentArea}>
             <ResourceContent resource={resource} items={items} onOpenImage={setLightboxImage} />

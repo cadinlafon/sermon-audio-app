@@ -1,3 +1,4 @@
+import RichTextField from "../../components/Admin/RichTextField";
 import { useEffect, useState } from "react";
 import { db } from "../../firebase";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
@@ -179,7 +180,7 @@ export default function WeeklyTopicsAdmin() {
             <input style={input} value={editing.form.memoryText} onChange={set("memoryText")} placeholder="e.g. Deut. 6:4-5" maxLength={200} />
 
             <label style={fieldLabel}>Details</label>
-            <textarea style={{ ...input, minHeight: "120px", resize: "vertical" }} value={editing.form.details} onChange={set("details")} placeholder="Anything visitors should know about this week…" />
+            <RichTextField value={editing.form.details} onChange={(v) => set("details")({ target: { value: v } })} rows={5} placeholder="Anything visitors should know about this week…" />
 
             <label style={checkRow}>
               <input type="checkbox" checked={editing.form.published !== false} onChange={set("published")} />

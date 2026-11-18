@@ -13,6 +13,7 @@ export const ADMIN_MODULES = [
   { key: "notifications", path: "notifications", label: "Notifications", icon: "🔔", actions: ["view"] },
   { key: "sendNotifications", path: "send-notifications", label: "Send Push", icon: "📣", actions: ["view", "edit"] },
   { key: "notices", path: "notices", label: "Notices", icon: "📌", actions: ["view", "edit", "delete"] },
+  { key: "popups", path: "popups", label: "Popups", icon: "🪟", actions: ["view", "edit", "delete"] },
   { key: "doctrine", path: "doctrine", label: "Doctrine Campaign", icon: "📖", actions: ["view", "edit"] },
   { key: "resources", path: "resources", label: "Resources", icon: "📚", actions: ["view", "edit", "delete"] },
   { key: "pageManager", path: "pagemanager", label: "Page Manager", icon: "🧭", actions: ["view", "edit"] },

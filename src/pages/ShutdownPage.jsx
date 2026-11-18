@@ -1,4 +1,5 @@
 import { useState } from "react";
+import RichText from "../components/RichText";
 import { useNavigate } from "react-router-dom";
 
 function ShutdownPage({ message, returnDate }) {
@@ -48,7 +49,7 @@ function ShutdownPage({ message, returnDate }) {
       <h1 style={title}>Down for Maintenance</h1>
 
       <p style={subtitle}>
-        {message || "We're making some improvements. We'll be back shortly."}
+        <RichText text={message || "We're making some improvements. We'll be back shortly."} style={{ textAlign: "center" }} />
       </p>
 
       {/* RETURN DATE CARD */}

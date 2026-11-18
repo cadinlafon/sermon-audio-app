@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import * as s from "./stateScreenStyles";
+import RichText from "../../components/RichText";
 
 export default function ComingSoonScreen({ config }) {
   const navigate = useNavigate();
@@ -14,10 +15,7 @@ export default function ComingSoonScreen({ config }) {
 
       <h1 style={s.title}>{config?.comingSoonTitle || `${name} is coming soon`}</h1>
 
-      <p style={s.subtitle}>
-        {config?.comingSoonMessage ||
-          `${name} isn't available quite yet. Check back soon!`}
-      </p>
+      <RichText text={config?.comingSoonMessage || `${name} isn't available quite yet. Check back soon!`} style={s.subtitle} />
 
       {config?.comingSoonBadge && (
         <div style={s.subtitle}>

@@ -1,14 +1,12 @@
 import { useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
-import NoticeInputForm from "../components/NoticeInputForm";
-import { noticeHasInput } from "../utils/noticeInputs";
+import NoticeItem from "../components/NoticeItem";
 import { db, auth } from "../firebase";
 import {
   collection,
   query,
   where,
   orderBy,
-  limit,
   getDocs,
   doc,
   getDoc,
@@ -30,14 +28,13 @@ function formatTime(seconds) {
 export default function Home() {
   const navigate = useNavigate();
 
-  const [latestSermon, setLatestSermon] = useState(null);
-  const [continueListening, setContinueListening] = useState(null);
   const [notices, setNotices] = useState([]);
   const [inProgress, setInProgress] = useState([]);
 
   const [user, setUser] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [authLoaded, setAuthLoaded] = useState(false);
+  const [homeDataLoading, setHomeDataLoading] = useState(true);
 
   const { playSermon } = useAudioPlayer();
 
@@ -59,6 +56,7 @@ export default function Home() {
   //////////////////////////////////////////////////
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
+      setHomeDataLoading(true);
       setUser(u);
 
       if (u) {
@@ -86,30 +84,15 @@ export default function Home() {
     if (!authLoaded) return;
 
     async function fetchData() {
+      setHomeDataLoading(true);
       try {
-        // Latest sermon (type === "sermon" only — homilies/Sunday School excluded)
-        const sermonQ = query(
-          collection(db, "audio"),
-          orderBy("createdAt", "desc"),
-          limit(15)
+        const noticePromise = getDocs(
+          query(collection(db, "notices"), orderBy("createdAt", "desc"))
         );
-
-        const sermonSnap = await getDocs(sermonQ);
-        const latest = sermonSnap.docs
-          .map((d) => ({ id: d.id, ...d.data() }))
-          .find((a) => a.type === "sermon");
-
-        if (latest) {
-          setLatestSermon(latest);
-        }
-
-        // Notices
-        const noticeQ = query(
-          collection(db, "notices"),
-          orderBy("createdAt", "desc")
-        );
-
-        const noticeSnap = await getDocs(noticeQ);
+        const progressPromise = user
+          ? getDocs(query(collection(db, "listenProgress"), where("userId", "==", user.uid)))
+          : Promise.resolve(null);
+        const [noticeSnap, progressSnap] = await Promise.all([noticePromise, progressPromise]);
         const now = new Date();
 
         const filtered = noticeSnap.docs
@@ -133,18 +116,14 @@ export default function Home() {
         // Pinned first
         filtered.sort((a, b) => (b.pinned === true) - (a.pinned === true));
 
-        setNotices(filtered);
+        let resolvedProgress = [];
 
         // Continue Listening — last 3 recordings this listener actually
         // started but hasn't finished. A single where("userId","==") is
         // the only filter applied server-side (status + ordering happen
         // client-side below) so this never needs a composite Firestore
         // index — same pattern useGoalData.js already relies on.
-        if (user) {
-          const progressSnap = await getDocs(
-            query(collection(db, "listenProgress"), where("userId", "==", user.uid))
-          );
-
+        if (progressSnap) {
           const recent = progressSnap.docs
             .map((d) => d.data())
             .filter((p) => p.status === "in-progress" && p.audioId)
@@ -159,26 +138,27 @@ export default function Home() {
             })
           );
 
-          setInProgress(resolved.filter(Boolean));
-        } else {
-          setInProgress([]);
+          resolvedProgress = resolved.filter(Boolean);
         }
+
+        setNotices(filtered);
+        setInProgress(resolvedProgress);
       } catch (error) {
         console.error("Error loading home data:", error);
+      } finally {
+        setHomeDataLoading(false);
       }
     }
 
     fetchData();
-
-    const saved = localStorage.getItem("continueListening");
-    if (saved) {
-      setContinueListening(JSON.parse(saved));
-    }
   }, [authLoaded, user, isAdmin]);
 
   //////////////////////////////////////////////////
   // UI
   //////////////////////////////////////////////////
+  const showContinueLoading = !authLoaded || (homeDataLoading && !!user);
+  const showNoticesLoading = !authLoaded || homeDataLoading;
+
   return (
     <div style={pageWrapper}>
 
@@ -187,11 +167,42 @@ export default function Home() {
         <div style={heroImage} />
         
       </div>
-
       <div style={contentArea}>
 
+        {/* NAV */}
+        <div style={navButtons}>
+          <button onClick={() => navigate("/sermons")} style={navButton}>
+            <span style={navButtonIcon}>🎧</span>
+            <span>Sermons</span>
+            <span style={navArrow}>→</span>
+          </button>
+
+          <button onClick={() => navigate("/sundayschool")} style={navButton}>
+            <span style={navButtonIcon}>📖</span>
+            <span>Sunday School</span>
+            <span style={navArrow}>→</span>
+          </button>
+        </div>
+
         {/* CONTINUE LISTENING */}
-        {inProgress.length > 0 && (
+        {showContinueLoading ? (
+          <div style={card} role="status" aria-label="Loading Continue Listening" aria-busy="true">
+            <div style={cardHeader}>
+              <span style={cardIcon}>⏯️</span>
+              <h2 style={cardTitle}>Continue Listening</h2>
+            </div>
+            {[0, 1, 2].map((row) => (
+              <div key={row} style={loadingContinueItem}>
+                <div style={continueInfo}>
+                  <div style={{ ...skeletonLine, width: "62%" }} />
+                  <div style={{ ...skeletonLine, width: "38%", height: "10px", marginTop: "8px" }} />
+                  <div style={{ ...skeletonLine, width: "100%", height: "5px", marginTop: "12px" }} />
+                </div>
+                <div style={skeletonResumeButton} />
+              </div>
+            ))}
+          </div>
+        ) : inProgress.length > 0 && (
           <div style={card}>
             <div style={cardHeader}>
               <span style={cardIcon}>⏯️</span>
@@ -234,7 +245,21 @@ export default function Home() {
         )}
 
         {/* NOTICES */}
-        {notices.length > 0 && (
+        {showNoticesLoading ? (
+          <div style={card} role="status" aria-label="Loading notices" aria-busy="true">
+            <div style={cardHeader}>
+              <span style={cardIcon}>📌</span>
+              <h2 style={cardTitle}>Notices</h2>
+            </div>
+            {[0, 1].map((row) => (
+              <div key={row} style={skeletonNotice}>
+                <div style={{ ...skeletonLine, width: "48%" }} />
+                <div style={{ ...skeletonLine, width: "92%", marginTop: "12px" }} />
+                <div style={{ ...skeletonLine, width: "74%", marginTop: "7px" }} />
+              </div>
+            ))}
+          </div>
+        ) : notices.length > 0 && (
           <div style={card}>
             <div style={cardHeader}>
               <span style={cardIcon}>📌</span>
@@ -242,82 +267,14 @@ export default function Home() {
             </div>
 
             {notices.map((n) => (
-              <div key={n.id} style={noticeItem}>
-                {n.pinned && <span style={pinnedBadge}>Pinned</span>}
-                <h4 style={noticeTitle}>{n.title}</h4>
-                <p style={noticeBody}>{n.details}</p>
-
-                {n.buttonEnabled && (
-                  <button
-                    style={noticeButton}
-                    onClick={() => {
-                      logEvent("notice_click", { noticeId: n.id, noticeTitle: n.title });
-                      if (n.buttonType === "url") {
-                        window.open(n.buttonValue, "_blank");
-                      } else if (n.buttonType === "page") {
-                        navigate(n.buttonValue);
-                      }
-                    }}
-                  >
-                    {n.buttonText || "Learn More"} →
-                  </button>
-                )}
-
-                {noticeHasInput(n) && <NoticeInputForm notice={n} user={user} />}
-              </div>
+              <NoticeItem key={n.id} notice={n} user={user} />
             ))}
           </div>
         )}
-
-        {/* LATEST AUDIO */}
-        <div style={card}>
-          <div style={cardHeader}>
-            <span style={cardIcon}>🎙️</span>
-            <h2 style={cardTitle}>Latest Sermon</h2>
-          </div>
-
-          {latestSermon ? (
-            <div style={sermonBlock}>
-              <h3 style={sermonTitle}>{latestSermon.title}</h3>
-              <p style={sermonSpeaker}>{latestSermon.speaker}</p>
-              <button
-                onClick={() => {
-                  localStorage.setItem(
-                    "continueListening",
-                    JSON.stringify(latestSermon)
-                  );
-                  navigate("/sermons");
-                }}
-                style={playButton}
-              >
-                <span style={playIcon}>▶</span> Play
-              </button>
-            </div>
-          ) : (
-            <p style={emptyText}>No sermons uploaded yet — check back soon.</p>
-          )}
-        </div>
-
-        {/* NAV */}
-        <div style={navButtons}>
-          <button onClick={() => navigate("/sermons")} style={navButton}>
-            <span style={navButtonIcon}>🎧</span>
-            <span>Sermons</span>
-            <span style={navArrow}>→</span>
-          </button>
-
-          <button onClick={() => navigate("/sundayschool")} style={navButton}>
-            <span style={navButtonIcon}>📖</span>
-            <span>Sunday School</span>
-            <span style={navArrow}>→</span>
-          </button>
-        </div>
-
-        <div style={footerLink}>
+      </div>
+      <div style={footerLink}>
           <a href="/audio-app" style={footerAnchor}>Audio app info</a>
         </div>
-
-      </div>
     </div>
   );
 }
@@ -389,6 +346,38 @@ const card = {
   marginBottom: "24px",
   border: "1px solid var(--color-eddfc8)",
   boxShadow: "0 2px 16px rgba(160,100,40,0.07)",
+};
+
+const skeletonLine = {
+  height: "12px",
+  borderRadius: "999px",
+  background: "var(--color-eddfc8)",
+};
+
+const loadingContinueItem = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: "16px",
+  padding: "12px 0",
+  borderBottom: "1px solid var(--color-f0e4d0)",
+  minHeight: "68px",
+};
+
+const skeletonResumeButton = {
+  width: "82px",
+  height: "34px",
+  flexShrink: 0,
+  borderRadius: "999px",
+  background: "var(--color-eddfc8)",
+};
+
+const skeletonNotice = {
+  background: "var(--color-fffbee)",
+  border: "1px solid var(--color-f0d898)",
+  padding: "14px 16px",
+  borderRadius: "12px",
+  marginBottom: "10px",
 };
 
 const cardHeader = {
@@ -482,54 +471,10 @@ const resumeButton = {
   boxShadow: "0 3px 10px rgba(160,80,20,0.25)",
 };
 
-const noticeItem = {
-  background: "var(--color-fffbee)",
-  border: "1px solid var(--color-f0d898)",
-  padding: "14px 16px",
-  borderRadius: "12px",
-  marginBottom: "10px",
-};
 
-const pinnedBadge = {
-  display: "inline-block",
-  fontSize: "11px",
-  fontFamily: "sans-serif",
-  background: "var(--color-f6e4b0)",
-  color: "var(--color-7a5a10)",
-  borderRadius: "99px",
-  padding: "2px 8px",
-  marginBottom: "6px",
-  letterSpacing: "0.04em",
-};
 
-const noticeTitle = {
-  margin: "0 0 5px",
-  fontSize: "15px",
-  fontWeight: "bold",
-  color: "var(--color-3d2600)",
-  fontFamily: "'Georgia', serif",
-};
 
-const noticeBody = {
-  margin: "0 0 4px",
-  fontSize: "14px",
-  color: "var(--color-6b4c20)",
-  lineHeight: 1.6,
-  whiteSpace: "pre-line",
-  fontFamily: "sans-serif",
-};
 
-const noticeButton = {
-  marginTop: "10px",
-  padding: "7px 14px",
-  borderRadius: "8px",
-  border: "1px solid var(--color-c8922a)",
-  background: "transparent",
-  color: "var(--color-8a5f10)",
-  cursor: "pointer",
-  fontSize: "13px",
-  fontFamily: "sans-serif",
-};
 
 const sermonBlock = {
   textAlign: "center",
@@ -583,19 +528,20 @@ const emptyText = {
 };
 
 const navButtons = {
-  display: "flex",
-  flexDirection: "column",
+  display: "grid",
+  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
   gap: "12px",
-  marginBottom: "8px",
+  marginBottom: "16px",
 };
 
 const navButton = {
   display: "flex",
   alignItems: "center",
-  gap: "12px",
-  width: "100%",
-  padding: "18px 20px",
-  fontSize: "16px",
+  gap: "8px",
+  minWidth: 0,
+  boxSizing: "border-box",
+  padding: "18px 14px",
+  fontSize: "15px",
   borderRadius: "14px",
   border: "1px solid var(--color-eddfc8)",
   backgroundColor: "var(--color-fffdf9)",

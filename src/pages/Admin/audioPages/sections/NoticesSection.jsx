@@ -3,14 +3,20 @@ import { addDoc, collection, deleteDoc, doc, serverTimestamp, updateDoc } from "
 import { db } from "../../../../firebase";
 import { Card, Field, Select, TextInput, TextArea, Toggle, Button, CheckGrid, input } from "../ui";
 import { NOTICE_TYPES, NOTICE_PLACEMENTS, DEFAULT_CATEGORIES } from "../../../../data/audioPageDefaults";
-import { noticePlacement, noticeStatus, noticeType, noticeLink } from "../../../../utils/pageNotices";
+import { noticePlacement, noticeStatus, noticeType, noticeButtons } from "../../../../utils/pageNotices";
+import RichTextField from "../../../../components/Admin/RichTextField";
+import ButtonsEditor from "../../../../components/Admin/ButtonsEditor";
+import StyleEditor from "../../../../components/Admin/StyleEditor";
+import { buttonsForForm, sanitizeButtons, validateButtons } from "../../../../lib/actionButtons";
+import { sanitizeStyle } from "../../../../lib/colors";
+import { stripRichText } from "../../../../lib/richText";
 
 // Notices — what used to be the separate "Page Notices" admin page. Several
 // notices, scheduled, typed, dismissible, with an optional link, per page and
 // category, in four possible places. Notices save the moment you save the
 // notice itself (they are not part of the settings Save button).
 const PAGE_CHOICES = [["sermons", "Sermons & Homilies"], ["sundayschool", "Sunday School"], ["all", "Both pages"]];
-const blank = { title: "", message: "", type: "info", page: "sermons", placement: "aboveList", startDate: "", endDate: "", linkUrl: "", linkText: "", dismissible: false, categories: [], enabled: true };
+const blank = { title: "", message: "", type: "info", page: "sermons", placement: "aboveList", startDate: "", endDate: "", buttons: [], style: { preset: "default" }, dismissible: false, categories: [], enabled: true };
 
 const STATUS_STYLE = {
   active: { label: "Showing now", bg: "var(--color-e3f5e6)", color: "var(--color-2f8a4a)" },
@@ -30,7 +36,7 @@ export default function NoticesSection({ notices, reload, perms }) {
     setError("");
     if (!n) { setForm({ ...blank }); setEditingId(null); return; }
     setEditingId(n.id);
-    setForm({ ...blank, ...n, placement: noticePlacement(n), categories: Array.isArray(n.categories) ? n.categories : [], page: n.page === "homilies" ? "sermons" : n.page || "sermons" });
+    setForm({ ...blank, ...n, buttons: buttonsForForm({ ...n, buttons: noticeButtons(n) }), style: sanitizeStyle(n.style), placement: noticePlacement(n), categories: Array.isArray(n.categories) ? n.categories : [], page: n.page === "homilies" ? "sermons" : n.page || "sermons" });
   };
 
   const save = async () => {
@@ -39,7 +45,11 @@ export default function NoticesSection({ notices, reload, perms }) {
     const message = form.message.trim();
     if (!title || !message) return setError("A title and a message are required.");
     if (form.startDate && form.endDate && form.endDate < form.startDate) return setError("The end date can't be before the start date.");
-    if (form.linkUrl.trim() && !noticeLink({ linkUrl: form.linkUrl, linkText: form.linkText })) return setError("The link must start with https:// (or be a path inside the app, like /doctrine).");
+    const buttonError = validateButtons(form.buttons);
+    if (buttonError) return setError(buttonError);
+    const buttons = sanitizeButtons(form.buttons);
+    // The first website / page button is also kept in the older link fields (the Android app reads those).
+    const firstLink = buttons.find((b) => b.action === "url" || b.action === "page");
     setBusy(true);
     setError("");
     try {
@@ -49,7 +59,8 @@ export default function NoticesSection({ notices, reload, perms }) {
         // Older code (and the unused Homilies page) read `position`.
         position: form.placement === "belowList" ? "bottom" : "top",
         startDate: form.startDate || "", endDate: form.endDate || "",
-        linkUrl: form.linkUrl.trim(), linkText: form.linkText.trim(),
+        buttons, style: sanitizeStyle(form.style),
+        linkUrl: firstLink ? firstLink.value : "", linkText: firstLink ? firstLink.text : "",
         dismissible: !!form.dismissible,
         categories: form.categories,
         enabled: !!form.enabled,
@@ -83,7 +94,7 @@ export default function NoticesSection({ notices, reload, perms }) {
     return (
       <Card title={editingId ? "Edit notice" : "New notice"}>
         <Field label="Title"><TextInput value={form.title} onChange={set("title")} placeholder="e.g. New series starts Sunday" maxLength={120} /></Field>
-        <Field label="Message"><TextArea value={form.message} onChange={set("message")} placeholder="What do you want listeners to know?" maxLength={600} rows={3} /></Field>
+        <Field label="Message"><RichTextField value={form.message} onChange={set("message")} placeholder="What do you want listeners to know? Use the toolbar for bold, italics, lists and links" maxLength={1500} rows={4} preview={false} /></Field>
         <div style={two}>
           <Field label="Type"><Select value={form.type} onChange={set("type")} options={NOTICE_TYPES.map((t) => [t.id, `${t.icon} ${t.label}`])} /></Field>
           <Field label="Show on"><Select value={form.page} onChange={set("page")} options={PAGE_CHOICES} /></Field>
@@ -93,10 +104,12 @@ export default function NoticesSection({ notices, reload, perms }) {
           <Field label="Start showing" hint="Optional — blank = right away."><input type="date" style={input} value={form.startDate} onChange={(e) => set("startDate")(e.target.value)} /></Field>
           <Field label="Stop showing after" hint="Optional — blank = until you turn it off."><input type="date" style={input} value={form.endDate} onChange={(e) => set("endDate")(e.target.value)} /></Field>
         </div>
-        <div style={two}>
-          <Field label="Link (optional)" hint="https://… or an app path like /doctrine"><TextInput value={form.linkUrl} onChange={set("linkUrl")} placeholder="https://" maxLength={500} /></Field>
-          <Field label="Link button text"><TextInput value={form.linkText} onChange={set("linkText")} placeholder="Learn more" maxLength={40} disabled={!form.linkUrl.trim()} /></Field>
-        </div>
+        <Field label="Buttons" hint="Add as many as you like — a website, a page in the app, or a popup you made in Admin → Popups.">
+          <ButtonsEditor buttons={form.buttons} onChange={set("buttons")} accent={form.style?.accent} />
+        </Field>
+        <Field label="Colors" hint="Optional. Pick a look or choose your own — it overrides the colors of the notice type above.">
+          <StyleEditor value={form.style} onChange={set("style")} />
+        </Field>
         <Field label="Show for these categories" hint="None ticked = every category. Otherwise it only shows while the page is showing one of them.">
           <CheckGrid items={categoryItems} values={Object.fromEntries(categoryItems.map((c) => [c.id, form.categories.includes(c.id)]))} onChange={(id, on) => set("categories")(on ? [...form.categories, id] : form.categories.filter((x) => x !== id))} />
         </Field>
@@ -127,7 +140,7 @@ export default function NoticesSection({ notices, reload, perms }) {
           <div key={n.id} style={item}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={itemTitle}>{t.icon} {n.title}</div>
-              <div style={itemMsg}>{n.message}</div>
+              <div style={itemMsg}>{stripRichText(n.message)}</div>
               <div style={meta}>
                 <span style={{ ...badge, background: st.bg, color: st.color }}>{st.label}</span>
                 <span style={badge2}>{PAGE_CHOICES.find((p) => p[0] === (n.page === "homilies" ? "sermons" : n.page))?.[1] || n.page}</span>
@@ -135,7 +148,7 @@ export default function NoticesSection({ notices, reload, perms }) {
                 <span style={badge2}>{cats}</span>
                 {(n.startDate || n.endDate) && <span style={badge2}>{n.startDate || "…"} → {n.endDate || "…"}</span>}
                 {n.dismissible && <span style={badge2}>dismissible</span>}
-                {noticeLink(n) && <span style={badge2}>has link</span>}
+                {noticeButtons(n).length > 0 && <span style={badge2}>{noticeButtons(n).length} button{noticeButtons(n).length === 1 ? "" : "s"}</span>}
               </div>
             </div>
             {perms.canEdit && (

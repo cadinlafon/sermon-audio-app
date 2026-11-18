@@ -1,3 +1,4 @@
+import RichTextField from "../../components/Admin/RichTextField";
 import { useEffect, useState } from "react";
 import { collection, doc, getDoc, getDocs, limit, orderBy, query, updateDoc } from "firebase/firestore";
 import { db } from "../../firebase";
@@ -206,13 +207,7 @@ export default function Settings() {
         )}
 
         <Field label="Maintenance Message">
-          <textarea
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            rows="3"
-            style={{ ...input, resize: "vertical" }}
-            placeholder="e.g. We're doing some maintenance. We'll be back soon!"
-          />
+          <RichTextField value={message} onChange={setMessage} rows={3} minimal placeholder="e.g. We're doing some maintenance. We'll be back soon!" />
         </Field>
 
         <Field label="Estimated Return Date & Time">

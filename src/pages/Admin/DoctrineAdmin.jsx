@@ -6,6 +6,9 @@ import { uploadPrivateAudio, deletePrivateAudio } from "../../utils/privateAudio
 import { uploadPublicImage, deletePublicImage } from "../../utils/imageUpload";
 import { useModulePermissions } from "../../hooks/usePermissions";
 import WeeklyTopicsAdmin from "./WeeklyTopicsAdmin";
+import RichTextField from "../../components/Admin/RichTextField";
+import ButtonsEditor from "../../components/Admin/ButtonsEditor";
+import { buttonsForForm, sanitizeButtons, validateButtons } from "../../lib/actionButtons";
 
 const DOC_ID = "current";
 
@@ -14,6 +17,7 @@ const blankForm = {
   speaker: "",
   details: "",
   docsLink: "",
+  buttons: [],
   memorization: "",
   notes: "",
   audioFiles: [],
@@ -61,7 +65,7 @@ export default function DoctrineAdmin() {
         if (audioFiles.length === 0 && legacyKey) {
           audioFiles = [{ id: crypto.randomUUID(), label: legacyName || "", audioStorageKey: legacyKey, audioFileName: legacyName || "" }];
         }
-        const data = { ...blankForm, ...rest, questions: rest.questions || [], audioFiles };
+        const data = { ...blankForm, ...rest, questions: rest.questions || [], audioFiles, buttons: buttonsForForm(rest) };
         setForm(data);
         originalAudioKeys.current = audioFiles.map((a) => a.audioStorageKey).filter(Boolean);
         originalImageKey.current = data.imageStorageKey || "";
@@ -191,6 +195,12 @@ export default function DoctrineAdmin() {
       return;
     }
 
+    const buttonError = validateButtons(form.buttons);
+    if (buttonError) {
+      showToast(buttonError, true);
+      return;
+    }
+
     setSaving(true);
     try {
       // Never write an "id" data field — the document's real id is
@@ -207,6 +217,9 @@ export default function DoctrineAdmin() {
         audioStorageKey: deleteField(),
         audioFileName: deleteField(),
         questions: form.questions.map((q) => q.trim()).filter(Boolean),
+        buttons: sanitizeButtons(form.buttons),
+        // The first website button also fills the older docsLink field (the Android app reads it).
+        docsLink: (sanitizeButtons(form.buttons).find((b) => b.action === "url") || {}).value || "",
         updatedAt: serverTimestamp(),
       };
 
@@ -322,12 +335,7 @@ export default function DoctrineAdmin() {
         </Field>
 
         <Field label="Long Details">
-          <textarea
-            value={form.details}
-            onChange={f("details")}
-            style={{ ...input, height: "100px", resize: "vertical" }}
-            placeholder="Description…"
-          />
+          <RichTextField value={form.details} onChange={(v) => setForm((cur) => ({ ...cur, details: v }))} rows={5} placeholder="Description… use the toolbar for bold, italics, lists and links" />
         </Field>
 
         <Field label="Questions">
@@ -352,13 +360,9 @@ export default function DoctrineAdmin() {
           </button>
         </Field>
 
-        <Field label="Docs Link">
-          <input
-            value={form.docsLink}
-            onChange={f("docsLink")}
-            style={input}
-            placeholder="https://…"
-          />
+        <Field label="Buttons & links">
+          <p style={{ margin: "0 0 8px", fontSize: "12px", color: "var(--color-9b7040)", fontFamily: "sans-serif", lineHeight: 1.5 }}>Shown under "Docs". Add as many as you like — a website, a page in the app, or a popup from Admin → Popups.</p>
+          <ButtonsEditor buttons={form.buttons} onChange={(buttons) => setForm((cur) => ({ ...cur, buttons }))} />
         </Field>
 
         <Field label="Audio Files">
@@ -430,21 +434,11 @@ export default function DoctrineAdmin() {
         </Field>
 
         <Field label="Weekly Memorization">
-          <textarea
-            value={form.memorization}
-            onChange={f("memorization")}
-            style={{ ...input, height: "80px", resize: "vertical" }}
-            placeholder="Verse or memorization content…"
-          />
+          <RichTextField value={form.memorization} onChange={(v) => setForm((cur) => ({ ...cur, memorization: v }))} rows={4} />
         </Field>
 
         <Field label="Notes">
-          <textarea
-            value={form.notes}
-            onChange={f("notes")}
-            style={{ ...input, height: "80px", resize: "vertical" }}
-            placeholder="Additional notes…"
-          />
+          <RichTextField value={form.notes} onChange={(v) => setForm((cur) => ({ ...cur, notes: v }))} rows={4} />
         </Field>
 
         {perms.canEdit && (

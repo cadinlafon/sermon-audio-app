@@ -1,3 +1,4 @@
+import RichText from "../components/RichText";
 import { useEffect, useState } from "react";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
@@ -141,10 +142,10 @@ function DevInfoContent() {
           <span style={cardIcon}>📞</span>
           <h2 style={cardTitle}>Support</h2>
         </div>
-        <p style={supportTextStyle}>
-          {supportText}{" "}
+        <div style={supportTextStyle}>
+          <RichText text={supportText} />{" "}
           <a href={githubOk} target="_blank" rel="noopener noreferrer" style={inlineLink}>View on GitHub</a>
-        </p>
+        </div>
       </div>
     </div>
   );

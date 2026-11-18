@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { dismissNotice, isDismissed, noticeLink, noticeType } from "../utils/pageNotices";
+import { dismissNotice, isDismissed, noticeButtons, noticeType } from "../utils/pageNotices";
+import RichText from "./RichText";
+import ActionButtons from "./ActionButtons";
+import { resolveStyle } from "../lib/colors";
 
 // Renders page notices (already filtered for this page and placement).
 export default function PageNoticeList({ notices, preview = false }) {
-  const navigate = useNavigate();
   const [, bump] = useState(0);
   const visible = notices.filter((n) => preview || !isDismissed(n));
   if (visible.length === 0) return null;
@@ -13,21 +14,22 @@ export default function PageNoticeList({ notices, preview = false }) {
     <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "14px" }}>
       {visible.map((n) => {
         const t = noticeType(n);
-        const link = noticeLink(n);
-        const palette = PALETTES[t.id] || PALETTES.info;
+        const own = resolveStyle(n.style);
+        const base = PALETTES[t.id] || PALETTES.info;
+        const palette = {
+          bg: own.bg || base.bg,
+          border: own.border || base.border,
+          title: own.title || base.title,
+          text: own.text || base.text,
+        };
+        const buttons = noticeButtons(n);
         return (
           <div key={n.id} style={{ ...box, background: palette.bg, borderColor: palette.border }} role={t.id === "important" || t.id === "warning" ? "alert" : "note"}>
             <span style={icon} aria-hidden="true">{t.icon}</span>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <strong style={{ ...title, color: palette.title }}>{n.title}</strong>
-              {n.message && <p style={{ ...message, color: palette.text }}>{n.message}</p>}
-              {link && (
-                link.external ? (
-                  <a href={link.href} target="_blank" rel="noopener noreferrer" style={{ ...linkStyle, color: palette.title }}>{link.text} ↗</a>
-                ) : (
-                  <button type="button" onClick={() => !preview && navigate(link.href)} style={{ ...linkStyle, color: palette.title, background: "none", border: "none", padding: 0, cursor: "pointer" }}>{link.text} →</button>
-                )
-              )}
+              <strong style={{ ...title, color: palette.title }}><RichText inline text={n.title} preview={preview} linkColor={own.accent || palette.title} /></strong>
+              {n.message && <RichText text={n.message} preview={preview} linkColor={own.accent || palette.title} style={{ ...message, color: palette.text }} />}
+              <ActionButtons buttons={buttons} accent={own.accent || palette.title} preview={preview} size="sm" style={{ marginTop: "8px" }} />
             </div>
             {n.dismissible === true && (
               <button
@@ -56,5 +58,4 @@ const box = { display: "flex", gap: "12px", alignItems: "flex-start", border: "1
 const icon = { fontSize: "18px", lineHeight: 1.3, flexShrink: 0 };
 const title = { fontSize: "15px", fontFamily: "'Georgia', serif" };
 const message = { fontSize: "13px", fontFamily: "sans-serif", lineHeight: 1.6, margin: "4px 0 0" };
-const linkStyle = { display: "inline-block", marginTop: "8px", fontSize: "13px", fontWeight: "600", fontFamily: "sans-serif", textDecoration: "none" };
 const closeBtn = { background: "none", border: "none", cursor: "pointer", fontSize: "13px", padding: "2px 4px", lineHeight: 1, opacity: 0.7, flexShrink: 0 };

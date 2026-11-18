@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import * as s from "./stateScreenStyles";
+import RichText from "../../components/RichText";
 
 export default function MaintenanceScreen({ config }) {
   const navigate = useNavigate();
@@ -16,10 +17,7 @@ export default function MaintenanceScreen({ config }) {
         {config?.maintenanceTitle || `${name} is under maintenance`}
       </h1>
 
-      <p style={s.subtitle}>
-        {config?.maintenanceMessage ||
-          "We're making some improvements here. Please check back soon."}
-      </p>
+      <RichText text={config?.maintenanceMessage || "We're making some improvements here. Please check back soon."} style={s.subtitle} />
 
       {formattedDate && (
         <div style={s.infoCard}>

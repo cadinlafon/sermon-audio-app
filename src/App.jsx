@@ -78,6 +78,7 @@ import Logs from "./pages/Admin/Logs";
 import AdminNotifications from "./pages/Admin/AdminNotifications";
 import AdminSuggestions from "./pages/Admin/AdminSuggestions";
 import AdminNotices from "./pages/Admin/AdminNotices";
+import AdminPopups from "./pages/Admin/AdminPopups";
 import DevInfoAdmin from "./pages/Admin/DevInfoAdmin";
 import ProblemReports from "./pages/Admin/ProblemReports";
 import MyReports from "./pages/MyReports";
@@ -407,6 +408,9 @@ function App() {
       <AdminTimeoutAlert />
 
       <RouteLogger />
+
+      {/* top banners from Admin → Popups render here, above the top bar */}
+      <div id="pf-banner-top" />
 
       <TopBar />
 
@@ -749,6 +753,11 @@ function App() {
               <Route
                 path="notices"
                 element={<ModuleGate moduleKey="notices"><AdminNotices /></ModuleGate>}
+              />
+
+              <Route
+                path="popups"
+                element={<ModuleGate moduleKey="popups"><AdminPopups /></ModuleGate>}
               />
 
               <Route
