@@ -17,6 +17,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.palousefellowship.audio.data.model.Notice
+import com.palousefellowship.audio.data.model.NoticeButton
+import com.palousefellowship.audio.data.model.resolve
+import com.palousefellowship.audio.util.RichText
 
 // Same amber tones as the web app's `noticeItem`/`pinnedBadge` (src/pages/Home.jsx).
 
@@ -26,15 +29,19 @@ import com.palousefellowship.audio.data.model.Notice
 @Composable
 fun NoticeCard(
     notice: Notice,
-    onButtonClick: (Notice) -> Unit,
+    onButtonClick: (NoticeButton) -> Unit,
     onSubmitInput: suspend (String) -> Unit,
     modifier: Modifier = Modifier,
+    onPage: (String) -> Unit = {},
 ) {
     val x = com.palousefellowship.audio.ui.theme.PfaTheme.extras
+    val st = notice.style.resolve()
+    val titleColor = st.title ?: x.noticeTitle
+    val textColor = st.text ?: x.noticeBody
     Card(
         modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = x.noticeBg),
-        border = BorderStroke(1.dp, x.noticeBorder),
+        colors = CardDefaults.cardColors(containerColor = st.bg ?: x.noticeBg),
+        border = BorderStroke(1.dp, st.border ?: x.noticeBorder),
         shape = RoundedCornerShape(12.dp),
     ) {
         Column(Modifier.padding(14.dp)) {
@@ -48,27 +55,27 @@ fun NoticeCard(
                         .padding(horizontal = 8.dp, vertical = 2.dp),
                 )
             }
-            Text(
-                text = notice.title,
-                style = MaterialTheme.typography.titleSmall,
-                color = x.noticeTitle,
-                modifier = Modifier.padding(top = if (notice.pinned) 6.dp else 0.dp),
-            )
+            if (notice.title.isNotBlank()) {
+                RichText(
+                    text = notice.title,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = titleColor,
+                    linkColor = st.accent ?: titleColor,
+                    onPage = onPage,
+                    modifier = Modifier.padding(top = if (notice.pinned) 6.dp else 0.dp),
+                )
+            }
             if (notice.details.isNotBlank()) {
-                Text(
+                RichText(
                     text = notice.details,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = x.noticeBody,
+                    color = textColor,
+                    linkColor = st.accent ?: MaterialTheme.colorScheme.primary,
+                    onPage = onPage,
                     modifier = Modifier.padding(top = 4.dp),
                 )
             }
-            if (notice.buttonEnabled && !notice.buttonValue.isNullOrBlank()) {
-                Row(Modifier.padding(top = 10.dp)) {
-                    OutlinedButton(onClick = { onButtonClick(notice) }) {
-                        Text((notice.buttonText?.takeIf { it.isNotBlank() } ?: "Learn More") + " →")
-                    }
-                }
-            }
+            NoticeButtonRow(notice.resolvedButtons(), st.accent, onButtonClick)
             if (notice.inputEnabled) {
                 NoticeInputForm(notice = notice, onSubmit = onSubmitInput)
             }

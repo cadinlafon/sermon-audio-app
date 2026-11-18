@@ -116,13 +116,16 @@ fun HomeScreen(
                                             androidx.compose.runtime.LaunchedEffect(notice.id) { container.eventLogger.log("notice_view", mapOf("noticeId" to notice.id, "noticeTitle" to notice.title)) }
                                             NoticeCard(
                                                 notice = notice,
-                                                onButtonClick = { n ->
-                                                    container.eventLogger.log("notice_click", mapOf("noticeId" to notice.id, "noticeTitle" to notice.title))
-                                                    when (n.buttonType) {
-                                                        "page" -> n.buttonValue?.let(onNavigateRoute)
-                                                        else -> n.buttonValue?.let { uriHandler.openUri(it) }
+                                                onButtonClick = { b ->
+                                                    container.eventLogger.log("notice_click", mapOf("noticeId" to notice.id, "noticeTitle" to notice.title, "buttonText" to b.text))
+                                                    when (b.action) {
+                                                        "page" -> onNavigateRoute(b.value)
+                                                        "email" -> uriHandler.openUri("mailto:${b.value}")
+                                                        "phone" -> uriHandler.openUri("tel:${b.value.replace(" ", "")}")
+                                                        else -> uriHandler.openUri(b.value)
                                                     }
                                                 },
+                                                onPage = onNavigateRoute,
                                                 onSubmitInput = { value -> container.noticeRepository.submitInput(notice.id, value) },
                                             )
                                         }

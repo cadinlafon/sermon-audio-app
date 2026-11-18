@@ -17,9 +17,16 @@ data class PageNotice(
     val endDate: String? = null,
     val linkUrl: String? = null,
     val linkText: String? = null,
+    val buttons: List<NoticeButton> = emptyList(),
+    val style: NoticeStyle? = null,
     val dismissible: Boolean = false,
     val categories: List<String> = emptyList(),
 ) {
+    fun resolvedButtons(): List<NoticeButton> {
+        val link = link()
+        return buttonsFor(buttons, link != null, link?.text, if (link?.external == false) "page" else "url", link?.href)
+    }
+
     val resolvedPlacement: String
         get() = if (placement in listOf("pageTop", "aboveFilters", "aboveList", "belowList")) placement!! else if (position == "bottom") "belowList" else "aboveList"
 

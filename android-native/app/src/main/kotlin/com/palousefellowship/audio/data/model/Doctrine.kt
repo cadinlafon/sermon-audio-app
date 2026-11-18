@@ -9,6 +9,7 @@ data class DoctrineContent(
     val questions: List<String> = emptyList(),
     val audioFiles: List<DoctrineAudioFile> = emptyList(),
     val docsLink: String = "",
+    val buttons: List<NoticeButton> = emptyList(),
     val memorization: String = "",
     val notes: String = "",
     // Legacy single-file shape some older docs still carry.
@@ -17,6 +18,9 @@ data class DoctrineContent(
 ) {
     /** [audioFiles] if present, else falls back to the legacy single file —
      * same rule the web app's Doctrine.jsx applies. */
+    /** Buttons under "Docs": the new list, or the older single docs link. */
+    fun resolvedButtons() = buttonsFor(buttons, docsLink.isNotBlank(), "Open Docs", "url", docsLink)
+
     fun resolvedAudioFiles(): List<DoctrineAudioFile> = when {
         audioFiles.isNotEmpty() -> audioFiles
         !audioStorageKey.isNullOrBlank() -> listOf(

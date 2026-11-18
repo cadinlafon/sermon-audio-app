@@ -151,6 +151,9 @@ fun PfaNavHost(
         )
     }
 
+    androidx.compose.runtime.CompositionLocalProvider(
+        com.palousefellowship.audio.util.LocalPageLinkHandler provides { route -> WEB_ROUTE_TO_NATIVE[route]?.let { navController.navigate(it) } },
+    ) {
     NavHost(navController = navController, startDestination = Routes.HOME, modifier = modifier) {
         composable(Routes.HOME) { gate("home") {
             HomeScreen(
@@ -265,5 +268,6 @@ fun PfaNavHost(
                 onGoToLogin = { navController.popBackStack() },
             )
         }
+    }
     }
 }

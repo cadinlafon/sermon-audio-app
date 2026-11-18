@@ -24,6 +24,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.palousefellowship.audio.data.model.PageNotice
+import com.palousefellowship.audio.data.model.resolve
+import com.palousefellowship.audio.util.RichText
 import com.palousefellowship.audio.ui.theme.PfaTheme
 
 /** Page notices from Audio Page Manager → Notices (PageNoticeList.jsx),
@@ -44,13 +46,18 @@ fun PageNoticeList(
     val x = PfaTheme.extras
     Column(Modifier.fillMaxWidth().padding(bottom = 14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         visible.forEach { n ->
-            val (icon, bg, border, titleC, textC) = when (n.type) {
+            val (icon, baseBg, baseBorder, baseTitle, baseText) = when (n.type) {
                 "warning" -> Palette("⚠️", x.warnBg, x.warnBorder, x.warnTitle, x.warnText)
                 "announcement" -> Palette("📣", x.annBg, x.annBorder, x.annTitle, x.annText)
                 "important" -> Palette("❗", x.impBg, x.impBorder, x.impTitle, x.impText)
                 else -> Palette("ℹ️", x.infoBg, x.infoBorder, x.infoTitle, x.infoText)
             }
-            val link = n.link()
+            val own = n.style.resolve()
+            val bg = own.bg ?: baseBg
+            val border = own.border ?: baseBorder
+            val titleC = own.title ?: baseTitle
+            val textC = own.text ?: baseText
+            val buttons = n.resolvedButtons()
             Row(
                 Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(bg)
                     .border(1.dp, border, RoundedCornerShape(14.dp)).padding(horizontal = 16.dp, vertical = 14.dp),
@@ -58,14 +65,16 @@ fun PageNoticeList(
             ) {
                 Text(icon, fontSize = 18.sp)
                 Column(Modifier.weight(1f)) {
-                    Text(n.title, fontFamily = FontFamily.Serif, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = titleC)
-                    if (n.message.isNotBlank()) Text(n.message, fontSize = 13.sp, lineHeight = 21.sp, color = textC, modifier = Modifier.padding(top = 4.dp))
-                    if (link != null) {
-                        Text(
-                            link.text + if (link.external) " ↗" else " →", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = titleC,
-                            modifier = Modifier.padding(top = 8.dp).clickable { if (!preview) { if (link.external) onOpenUrl(link.href) else onOpenRoute(link.href) } },
-                        )
-                    }
+                    RichText(n.title, style = androidx.compose.ui.text.TextStyle(fontFamily = FontFamily.Serif, fontWeight = FontWeight.Bold, fontSize = 15.sp), color = titleC, linkColor = own.accent ?: titleC, onPage = onOpenRoute)
+                    if (n.message.isNotBlank()) RichText(n.message, style = androidx.compose.ui.text.TextStyle(fontSize = 13.sp, lineHeight = 21.sp), color = textC, linkColor = own.accent ?: titleC, onPage = onOpenRoute, modifier = Modifier.padding(top = 4.dp))
+                    NoticeButtonRow(buttons, own.accent ?: titleC, onClick = { b ->
+                        if (!preview) when (b.action) {
+                            "page" -> onOpenRoute(b.value)
+                            "email" -> onOpenUrl("mailto:${b.value}")
+                            "phone" -> onOpenUrl("tel:${b.value.replace(" ", "")}")
+                            else -> onOpenUrl(b.value)
+                        }
+                    })
                 }
                 if (n.dismissible) {
                     Text("✕", fontSize = 13.sp, color = textC, modifier = Modifier.clickable { if (!preview) { onDismiss(n); bump++ } }.padding(2.dp))

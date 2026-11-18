@@ -17,6 +17,8 @@ data class Notice(
     val buttonType: String? = null, // "url" | "page"
     val buttonValue: String? = null,
     val buttonText: String? = null,
+    val buttons: List<NoticeButton> = emptyList(),
+    val style: NoticeStyle? = null,
     val inputEnabled: Boolean = false,
     val inputMessage: String? = null,
     val inputPlaceholder: String? = null,
@@ -32,4 +34,6 @@ data class Notice(
             else -> true
         }
     }
+
+    fun resolvedButtons() = buttonsFor(buttons, buttonEnabled, buttonText, buttonType, buttonValue)
 }

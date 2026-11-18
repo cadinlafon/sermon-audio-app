@@ -129,7 +129,7 @@ fun DoctrineScreen(
                                     Text("Speaker: ${content.speaker}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                                 if (content.details.isNotBlank()) {
-                                    Text(content.details, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 8.dp))
+                                    com.palousefellowship.audio.util.RichText(content.details, modifier = Modifier.padding(top = 8.dp))
                                 }
                             }
                         }
@@ -145,7 +145,7 @@ fun DoctrineScreen(
                             ExpandableSection(title = "Questions") {
                                 if (questions.isEmpty()) EmptySectionText("No questions added yet.")
                                 else Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                    questions.forEachIndexed { i, q -> Text("${i + 1}. $q", style = MaterialTheme.typography.bodyMedium) }
+                                    questions.forEachIndexed { i, q -> com.palousefellowship.audio.util.RichText("${i + 1}. $q") }
                                 }
                             }
                         }
@@ -170,13 +170,19 @@ fun DoctrineScreen(
                             }
                         }
 
-                        if (content.docsLink.isNotBlank()) {
+                        if (content.resolvedButtons().isNotEmpty()) {
                             item {
                                 ExpandableSection(title = "Docs") {
                                     val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
-                                    androidx.compose.material3.TextButton(onClick = { uriHandler.openUri(content.docsLink) }) {
-                                        Text("Open Docs →")
-                                    }
+                                    val goPage = com.palousefellowship.audio.util.LocalPageLinkHandler.current
+                                    com.palousefellowship.audio.ui.components.NoticeButtonRow(content.resolvedButtons(), null, onClick = { b ->
+                                        when (b.action) {
+                                            "page" -> goPage(b.value)
+                                            "email" -> uriHandler.openUri("mailto:${b.value}")
+                                            "phone" -> uriHandler.openUri("tel:${b.value.replace(" ", "")}")
+                                            else -> uriHandler.openUri(b.value)
+                                        }
+                                    })
                                 }
                             }
                         }
@@ -184,14 +190,14 @@ fun DoctrineScreen(
                         if (content.memorization.isNotBlank()) {
                             item {
                                 ExpandableSection(title = "Weekly Memorization") {
-                                    Text(content.memorization, style = MaterialTheme.typography.bodyMedium)
+                                    com.palousefellowship.audio.util.RichText(content.memorization)
                                 }
                             }
                         }
                         if (content.notes.isNotBlank()) {
                             item {
                                 ExpandableSection(title = "Notes") {
-                                    Text(content.notes, style = MaterialTheme.typography.bodyMedium)
+                                    com.palousefellowship.audio.util.RichText(content.notes)
                                 }
                             }
                         }
@@ -357,11 +363,11 @@ private fun WeeklyTopicSlider(weeks: List<DoctrineWeek>, defaultWeekId: String) 
                 Card(modifier = Modifier.fillMaxWidth().padding(top = 8.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f))) {
                     Column(Modifier.padding(10.dp)) {
                         Text("Memory text", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
-                        Text(week.memoryText, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 2.dp))
+                        com.palousefellowship.audio.util.RichText(week.memoryText, modifier = Modifier.padding(top = 2.dp))
                     }
                 }
             }
-            if (week.details.isNotBlank()) Text(week.details, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 8.dp))
+            if (week.details.isNotBlank()) com.palousefellowship.audio.util.RichText(week.details, modifier = Modifier.padding(top = 8.dp))
         }
     } else {
         EmptySectionText("Nothing added for this week yet.")
