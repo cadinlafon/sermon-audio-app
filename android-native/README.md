@@ -38,6 +38,9 @@ See **"Where this intentionally differs from the web app"** below for the
 handful of places this deliberately doesn't mirror the web app 1:1 (and
 why), and **"Not yet implemented"** for what's still out of scope.
 
+## v2.1.0 (2026-11-19)
+Renders the web admin's rich text (bold, italics, links, headings, lists), multiple notice buttons and notice/button colors in notices, page notices and Doctrine Campaign. Popups built in Admin → Popups are web-only for now; popup links show as plain bold text.
+
 ## Web-parity update (v2.0.0)
 
 This version brings the native app in line with the current web app (same Firebase/Supabase backend, same
